@@ -1,11 +1,12 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import flt, today
+from frappe.utils import cint, flt, today
 
 
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
+        self.validate_guest_count()
         self.calculate_totals()
         self.calculate_breakage()
 
@@ -26,6 +27,10 @@ class EventBooking(Document):
             if self.is_new():
                 frappe.throw("Event Date cannot be in the past for new bookings.")
 
+    def validate_guest_count(self):
+        if self.guest_count and cint(self.guest_count) < 0:
+            frappe.throw("Guest Count cannot be negative.")
+
     def calculate_totals(self):
         estimated = 0.0
         for item in self.services:
@@ -35,7 +40,6 @@ class EventBooking(Document):
 
     def calculate_breakage(self):
         breakage = 0.0
-        settings = self.get_settings()
         for item in self.services:
             if item.is_stock_item and item.qty_broken:
                 rate = flt(item.rate) or 1
