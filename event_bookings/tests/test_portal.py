@@ -55,6 +55,35 @@ class TestGetCustomerBookings(unittest.TestCase):
 		result = get_customer_bookings()
 		self.assertEqual(len(result), 1)
 
+	def test_pagination_params_passed(self, mock_frappe):
+		mock_frappe.session.user = "user@test.com"
+		mock_frappe.db.get_value.return_value = "CONTACT-001"
+		mock_frappe.get_all.side_effect = [
+			[MagicMock(link_name="CUST-001")],
+			[],
+		]
+
+		from event_bookings.api.portal import get_customer_bookings
+
+		get_customer_bookings(limit_start=10, limit_page_length=5)
+		call_args = mock_frappe.get_all.call_args_list[1]
+		self.assertEqual(call_args[1]["start"], 10)
+		self.assertEqual(call_args[1]["limit_page_length"], 5)
+
+	def test_pagination_capped_at_100(self, mock_frappe):
+		mock_frappe.session.user = "user@test.com"
+		mock_frappe.db.get_value.return_value = "CONTACT-001"
+		mock_frappe.get_all.side_effect = [
+			[MagicMock(link_name="CUST-001")],
+			[],
+		]
+
+		from event_bookings.api.portal import get_customer_bookings
+
+		get_customer_bookings(limit_start=0, limit_page_length=999)
+		call_args = mock_frappe.get_all.call_args_list[1]
+		self.assertEqual(call_args[1]["limit_page_length"], 100)
+
 
 @patch("event_bookings.api.portal.frappe")
 class TestApproveQuotation(unittest.TestCase):

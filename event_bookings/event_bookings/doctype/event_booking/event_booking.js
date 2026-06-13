@@ -26,6 +26,15 @@ frappe.ui.form.on("Event Booking", {
 			);
 		}
 	},
+
+	validate(frm) {
+		if (frm.doc.event_end_time && frm.doc.event_time) {
+			if (frm.doc.event_end_time <= frm.doc.event_time) {
+				frappe.msgprint(__("Event End Time must be after Event Time."));
+				frappe.validated = false;
+			}
+		}
+	},
 });
 
 var event_bookings = {

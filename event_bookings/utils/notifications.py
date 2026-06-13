@@ -99,7 +99,7 @@ def _get_event_recipients(event_doc, settings):
 		planner_email = frappe.db.get_value("Sales Partner", event_doc.event_planner, "email")
 		if planner_email:
 			recipients.append(planner_email)
-	return recipients
+	return list(dict.fromkeys(recipients))
 
 
 def _send_whatsapp_reminder(event_doc, days_until):

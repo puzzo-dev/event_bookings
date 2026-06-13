@@ -15,9 +15,6 @@ class EventBooking(Document):
 		if self.has_status_changed():
 			self.handle_status_transition()
 
-	def on_update(self):
-		pass
-
 	# -----------------------------------------------------------------
 	# Validations
 	# -----------------------------------------------------------------
@@ -26,6 +23,9 @@ class EventBooking(Document):
 		if self.event_date and self.event_date < today():
 			if self.is_new():
 				frappe.throw("Event Date cannot be in the past for new bookings.")
+
+		if self.event_end_time and self.event_time and self.event_end_time <= self.event_time:
+			frappe.throw("Event End Time must be after Event Time.")
 
 	# -----------------------------------------------------------------
 	# Defaults
