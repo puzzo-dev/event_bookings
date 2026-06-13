@@ -1,0 +1,96 @@
+{% extends "templates/web.html" %}
+
+{% block title %}My Event Bookings{% endblock %}
+
+{% block page_content %}
+<div class="container py-4">
+    <h2>My Event Bookings</h2>
+    <p class="text-muted">View and manage your event bookings.</p>
+
+    <div id="bookings-list">
+        <div class="text-center py-5">
+            <div class="spinner-border text-primary" role="status"></div>
+            <p class="mt-2">Loading your bookings...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+.booking-card {
+    border: 1px solid var(--border-color, #d1d8dd);
+    border-radius: 8px;
+    padding: 1.5rem;
+    margin-bottom: 1rem;
+    background: var(--card-bg, #fff);
+}
+.booking-card:hover {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+}
+.booking-status {
+    display: inline-block;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-size: 0.85em;
+    font-weight: 600;
+}
+.status-new { background: #e3f2fd; color: #1565c0; }
+.status-quoted { background: #fff3e0; color: #e65100; }
+.status-confirmed { background: #e8f5e9; color: #2e7d32; }
+.status-in-preparation { background: #f3e5f5; color: #7b1fa2; }
+.status-executed { background: #e0f2f1; color: #00695c; }
+.status-invoiced { background: #fce4ec; color: #c62828; }
+.status-paid { background: #e8f5e9; color: #1b5e20; }
+.status-cancelled { background: #efebe9; color: #4e342e; }
+.booking-meta { color: var(--text-muted, #8d99a6); font-size: 0.9em; }
+</style>
+
+<script>
+frappe.ready(function() {
+    frappe.call({
+        method: 'event_bookings.api.portal.get_customer_bookings',
+        callback: function(r) {
+            if (r.message && r.message.length) {
+                render_bookings(r.message);
+            } else {
+                $('#bookings-list').html(
+                    '<div class="text-center py-5 text-muted">' +
+                    '<p>No bookings found.</p></div>'
+                );
+            }
+        }
+    });
+});
+
+function render_bookings(bookings) {
+    var html = '';
+    bookings.forEach(function(b) {
+        var status_class = 'status-' + b.booking_status.toLowerCase().replace(/ /g, '-');
+        html += '<div class="booking-card">' +
+            '<div class="row">' +
+            '<div class="col-md-8">' +
+            '<h5>' + b.event_name + ' <span class="booking-status ' + status_class + '">' +
+            b.booking_status + '</span></h5>' +
+            '<div class="booking-meta">' +
+            '<span>📅 ' + b.event_date + '</span> &nbsp; ' +
+            '<span>📍 ' + (b.event_location || '') + '</span>' +
+            '</div>' +
+            '</div>' +
+            '<div class="col-md-4 text-right">' +
+            '<div class="booking-meta">Estimated: ' + format_currency(b.total_estimated) + '</div>';
+
+        if (b.booking_status === 'Quoted' && !b.sales_order) {
+            html += '<a href="/approve-booking?name=' + b.name +
+                '" class="btn btn-primary btn-sm mt-2">View Quote</a>';
+        }
+
+        html += '</div></div></div>';
+    });
+    $('#bookings-list').html(html);
+}
+
+function format_currency(val) {
+    if (!val) return '—';
+    return frappe.format(val, {fieldtype: 'Currency'});
+}
+</script>
+{% endblock %}
