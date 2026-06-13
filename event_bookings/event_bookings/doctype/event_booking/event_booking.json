@@ -251,7 +251,38 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
+ "links": [
+  {
+   "group": "Selling",
+   "link_doctype": "Quotation",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Selling",
+   "link_doctype": "Sales Order",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Accounts",
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Stock",
+   "link_doctype": "Material Request",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Stock",
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "HR",
+   "link_doctype": "Shift Assignment",
+   "link_fieldname": "event_booking"
+  }
+ ],
  "modified": "2026-06-13 06:39:52.704059",
  "modified_by": "Administrator",
  "module": "Event Bookings",
@@ -325,5 +356,6 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1,
+ "track_seen": 1,
  "track_views": 1
 }

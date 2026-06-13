@@ -23,14 +23,14 @@ def sync_invoice_payment_status():
 		"Event Booking",
 		filters={"booking_status": "Invoiced", "sales_invoice": ("is", "set")},
 		fields=["name", "sales_invoice"],
+		limit_page_length=500,
 	)
 	for eb in events:
 		try:
 			si_status = frappe.db.get_value("Sales Invoice", eb.sales_invoice, "status")
 			if si_status == "Paid":
 				doc = frappe.get_doc("Event Booking", eb.name)
-				doc.booking_status = "Paid"
-				doc.save(ignore_permissions=True)
+				frappe.utils.apply_workflow(doc, "Mark Paid")
 		except Exception:
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
 
@@ -45,6 +45,7 @@ def send_pre_event_reminders(days=3):
 			"booking_status": ("in", ["In Preparation", "Confirmed"]),
 		},
 		fields=["name", "event_name", "event_date"],
+		limit_page_length=500,
 	)
 	for ev in events:
 		doc = frappe.get_doc("Event Booking", ev.name)
@@ -57,6 +58,7 @@ def send_unstaffed_alerts():
 		"Event Booking",
 		filters={"booking_status": "In Preparation"},
 		fields=["name"],
+		limit_page_length=500,
 	)
 	for ev in events:
 		doc = frappe.get_doc("Event Booking", ev.name)

@@ -72,6 +72,27 @@ class TestSendEventReminder(unittest.TestCase):
 		send_event_reminder(doc, 3)
 		mock_frappe.sendmail.assert_called_once()
 
+	def test_deduplicates_recipients(self, _fmt, mock_frappe):
+		from event_bookings.utils.notifications import send_event_reminder
+
+		settings = SimpleNamespace(notification_email="mgr@test.com", enable_whatsapp=False)
+		mock_frappe.get_cached_doc.return_value = settings
+		mock_frappe.db.get_value.side_effect = lambda dt, name, field: "mgr@test.com"
+
+		doc = SimpleNamespace(
+			name="EVT-001",
+			event_name="Gala",
+			customer="Acme",
+			event_date="2026-07-15",
+			event_location="Hall",
+			contact_person="C-001",
+			event_planner="SP-001",
+		)
+		send_event_reminder(doc, 3)
+		call_args = mock_frappe.sendmail.call_args
+		recipients = call_args[1]["recipients"] if "recipients" in call_args[1] else call_args[0][0]
+		self.assertEqual(len(recipients), len(set(recipients)))
+
 	def test_skips_when_no_recipients(self, _fmt, mock_frappe):
 		from event_bookings.utils.notifications import send_event_reminder
 

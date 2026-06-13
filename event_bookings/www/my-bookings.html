@@ -13,6 +13,9 @@
             <p class="mt-2">Loading your bookings...</p>
         </div>
     </div>
+    <div id="load-more-wrapper" class="text-center py-3" style="display: none;">
+        <button id="load-more-btn" class="btn btn-default btn-sm">Load More</button>
+    </div>
 </div>
 
 <style>
@@ -45,21 +48,46 @@
 </style>
 
 <script>
+var PAGE_SIZE = 20;
+var current_start = 0;
+var all_loaded = false;
+
 frappe.ready(function() {
+    load_bookings(0);
+
+    $('#load-more-btn').on('click', function() {
+        load_bookings(current_start);
+    });
+});
+
+function load_bookings(start) {
     frappe.call({
         method: 'event_bookings.api.portal.get_customer_bookings',
+        args: { limit_start: start, limit_page_length: PAGE_SIZE },
         callback: function(r) {
-            if (r.message && r.message.length) {
-                render_bookings(r.message);
-            } else {
+            var bookings = r.message || [];
+            if (start === 0 && bookings.length === 0) {
                 $('#bookings-list').html(
                     '<div class="text-center py-5 text-muted">' +
                     '<p>No bookings found.</p></div>'
                 );
+                return;
+            }
+            if (start === 0) {
+                $('#bookings-list').html('');
+            }
+            render_bookings(bookings);
+            current_start += bookings.length;
+
+            if (bookings.length < PAGE_SIZE) {
+                all_loaded = true;
+                $('#load-more-wrapper').hide();
+            } else {
+                $('#load-more-wrapper').show();
             }
         }
     });
-});
+}
 
 function render_bookings(bookings) {
     var html = '';
@@ -71,8 +99,8 @@ function render_bookings(bookings) {
             '<h5>' + b.event_name + ' <span class="booking-status ' + status_class + '">' +
             b.booking_status + '</span></h5>' +
             '<div class="booking-meta">' +
-            '<span>📅 ' + b.event_date + '</span> &nbsp; ' +
-            '<span>📍 ' + (b.event_location || '') + '</span>' +
+            '<span>Date: ' + b.event_date + '</span> &nbsp; ' +
+            '<span>Location: ' + (b.event_location || '') + '</span>' +
             '</div>' +
             '</div>' +
             '<div class="col-md-4 text-right">' +
@@ -85,7 +113,7 @@ function render_bookings(bookings) {
 
         html += '</div></div></div>';
     });
-    $('#bookings-list').html(html);
+    $('#bookings-list').append(html);
 }
 
 function approve_booking(name) {

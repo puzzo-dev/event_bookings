@@ -2,7 +2,7 @@ import frappe
 
 
 @frappe.whitelist()
-def get_customer_bookings():
+def get_customer_bookings(limit_start=0, limit_page_length=20):
 	"""Return event bookings for the logged-in customer portal user."""
 	user = frappe.session.user
 	if user == "Guest":
@@ -11,6 +11,9 @@ def get_customer_bookings():
 	customer = _get_customer_for_user(user)
 	if not customer:
 		return []
+
+	limit_start = int(limit_start)
+	limit_page_length = min(int(limit_page_length), 100)
 
 	return frappe.get_all(
 		"Event Booking",
@@ -27,6 +30,8 @@ def get_customer_bookings():
 			"sales_order",
 		],
 		order_by="event_date desc",
+		start=limit_start,
+		limit_page_length=limit_page_length,
 	)
 
 

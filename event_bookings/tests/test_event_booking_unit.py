@@ -36,6 +36,8 @@ def _new_booking(**overrides):
 	eb.event_name = "Test Event"
 	eb.event_date = "2026-08-01"
 	eb.event_location = "Venue"
+	eb.event_time = "10:00:00"
+	eb.event_end_time = None
 	eb.name = "EVT-001"
 	eb.flags = SimpleNamespace(ignore_permissions=False)
 	for k, v in overrides.items():
@@ -75,6 +77,30 @@ class TestValidateDates(unittest.TestCase):
 
 	def test_none_date_no_throw(self, mock_today, mock_frappe):
 		eb = _new_booking(event_date=None)
+		eb.is_new = lambda: True
+
+		eb.validate_dates()
+		mock_frappe.throw.assert_not_called()
+
+	def test_end_time_before_start_time_throws(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="14:00:00", event_end_time="12:00:00")
+		eb.is_new = lambda: True
+
+		eb.validate_dates()
+		mock_frappe.throw.assert_called_once_with("Event End Time must be after Event Time.")
+
+	def test_end_time_after_start_time_ok(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="10:00:00", event_end_time="18:00:00")
+		eb.is_new = lambda: True
+
+		eb.validate_dates()
+		mock_frappe.throw.assert_not_called()
+
+	def test_no_end_time_ok(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="10:00:00", event_end_time=None)
 		eb.is_new = lambda: True
 
 		eb.validate_dates()
@@ -605,6 +631,14 @@ class TestSyncAssignedStaff(unittest.TestCase):
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestRecordDamagesPermission(unittest.TestCase):
+	def setUp(self):
+		import frappe as real_frappe
+
+		if not hasattr(real_frappe.local, "flags"):
+			real_frappe.local.flags = real_frappe._dict(in_test=True)
+		else:
+			real_frappe.local.flags.in_test = True
+
 	def test_checks_permission_before_processing(self, mock_frappe):
 		from event_bookings.event_bookings.doctype.event_booking.event_booking import record_damages
 

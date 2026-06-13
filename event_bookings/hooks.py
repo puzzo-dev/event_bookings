@@ -91,7 +91,6 @@ portal_menu_items = [
 # ------------
 
 # before_install = "event_bookings.install.before_install"
-# after_install = "event_bookings.install.after_install"
 
 # Uninstallation
 # ------------
