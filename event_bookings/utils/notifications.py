@@ -14,8 +14,8 @@ def format_whatsapp_message(template, doc):
     """Format a WhatsApp message from a template string and document.
 
     Uses explicit placeholder substitution to prevent format-string injection.
-    Only the whitelisted placeholders are resolved; unknown placeholders are
-    left as-is.
+    Only the whitelisted placeholders are resolved; unknown placeholders
+    cause a ``KeyError``.
     """
     from frappe.utils import formatdate
 
