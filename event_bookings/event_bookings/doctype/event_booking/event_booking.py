@@ -1,14 +1,13 @@
 import frappe
 from frappe.model.document import Document
-from frappe.utils import cint, flt, today
+from frappe.model.mapper import get_mapped_doc
+from frappe.utils import cint, today
 
 
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
         self.validate_guest_count()
-        self.calculate_totals()
-        self.calculate_breakage()
 
     def before_insert(self):
         self.set_defaults_from_settings()
@@ -31,20 +30,6 @@ class EventBooking(Document):
         if self.guest_count and cint(self.guest_count) < 0:
             frappe.throw("Guest Count cannot be negative.")
 
-    def calculate_totals(self):
-        estimated = 0.0
-        for item in self.services:
-            item.amount = flt(item.qty) * flt(item.rate)
-            estimated += flt(item.amount)
-        self.total_estimated = estimated
-
-    def calculate_breakage(self):
-        breakage = 0.0
-        for item in self.services:
-            if item.is_stock_item and item.qty_broken:
-                rate = flt(item.rate) or 1
-                breakage += flt(item.qty_broken) * rate
-        self.breakage_cost = breakage
 
     # -----------------------------------------------------------------
     # Defaults
@@ -52,7 +37,7 @@ class EventBooking(Document):
 
     def set_defaults_from_settings(self):
         settings = self.get_settings()
-        if not self.event_cost_center and settings.default_cost_center:
+        if not self.event_cost_center and settings.default_cost_center and not settings.auto_create_cost_center_per_event:
             self.event_cost_center = settings.default_cost_center
 
     def set_cost_center(self):
@@ -104,94 +89,11 @@ class EventBooking(Document):
     def handle_status_transition(self):
         status = self.booking_status
 
-        if status == "Quoted":
-            self.create_quotation()
-
-        elif status == "Confirmed":
+        if status == "Confirmed":
             self.ensure_event_cost_center()
 
         elif status == "In Preparation":
-            self.create_material_request()
             self.create_shift_assignments()
-
-        elif status == "Executed":
-            pass  # Validation prevents service edits
-
-        elif status == "Invoiced":
-            pass  # Sales Manager creates invoice manually or via auto-create
-
-        elif status == "Paid":
-            pass  # Set by scheduler when SI is paid
-
-    # -----------------------------------------------------------------
-    # Quotation Builder
-    # -----------------------------------------------------------------
-
-    def create_quotation(self):
-        if self.quotation:
-            return
-
-        settings = self.get_settings()
-        qt = frappe.get_doc(
-            {
-                "doctype": "Quotation",
-                "quotation_to": "Customer",
-                "party_name": self.customer,
-                "event_booking": self.name,
-                "cost_center": self.event_cost_center or settings.default_cost_center,
-            }
-        )
-
-        for svc in self.services:
-            qt.append(
-                "items",
-                {
-                    "item_code": svc.item,
-                    "qty": svc.qty,
-                    "rate": svc.rate,
-                    "cost_center": self.event_cost_center or settings.default_cost_center,
-                    "income_account": settings.default_income_account,
-                },
-            )
-
-        qt.insert(ignore_permissions=True)
-        self.quotation = qt.name
-
-    # -----------------------------------------------------------------
-    # Material Request
-    # -----------------------------------------------------------------
-
-    def create_material_request(self):
-        if self.material_request:
-            return
-
-        settings = self.get_settings()
-        stock_items = [s for s in self.services if s.is_stock_item]
-        if not stock_items:
-            return
-
-        mr = frappe.get_doc(
-            {
-                "doctype": "Material Request",
-                "material_request_type": "Material Issue",
-                "event_booking": self.name,
-                "cost_center": self.event_cost_center or settings.default_cost_center,
-            }
-        )
-
-        for svc in stock_items:
-            mr.append(
-                "items",
-                {
-                    "item_code": svc.item,
-                    "qty": svc.qty,
-                    "warehouse": settings.default_warehouse,
-                    "cost_center": self.event_cost_center or settings.default_cost_center,
-                },
-            )
-
-        mr.insert(ignore_permissions=True)
-        self.material_request = mr.name
 
     # -----------------------------------------------------------------
     # Shift Assignments (HRMS Integration)
@@ -200,7 +102,7 @@ class EventBooking(Document):
     def create_shift_assignments(self):
         settings = self.get_settings()
         for req in self.staff_requirements:
-            needed = flt(req.qty_required) - flt(req.qty_assigned or 0)
+            needed = frappe.utils.flt(req.qty_required) - frappe.utils.flt(req.qty_assigned or 0)
             for _ in range(int(needed)):
                 shift = frappe.get_doc(
                     {
@@ -234,3 +136,28 @@ class EventBooking(Document):
 
     def get_settings(self):
         return frappe.get_cached_doc("Event Settings", "Event Settings")
+
+@frappe.whitelist()
+def make_quotation(source_name, target_doc=None):
+    def set_missing_values(source, target):
+        target.quotation_to = "Customer"
+        target.event_booking = source.name
+
+    doclist = get_mapped_doc(
+        "Event Booking",
+        source_name,
+        {
+            "Event Booking": {
+                "doctype": "Quotation",
+                "field_map": {
+                    "customer": "party_name",
+                    "contact_person": "contact_person",
+                    "event_cost_center": "cost_center"
+                }
+            }
+        },
+        target_doc,
+        set_missing_values
+    )
+
+    return doclist
