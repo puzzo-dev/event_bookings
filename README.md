@@ -1,33 +1,52 @@
-### Event Bookings
+# Event Bookings
 
-Event Management
+A standalone Frappe app for managing event lifecycles, integrated with **ERPNext** and **HRMS**.
 
-### Installation
+## Overview
 
-You can install this app using the [bench](https://github.com/frappe/bench) CLI:
+Event Bookings manages the full event lifecycle from enquiry to post-event follow-up, while leveraging ERPNext for financials/stock and HRMS for staff management.
 
-```bash
-cd $PATH_TO_YOUR_BENCH
-bench get-app $URL_OF_THIS_REPO --branch develop
-bench install-app event_bookings
-```
+## Dependencies
 
-### Contributing
+- Frappe Framework v15+
+- ERPNext
+- HRMS
 
-This app uses `pre-commit` for code formatting and linting. Please [install pre-commit](https://pre-commit.com/#installation) and enable it for this repository:
+## Installation
 
 ```bash
-cd apps/event_bookings
-pre-commit install
+bench get-app https://github.com/your-org/event_bookings.git
+bench --site your-site.local install-app event_bookings
 ```
 
-Pre-commit is configured to use the following tools for checking and formatting your code:
+## Features
 
-- ruff
-- eslint
-- prettier
-- pyupgrade
+### DocTypes
+- **Event Booking** — Central operational document for every event
+- **Event Type** — Dynamic classification (Wedding, Corporate, etc.)
+- **Event Settings** — Global defaults (items, warehouse, cost center, COA accounts)
+- **Event Service Item** — Child table for line items
+- **Event Staff Requirement** — Roles needed vs assigned
+- **Event Assigned Staff** — Read-only view of assigned employees
 
-### License
+### Workflow
+9-state workflow: New → Quoted → Negotiating → Confirmed → In Preparation → Executed → Invoiced → Paid → Cancelled
 
-mit
+### Integration
+- **ERPNext**: Quotations, Sales Orders, Sales Invoices, Material Requests, Stock Entries
+- **HRMS**: Shift Assignments for staff scheduling
+- **Accounting**: Dynamic COA account creation (Event Revenue, COGS, Breakage Expenses)
+
+### Dashboard
+- Custom workspace with KPIs, charts, and shortcuts
+- Query report: Event Booking Profitability
+
+## Configuration
+
+1. Open **Event Settings** after installation
+2. Set default warehouse, cost center, and COA accounts
+3. Configure notification email and WhatsApp settings
+
+## License
+
+MIT

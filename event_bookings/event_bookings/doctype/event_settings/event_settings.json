@@ -1,0 +1,124 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-12 22:47:33.571580",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "default_warehouse",
+  "breakage_warehouse",
+  "default_cost_center",
+  "default_income_account",
+  "default_cogs_account",
+  "default_breakage_account",
+  "default_rental_item",
+  "default_shift_type",
+  "default_service_item",
+  "auto_create_cost_center_per_event",
+  "auto_create_project",
+  "require_review",
+  "notification_email",
+  "enable_whatsapp"
+ ],
+ "fields": [
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "breakage_warehouse",
+   "fieldtype": "Link",
+   "label": "Breakage Warehouse",
+   "options": "Warehouse"
+  },
+  {
+   "fieldname": "default_cost_center",
+   "fieldtype": "Link",
+   "label": "Default Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "default_income_account",
+   "fieldtype": "Link",
+   "label": "Default Income Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "default_cogs_account",
+   "fieldtype": "Link",
+   "label": "Default COGS Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "default_breakage_account",
+   "fieldtype": "Link",
+   "label": "Default Breakage Expense Account",
+   "options": "Account"
+  },
+  {
+   "fieldname": "default_shift_type",
+   "fieldtype": "Link",
+   "label": "Default Shift Type",
+   "options": "Shift Type"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_create_cost_center_per_event",
+   "fieldtype": "Check",
+   "label": "Auto-Create Cost Center per Event"
+  },
+  {
+   "default": "0",
+   "fieldname": "auto_create_project",
+   "fieldtype": "Check",
+   "label": "Auto-Create Project"
+  },
+  {
+   "default": "0",
+   "fieldname": "require_review",
+   "fieldtype": "Check",
+   "label": "Require Post-Event Review"
+  },
+  {
+   "fieldname": "notification_email",
+   "fieldtype": "Data",
+   "label": "Notification Email"
+  },
+  {
+   "default": "0",
+   "fieldname": "enable_whatsapp",
+   "fieldtype": "Check",
+   "label": "Enable WhatsApp"
+  },
+  {
+   "fieldname": "default_rental_item",
+   "fieldtype": "Link",
+   "label": "Default Rental Item",
+   "options": "Item"
+  },
+  {
+   "fieldname": "default_service_item",
+   "fieldtype": "Link",
+   "label": "Default Service Item",
+   "options": "Item"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "issingle": 1,
+ "links": [],
+ "modified": "2026-06-13 06:39:52.224116",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Settings",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

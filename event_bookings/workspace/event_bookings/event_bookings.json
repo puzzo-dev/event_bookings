@@ -1,0 +1,145 @@
+{
+ "charts": [
+  {
+   "chart_name": "Monthly Events",
+   "label": "Monthly Events"
+  },
+  {
+   "chart_name": "Event Revenue Trend",
+   "label": "Revenue Trend"
+  }
+ ],
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Getting Started\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Quick Links\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
+ "creation": "2026-06-13 03:00:00.000000",
+ "custom_blocks": [],
+ "docstatus": 0,
+ "doctype": "Workspace",
+ "for_user": "",
+ "hide_custom": 0,
+ "icon": "calendar",
+ "idx": 0,
+ "is_editable": 1,
+ "label": "Event Bookings",
+ "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "New Event Booking",
+   "link_to": "Event Booking",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Bookings List",
+   "link_to": "Event Booking",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Types",
+   "link_to": "Event Type",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Settings",
+   "link_to": "Event Settings",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Profitability Report",
+   "link_to": "Event Booking Profitability",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
+  }
+ ],
+ "modified": "2026-06-13 03:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Bookings",
+ "number_cards": [
+  {
+   "label": "Upcoming Events",
+   "number_card_name": "Upcoming Events"
+  },
+  {
+   "label": "Events This Month",
+   "number_card_name": "Events This Month"
+  },
+  {
+   "label": "Pending Invoices",
+   "number_card_name": "Pending Invoices"
+  },
+  {
+   "label": "Total Revenue",
+   "number_card_name": "Total Revenue"
+  }
+ ],
+ "parent_page": "",
+ "public": 1,
+ "quick_lists": [],
+ "roles": [
+  {"role": "Event Manager"},
+  {"role": "Event User"},
+  {"role": "Sales Manager"},
+  {"role": "System Manager"}
+ ],
+ "sequence_id": 1,
+ "shortcuts": [
+  {
+   "color": "Blue",
+   "doc_view": "New",
+   "format": "",
+   "icon": "plus",
+   "label": "New Event Booking",
+   "link_to": "Event Booking",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Green",
+   "doc_view": "List",
+   "format": "",
+   "icon": "list",
+   "label": "Event Bookings List",
+   "link_to": "Event Booking",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Orange",
+   "doc_view": "List",
+   "format": "",
+   "icon": "settings",
+   "label": "Event Types",
+   "link_to": "Event Type",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Grey",
+   "doc_view": "List",
+   "format": "",
+   "icon": "settings",
+   "label": "Event Settings",
+   "link_to": "Event Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  }
+ ],
+ "title": "Event Bookings"
+}

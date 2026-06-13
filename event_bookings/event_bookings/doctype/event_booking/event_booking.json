@@ -1,0 +1,329 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "autoname": "format:EVT-.YYYY.-.####",
+ "creation": "2026-06-12 22:47:36.158952",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "sec_core",
+  "event_name",
+  "booking_status",
+  "customer",
+  "contact_person",
+  "col_type",
+  "event_type",
+  "event_planner",
+  "event_cost_center",
+  "project",
+  "sec_logistics",
+  "event_date",
+  "event_time",
+  "event_end_time",
+  "guest_count",
+  "col_loc",
+  "event_location",
+  "special_requirements",
+  "sec_services",
+  "total_estimated",
+  "total_actual",
+  "col_fin",
+  "quotation",
+  "sales_order",
+  "sales_invoice",
+  "material_request",
+  "sec_staffing",
+  "staff_requirements",
+  "assigned_staff",
+  "sec_post",
+  "breakage_cost",
+  "col_rev",
+  "client_feedback",
+  "review_requested",
+  "review_received"
+ ],
+ "fields": [
+  {
+   "fieldname": "sec_core",
+   "fieldtype": "Section Break",
+   "label": "Client & Event Core"
+  },
+  {
+   "fieldname": "event_name",
+   "fieldtype": "Data",
+   "in_list_view": 1,
+   "label": "Event Name",
+   "reqd": 1
+  },
+  {
+   "default": "New",
+   "fieldname": "booking_status",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Booking Status",
+   "options": "New\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
+   "reqd": 1
+  },
+  {
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "label": "Customer",
+   "options": "Customer",
+   "reqd": 1
+  },
+  {
+   "fieldname": "contact_person",
+   "fieldtype": "Link",
+   "label": "Contact",
+   "options": "Contact"
+  },
+  {
+   "fieldname": "col_type",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "event_type",
+   "fieldtype": "Link",
+   "label": "Event Type",
+   "options": "Event Type",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_planner",
+   "fieldtype": "Link",
+   "label": "Event Planner",
+   "options": "Sales Partner"
+  },
+  {
+   "fieldname": "event_cost_center",
+   "fieldtype": "Link",
+   "label": "Cost Center",
+   "options": "Cost Center"
+  },
+  {
+   "fieldname": "project",
+   "fieldtype": "Link",
+   "label": "Project",
+   "options": "Project"
+  },
+  {
+   "fieldname": "sec_logistics",
+   "fieldtype": "Section Break",
+   "label": "Logistics & Schedule"
+  },
+  {
+   "fieldname": "event_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Event Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Time",
+   "label": "Event Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_end_time",
+   "fieldtype": "Time",
+   "label": "Event End Time"
+  },
+  {
+   "fieldname": "guest_count",
+   "fieldtype": "Int",
+   "label": "Guest Count"
+  },
+  {
+   "fieldname": "col_loc",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "event_location",
+   "fieldtype": "Small Text",
+   "label": "Event Location",
+   "reqd": 1
+  },
+  {
+   "fieldname": "special_requirements",
+   "fieldtype": "Text",
+   "label": "Special Requirements"
+  },
+  {
+   "fieldname": "sec_services",
+   "fieldtype": "Section Break",
+   "label": "Services & Financials"
+  },
+  {
+   "fieldname": "total_estimated",
+   "fieldtype": "Currency",
+   "label": "Total Estimated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "total_actual",
+   "fieldtype": "Currency",
+   "label": "Total Actual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_fin",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "quotation",
+   "fieldtype": "Link",
+   "label": "Quotation",
+   "options": "Quotation",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_order",
+   "fieldtype": "Link",
+   "label": "Sales Order",
+   "options": "Sales Order",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sales_invoice",
+   "fieldtype": "Link",
+   "label": "Sales Invoice",
+   "options": "Sales Invoice",
+   "read_only": 1
+  },
+  {
+   "fieldname": "material_request",
+   "fieldtype": "Link",
+   "label": "Material Request",
+   "options": "Material Request",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_staffing",
+   "fieldtype": "Section Break",
+   "label": "Staffing"
+  },
+  {
+   "fieldname": "staff_requirements",
+   "fieldtype": "Table",
+   "label": "Staff Requirements",
+   "options": "Event Staff Requirement"
+  },
+  {
+   "fieldname": "assigned_staff",
+   "fieldtype": "Table",
+   "label": "Assigned Staff",
+   "options": "Event Assigned Staff"
+  },
+  {
+   "fieldname": "sec_post",
+   "fieldtype": "Section Break",
+   "label": "Post-Event"
+  },
+  {
+   "fieldname": "breakage_cost",
+   "fieldtype": "Currency",
+   "label": "Breakage Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "col_rev",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "client_feedback",
+   "fieldtype": "Text",
+   "label": "Client Feedback"
+  },
+  {
+   "default": "0",
+   "fieldname": "review_requested",
+   "fieldtype": "Check",
+   "label": "Review Requested"
+  },
+  {
+   "default": "0",
+   "fieldname": "review_received",
+   "fieldtype": "Check",
+   "label": "Review Received"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "links": [],
+ "modified": "2026-06-13 06:39:52.704059",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Booking",
+ "naming_rule": "Expression (old style)",
+ "owner": "Administrator",
+ "permissions": [
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Event Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Event User"
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales Manager",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Sales User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "Accounts User",
+   "share": 1,
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "email": 1,
+   "export": 1,
+   "print": 1,
+   "read": 1,
+   "report": 1,
+   "role": "System Manager",
+   "share": 1,
+   "write": 1
+  }
+ ],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": [],
+ "track_changes": 1,
+ "track_views": 1
+}

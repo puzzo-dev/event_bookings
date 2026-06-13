@@ -1,0 +1,58 @@
+{
+ "actions": [],
+ "allow_rename": 1,
+ "creation": "2026-06-12 22:12:12.920347",
+ "doctype": "DocType",
+ "editable_grid": 1,
+ "engine": "InnoDB",
+ "field_order": [
+  "designation",
+  "qty_required",
+  "qty_assigned",
+  "notes"
+ ],
+ "fields": [
+  {
+   "fieldname": "designation",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Designation",
+   "options": "Designation",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qty_required",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Qty Required",
+   "reqd": 1
+  },
+  {
+   "fieldname": "qty_assigned",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Qty Assigned",
+   "read_only": 1
+  },
+  {
+   "fieldname": "notes",
+   "fieldtype": "Text",
+   "label": "Notes"
+  }
+ ],
+ "grid_page_length": 50,
+ "index_web_pages_for_search": 1,
+ "istable": 1,
+ "links": [],
+ "modified": "2026-06-12 22:12:12.920347",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Staff Requirement",
+ "owner": "Administrator",
+ "permissions": [],
+ "row_format": "Dynamic",
+ "rows_threshold_for_grid_search": 20,
+ "sort_field": "modified",
+ "sort_order": "DESC",
+ "states": []
+}

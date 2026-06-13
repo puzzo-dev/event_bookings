@@ -8,7 +8,7 @@ app_license = "mit"
 # Apps
 # ------------------
 
-# required_apps = []
+required_apps = ["erpnext", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -137,34 +137,35 @@ app_license = "mit"
 # ---------------
 # Hook on document methods and events
 
-# doc_events = {
-# 	"*": {
-# 		"on_update": "method",
-# 		"on_cancel": "method",
-# 		"on_trash": "method"
-# 	}
-# }
+doc_events = {
+	"Quotation": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
+	},
+	"Sales Order": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_order_submit",
+	},
+	"Sales Invoice": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_invoice_submit",
+	},
+	"Stock Entry": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
+	},
+	"Shift Assignment": {
+		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+	},
+}
 
 # Scheduled Tasks
 # ---------------
 
-# scheduler_events = {
-# 	"all": [
-# 		"event_bookings.tasks.all"
-# 	],
-# 	"daily": [
-# 		"event_bookings.tasks.daily"
-# 	],
-# 	"hourly": [
-# 		"event_bookings.tasks.hourly"
-# 	],
-# 	"weekly": [
-# 		"event_bookings.tasks.weekly"
-# 	],
-# 	"monthly": [
-# 		"event_bookings.tasks.monthly"
-# 	],
-# }
+scheduler_events = {
+	"daily": [
+		"event_bookings.utils.scheduler.daily"
+	],
+	"hourly": [
+		"event_bookings.utils.scheduler.hourly"
+	],
+}
 
 # Testing
 # -------
@@ -247,3 +248,32 @@ app_license = "mit"
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+after_install = "event_bookings.install.after_install"
+
+# Fixtures
+# --------
+fixtures = [
+    {"dt": "Custom Field", "filters": [["dt", "in", [
+        "Quotation", "Sales Order", "Sales Invoice",
+        "Purchase Invoice", "Journal Entry",
+        "Material Request", "Stock Entry", "Expense Claim",
+        "Shift Assignment", "Cost Center"
+    ]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
+    {"dt": "Workflow", "filters": [["document_type", "=", "Event Booking"]]},
+    {"dt": "Workflow State", "filters": [["name", "in", [
+        "New", "Quoted", "Negotiating", "Confirmed",
+        "In Preparation", "Executed", "Invoiced", "Paid", "Cancelled"
+    ]]]},
+    {"dt": "Workflow Action Master", "filters": [["name", "in", [
+        "Send Quote", "Negotiate", "Confirm", "Prepare",
+        "Execute", "Invoice", "Mark Paid", "Cancel"
+    ]]]},
+    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
+    {"dt": "Number Card", "filters": [["name", "in", [
+        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
+    ]]]},
+    {"dt": "Dashboard Chart", "filters": [["name", "in", [
+        "Monthly Events", "Event Revenue Trend"
+    ]]]},
+]
