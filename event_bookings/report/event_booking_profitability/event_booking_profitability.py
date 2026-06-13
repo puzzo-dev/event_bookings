@@ -19,7 +19,7 @@ def get_columns():
         {"fieldname": "total_estimated", "label": "Estimated Revenue", "fieldtype": "Currency", "width": 140},
         {"fieldname": "total_actual", "label": "Actual Revenue", "fieldtype": "Currency", "width": 140},
         {"fieldname": "cogs", "label": "COGS", "fieldtype": "Currency", "width": 120},
-        {"fieldname": "breakage_cost", "label": "Breakage", "fieldtype": "Currency", "width": 120},
+        {"fieldname": "damages_cost", "label": "Damages / Losses", "fieldtype": "Currency", "width": 120},
         {"fieldname": "net_profit", "label": "Net Profit", "fieldtype": "Currency", "width": 140},
         {"fieldname": "margin_pct", "label": "Margin %", "fieldtype": "Float", "width": 100},
     ]
@@ -43,7 +43,7 @@ def get_data(filters):
         filters=conditions,
         fields=[
             "name as event_name", "customer", "event_date", "booking_status",
-            "total_estimated", "total_actual", "breakage_cost"
+            "total_estimated", "total_actual", "damages_cost"
         ],
         order_by="event_date desc"
     )
@@ -51,10 +51,10 @@ def get_data(filters):
     data = []
     for eb in bookings:
         revenue = eb.total_actual if eb.total_actual else eb.total_estimated
-        breakage = eb.breakage_cost or 0
+        damages = eb.damages_cost or 0
         revenue = revenue or 0
         
-        net_profit = revenue - breakage
+        net_profit = revenue - damages
         margin_pct = (net_profit / revenue * 100) if revenue > 0 else 0
         
         eb.update({
