@@ -246,23 +246,39 @@ class EventBooking(Document):
 
 	def create_shift_assignments(self):
 		settings = self.get_settings()
+		if not settings.default_shift_type:
+			frappe.throw("Set a Default Shift Type in Event Settings before creating Shift Assignments.")
+
+		failed = []
 		for req in self.staff_requirements:
 			needed = frappe.utils.flt(req.qty_required) - frappe.utils.flt(req.qty_assigned or 0)
 			for _ in range(int(needed)):
-				shift = frappe.get_doc(
-					{
-						"doctype": "Shift Assignment",
-						"employee": None,
-						"designation": req.designation,
-						"shift_type": settings.default_shift_type,
-						"date": self.event_date,
-						"status": "Planned",
-						"event_booking": self.name,
-					}
-				)
-				shift.insert(ignore_permissions=True)
+				try:
+					shift = frappe.get_doc(
+						{
+							"doctype": "Shift Assignment",
+							"employee": None,
+							"designation": req.designation,
+							"shift_type": settings.default_shift_type,
+							"date": self.event_date,
+							"status": "Planned",
+							"event_booking": self.name,
+						}
+					)
+					shift.insert(ignore_permissions=True)
+				except Exception:
+					failed.append(req.designation)
+					frappe.log_error(title=f"Shift Assignment failed for {self.name} / {req.designation}")
+
 		self.update_staff_assignment_counts()
 		self._sync_assigned_staff()
+
+		if failed:
+			frappe.msgprint(
+				f"Some Shift Assignments could not be created: {', '.join(failed)}. Check the Error Log.",
+				indicator="orange",
+				alert=True,
+			)
 
 	def update_staff_assignment_counts(self):
 		for req in self.staff_requirements:

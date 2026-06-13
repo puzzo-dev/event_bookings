@@ -4,12 +4,16 @@ from frappe.utils import formatdate
 
 def format_whatsapp_message(template, doc):
 	"""Format a WhatsApp message from a template string and document."""
-	return template.format(
-		event_name=doc.event_name,
-		customer=doc.customer,
-		event_date=formatdate(doc.event_date),
-		event_location=doc.event_location,
-	)
+	try:
+		return template.format(
+			event_name=doc.event_name,
+			customer=doc.customer,
+			event_date=formatdate(doc.event_date),
+			event_location=doc.event_location,
+		)
+	except (KeyError, AttributeError) as exc:
+		frappe.log_error(title="WhatsApp message formatting failed")
+		frappe.throw(f"WhatsApp template contains an unsupported placeholder: {exc}")
 
 
 def send_event_reminder(event_doc, days_until):
