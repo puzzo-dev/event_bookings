@@ -9,11 +9,13 @@ class EventBooking(Document):
 
     def before_insert(self):
         self.set_defaults_from_settings()
-        self.set_cost_center()
 
-    def on_update(self):
+    def before_save(self):
         if self.has_status_changed():
             self.handle_status_transition()
+
+    def on_update(self):
+        pass
 
     # -----------------------------------------------------------------
     # Validations
@@ -52,19 +54,24 @@ class EventBooking(Document):
             frappe.throw("Set a Default Cost Center in Event Settings to auto-create per-event cost centers.")
 
         cc_name = f"{self.name} - {self.event_name}"
-        if not frappe.db.exists("Cost Center", cc_name):
+        company = self.get_company_from_cost_center(parent_cc)
+        abbr = frappe.db.get_value("Company", company, "abbr")
+        full_cc_name = f"{cc_name} - {abbr}"
+
+        if not frappe.db.exists("Cost Center", full_cc_name):
             cc = frappe.get_doc(
                 {
                     "doctype": "Cost Center",
                     "cost_center_name": cc_name,
                     "parent_cost_center": parent_cc,
                     "is_event_cost_center": 1,
-                    "company": self.get_company_from_cost_center(parent_cc),
+                    "company": company,
                 }
             )
             cc.insert(ignore_permissions=True)
+            full_cc_name = cc.name
 
-        self.event_cost_center = cc_name
+        self.event_cost_center = full_cc_name
 
     def get_company_from_cost_center(self, cost_center):
         return frappe.db.get_value("Cost Center", cost_center, "company") or frappe.defaults.get_defaults().get("company")
@@ -76,8 +83,8 @@ class EventBooking(Document):
     def has_status_changed(self):
         if self.is_new():
             return False
-        old = frappe.db.get_value("Event Booking", self.name, "booking_status")
-        return old != self.booking_status
+        old_status = frappe.db.get_value("Event Booking", self.name, "booking_status")
+        return old_status != self.booking_status
 
     def handle_status_transition(self):
         status = self.booking_status
