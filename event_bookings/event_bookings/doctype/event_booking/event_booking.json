@@ -37,7 +37,7 @@
   "staff_requirements",
   "assigned_staff",
   "sec_post",
-  "breakage_cost",
+  "damages_cost",
   "col_rev",
   "client_feedback",
   "review_requested",
@@ -222,9 +222,9 @@
    "label": "Post-Event"
   },
   {
-   "fieldname": "breakage_cost",
+   "fieldname": "damages_cost",
    "fieldtype": "Currency",
-   "label": "Breakage Cost",
+   "label": "Damages / Losses",
    "read_only": 1
   },
   {
