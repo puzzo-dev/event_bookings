@@ -5,10 +5,16 @@ from frappe.utils import add_days, today
 
 def daily():
 	"""Daily scheduled tasks."""
-	sync_invoice_payment_status()
-	send_pre_event_reminders(days=3)
-	send_pre_event_reminders(days=1)
-	send_unstaffed_alerts()
+	for task in (
+		sync_invoice_payment_status,
+		lambda: send_pre_event_reminders(days=3),
+		lambda: send_pre_event_reminders(days=1),
+		send_unstaffed_alerts,
+	):
+		try:
+			task()
+		except Exception:
+			frappe.log_error(title=f"Event Bookings daily task failed: {getattr(task, '__name__', 'lambda')}")
 
 
 def sync_invoice_payment_status():
@@ -19,11 +25,14 @@ def sync_invoice_payment_status():
 		fields=["name", "sales_invoice"],
 	)
 	for eb in events:
-		si_status = frappe.db.get_value("Sales Invoice", eb.sales_invoice, "status")
-		if si_status == "Paid":
-			doc = frappe.get_doc("Event Booking", eb.name)
-			doc.booking_status = "Paid"
-			doc.save(ignore_permissions=True)
+		try:
+			si_status = frappe.db.get_value("Sales Invoice", eb.sales_invoice, "status")
+			if si_status == "Paid":
+				doc = frappe.get_doc("Event Booking", eb.name)
+				doc.booking_status = "Paid"
+				doc.save(ignore_permissions=True)
+		except Exception:
+			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
 
 
 def send_pre_event_reminders(days=3):
