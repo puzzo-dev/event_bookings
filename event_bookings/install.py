@@ -51,18 +51,21 @@ def create_event_coa_accounts():
 
 		for acc in accounts:
 			account_name = f"{acc['account_name']} - {cstr(frappe.db.get_value('Company', company, 'abbr'))}"
-			if not frappe.db.exists("Account", account_name):
-				frappe.get_doc(
-					{
-						"doctype": "Account",
-						"account_name": acc["account_name"],
-						"company": company,
-						"parent_account": acc["parent_account"],
-						"root_type": acc["root_type"],
-						"account_type": acc["account_type"],
-						"is_group": 0,
-					}
-				).insert(ignore_permissions=True)
+			try:
+				if not frappe.db.exists("Account", account_name):
+					frappe.get_doc(
+						{
+							"doctype": "Account",
+							"account_name": acc["account_name"],
+							"company": company,
+							"parent_account": acc["parent_account"],
+							"root_type": acc["root_type"],
+							"account_type": acc["account_type"],
+							"is_group": 0,
+						}
+					).insert(ignore_permissions=True)
+			except Exception:
+				frappe.log_error(title=f"Failed to create account {acc['account_name']} for {company}")
 
 	frappe.db.commit()
 
