@@ -283,12 +283,15 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 0
 		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		mock_shift = MagicMock()
 		mock_frappe.get_doc.return_value = mock_shift
 
 		req = _make_staff_req(designation="Waiter", qty_required=3, qty_assigned=0)
 		eb = _new_booking(staff_requirements=[req], event_date="2026-08-01")
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		self.assertEqual(mock_frappe.get_doc.call_count, 3)
@@ -299,12 +302,15 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 2
 		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		mock_shift = MagicMock()
 		mock_frappe.get_doc.return_value = mock_shift
 
 		req = _make_staff_req(designation="Chef", qty_required=3, qty_assigned=2)
 		eb = _new_booking(staff_requirements=[req])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		self.assertEqual(mock_frappe.get_doc.call_count, 1)
@@ -314,9 +320,12 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 5
 		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		req = _make_staff_req(qty_required=5, qty_assigned=5)
 		eb = _new_booking(staff_requirements=[req])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		mock_frappe.get_doc.assert_not_called()
@@ -329,9 +338,12 @@ class TestCreateShiftAssignments(unittest.TestCase):
 class TestUpdateStaffAssignmentCounts(unittest.TestCase):
 	def test_updates_counts_from_db(self, mock_frappe):
 		mock_frappe.db.count.return_value = 4
+		mock_frappe.get_all.return_value = []
 
 		req = _make_staff_req(designation="Waiter", qty_assigned=0)
 		eb = _new_booking(staff_requirements=[req], name="EVT-001")
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.update_staff_assignment_counts()
 
 		self.assertEqual(req.qty_assigned, 4)
@@ -346,10 +358,13 @@ class TestUpdateStaffAssignmentCounts(unittest.TestCase):
 
 	def test_multiple_requirements(self, mock_frappe):
 		mock_frappe.db.count.side_effect = [2, 5]
+		mock_frappe.get_all.return_value = []
 
 		r1 = _make_staff_req(designation="Waiter")
 		r2 = _make_staff_req(designation="Chef")
 		eb = _new_booking(staff_requirements=[r1, r2])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.update_staff_assignment_counts()
 
 		self.assertEqual(r1.qty_assigned, 2)
@@ -509,6 +524,7 @@ class TestCreateDamageStockEntry(unittest.TestCase):
 		)
 
 		mock_se.insert.assert_called_once_with(ignore_permissions=True)
+		mock_se.submit.assert_called_once()
 		self.assertEqual(eb.damage_cost, 200)
 
 	def test_skips_zero_qty(self, mock_frappe):
@@ -545,3 +561,59 @@ class TestCreateDamageStockEntry(unittest.TestCase):
 		eb = _new_booking()
 		eb.create_damage_stock_entry([{"item_code": "X", "qty_damaged": 1}])
 		mock_frappe.throw.assert_called_once()
+
+
+# ── _sync_assigned_staff ────────────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestSyncAssignedStaff(unittest.TestCase):
+	def test_populates_from_shift_assignments(self, mock_frappe):
+		mock_frappe.get_all.return_value = [
+			SimpleNamespace(
+				name="SA-001",
+				employee="EMP-001",
+				employee_name="John",
+				designation="Waiter",
+				start_date="2026-08-01",
+			),
+		]
+
+		eb = _new_booking()
+		eb.assigned_staff = []
+		appended = []
+		eb.append = lambda field, row: appended.append(row)
+		eb._sync_assigned_staff()
+
+		self.assertEqual(len(appended), 1)
+		self.assertEqual(appended[0]["employee"], "EMP-001")
+		self.assertEqual(appended[0]["shift_assignment"], "SA-001")
+
+	def test_clears_existing_entries(self, mock_frappe):
+		mock_frappe.get_all.return_value = []
+
+		eb = _new_booking()
+		eb.assigned_staff = ["existing"]
+		eb.append = MagicMock()
+		eb._sync_assigned_staff()
+
+		self.assertEqual(eb.assigned_staff, [])
+
+
+# ── record_damages permission check ────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestRecordDamagesPermission(unittest.TestCase):
+	def test_checks_permission_before_processing(self, mock_frappe):
+		from event_bookings.event_bookings.doctype.event_booking.event_booking import record_damages
+
+		mock_frappe.has_permission.side_effect = PermissionError("No write access")
+
+		mock_doc = MagicMock()
+		mock_frappe.get_doc.return_value = mock_doc
+
+		with self.assertRaises(PermissionError):
+			record_damages("EVT-001", "[]")
+
+		mock_frappe.has_permission.assert_called_once()

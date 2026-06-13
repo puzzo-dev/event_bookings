@@ -16,8 +16,6 @@
   "default_shift_type",
   "default_service_item",
   "auto_create_cost_center_per_event",
-  "auto_create_project",
-  "require_review",
   "notification_email",
   "enable_whatsapp"
  ],
@@ -71,18 +69,6 @@
    "label": "Auto-Create Cost Center per Event"
   },
   {
-   "default": "0",
-   "fieldname": "auto_create_project",
-   "fieldtype": "Check",
-   "label": "Auto-Create Project"
-  },
-  {
-   "default": "0",
-   "fieldname": "require_review",
-   "fieldtype": "Check",
-   "label": "Require Post-Event Review"
-  },
-  {
    "fieldname": "notification_email",
    "fieldtype": "Data",
    "label": "Notification Email"
@@ -115,7 +101,26 @@
  "module": "Event Bookings",
  "name": "Event Settings",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Event Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Event User"
+  }
+ ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",

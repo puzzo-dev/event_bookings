@@ -79,13 +79,26 @@ function render_bookings(bookings) {
             '<div class="booking-meta">Estimated: ' + format_currency(b.total_estimated) + '</div>';
 
         if (b.booking_status === 'Quoted' && !b.sales_order) {
-            html += '<a href="/approve-booking?name=' + b.name +
-                '" class="btn btn-primary btn-sm mt-2">View Quote</a>';
+            html += '<button class="btn btn-primary btn-sm mt-2" onclick="approve_booking(\'' +
+                b.name + '\')">Approve Quote</button>';
         }
 
         html += '</div></div></div>';
     });
     $('#bookings-list').html(html);
+}
+
+function approve_booking(name) {
+    frappe.call({
+        method: 'event_bookings.api.portal.approve_quotation',
+        args: { event_booking: name },
+        callback: function(r) {
+            if (r.message && r.message.status === 'success') {
+                frappe.msgprint(__('Booking confirmed successfully.'));
+                setTimeout(function() { location.reload(); }, 1500);
+            }
+        }
+    });
 }
 
 function format_currency(val) {

@@ -28,13 +28,19 @@ def send_event_reminder(event_doc, days_until):
 	if not recipients:
 		return
 
-	frappe.sendmail(
-		recipients=recipients,
-		subject=subject,
-		message=message,
-		reference_doctype="Event Booking",
-		reference_name=event_doc.name,
-	)
+	try:
+		frappe.sendmail(
+			recipients=recipients,
+			subject=subject,
+			message=message,
+			reference_doctype="Event Booking",
+			reference_name=event_doc.name,
+		)
+	except Exception:
+		frappe.log_error(
+			f"Failed to send event reminder for {event_doc.name}",
+			"Event Bookings Email",
+		)
 
 	if settings.enable_whatsapp:
 		_send_whatsapp_reminder(event_doc, days_until)
@@ -61,13 +67,19 @@ def send_unstaffed_alert(event_doc, unstaffed_roles):
 			recipients.append(planner_email)
 
 	if recipients:
-		frappe.sendmail(
-			recipients=recipients,
-			subject=subject,
-			message=message,
-			reference_doctype="Event Booking",
-			reference_name=event_doc.name,
-		)
+		try:
+			frappe.sendmail(
+				recipients=recipients,
+				subject=subject,
+				message=message,
+				reference_doctype="Event Booking",
+				reference_name=event_doc.name,
+			)
+		except Exception:
+			frappe.log_error(
+				f"Failed to send unstaffed alert for {event_doc.name}",
+				"Event Bookings Email",
+			)
 
 
 def _get_event_recipients(event_doc, settings):
