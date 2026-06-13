@@ -27,4 +27,5 @@ def create_print_format():
 		print("Print Format already exists.")
 
 
-create_print_format()
+if __name__ == "__main__":
+	create_print_format()

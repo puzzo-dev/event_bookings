@@ -5,3 +5,20 @@
 tags
 node_modules
 __pycache__
+
+# Secrets and credentials
+.env
+.env.*
+*.pem
+*.key
+*.cert
+*.p12
+*.pfx
+*.secret
+credentials.json
+service_account.json
+
+# IDE
+.idea/
+.vscode/
+*.code-workspace

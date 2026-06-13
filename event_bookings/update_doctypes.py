@@ -50,4 +50,6 @@ def create_sales_order_item_fields():
 
     print('Updated successfully!')
 
-make_generic()
+
+if __name__ == "__main__":
+    make_generic()

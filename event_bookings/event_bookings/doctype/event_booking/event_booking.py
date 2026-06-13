@@ -1,12 +1,13 @@
 import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import today
+from frappe.utils import cint, today
 
 
 class EventBooking(Document):
 	def validate(self):
 		self.validate_dates()
+		self.validate_guest_count()
 
 	def before_insert(self):
 		self.set_defaults_from_settings()
@@ -26,6 +27,10 @@ class EventBooking(Document):
 		if self.event_date and self.event_date < today():
 			if self.is_new():
 				frappe.throw("Event Date cannot be in the past for new bookings.")
+
+	def validate_guest_count(self):
+		if self.guest_count and cint(self.guest_count) < 0:
+			frappe.throw("Guest Count cannot be negative.")
 
 	# -----------------------------------------------------------------
 	# Defaults
