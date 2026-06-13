@@ -40,10 +40,14 @@ class TestFormatWhatsappMessage(unittest.TestCase):
 		result = format_whatsapp_message("{event_name}/{customer}", doc)
 		self.assertEqual(result, "/")
 
+	@patch("event_bookings.utils.notifications.frappe")
 	@patch("event_bookings.utils.notifications.formatdate", side_effect=lambda d: d)
-	def test_missing_placeholder_raises(self, _fmt):
-		with self.assertRaises(KeyError):
+	def test_missing_placeholder_raises(self, _fmt, mock_frappe):
+		mock_frappe.throw.side_effect = Exception("ValidationError")
+		with self.assertRaises(Exception):
 			format_whatsapp_message("{nonexistent}", self._make_doc())
+		mock_frappe.log_error.assert_called_once()
+		mock_frappe.throw.assert_called_once()
 
 
 @patch("event_bookings.utils.notifications.frappe")
