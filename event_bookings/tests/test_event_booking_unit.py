@@ -41,7 +41,7 @@ def _new_booking(**overrides):
 	eb.staff_requirements = []
 	eb.event_cost_center = None
 	eb.total_estimated = 0
-	eb.breakage_cost = 0
+	eb.damages_cost = 0
 	eb.quotation = None
 	eb.material_request = None
 	eb.booking_status = "New"
@@ -56,21 +56,21 @@ def _new_booking(**overrides):
 	return eb
 
 
-# ── calculate_breakage ──────────────────────────────────────────────
+# ── calculate_damages ──────────────────────────────────────────────
 
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
-class TestCalculateBreakage(unittest.TestCase):
+class TestCalculateDamages(unittest.TestCase):
 	def _settings(self):
 		return SimpleNamespace()
 
-	def test_zero_breakage_no_broken_items(self, mock_frappe):
+	def test_zero_damages_no_broken_items(self, mock_frappe):
 		mock_frappe.get_cached_doc.return_value = self._settings()
 		eb = _new_booking(services=[_make_service(is_stock_item=True, qty_broken=0, rate=100)])
-		eb.calculate_breakage()
-		self.assertEqual(eb.breakage_cost, 0)
+		eb.calculate_damages()
+		self.assertEqual(eb.damages_cost, 0)
 
-	def test_breakage_calculated_from_broken_qty(self, mock_frappe):
+	def test_damages_calculated_from_broken_qty(self, mock_frappe):
 		mock_frappe.get_cached_doc.return_value = self._settings()
 		eb = _new_booking(
 			services=[
@@ -78,20 +78,20 @@ class TestCalculateBreakage(unittest.TestCase):
 				_make_service(is_stock_item=True, qty_broken=1, rate=200),
 			]
 		)
-		eb.calculate_breakage()
-		self.assertEqual(eb.breakage_cost, 500)  # 2*150 + 1*200
+		eb.calculate_damages()
+		self.assertEqual(eb.damages_cost, 500)  # 2*150 + 1*200
 
 	def test_non_stock_items_ignored(self, mock_frappe):
 		mock_frappe.get_cached_doc.return_value = self._settings()
 		eb = _new_booking(services=[_make_service(is_stock_item=False, qty_broken=5, rate=100)])
-		eb.calculate_breakage()
-		self.assertEqual(eb.breakage_cost, 0)
+		eb.calculate_damages()
+		self.assertEqual(eb.damages_cost, 0)
 
 	def test_zero_rate_uses_fallback(self, mock_frappe):
 		mock_frappe.get_cached_doc.return_value = self._settings()
 		eb = _new_booking(services=[_make_service(is_stock_item=True, qty_broken=3, rate=0)])
-		eb.calculate_breakage()
-		self.assertEqual(eb.breakage_cost, 3)  # 3 * 1 (fallback rate)
+		eb.calculate_damages()
+		self.assertEqual(eb.damages_cost, 3)  # 3 * 1 (fallback rate)
 
 
 # ── calculate_totals ────────────────────────────────────────────────
