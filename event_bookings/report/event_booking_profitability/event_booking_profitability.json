@@ -46,9 +46,9 @@
    "width": 120
   },
   {
-   "fieldname": "breakage_cost",
+   "fieldname": "damages_cost",
    "fieldtype": "Currency",
-   "label": "Breakage",
+   "label": "Damages / Losses",
    "width": 120
   },
   {
