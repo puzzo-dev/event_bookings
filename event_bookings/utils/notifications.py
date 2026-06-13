@@ -30,6 +30,6 @@ def format_whatsapp_message(template, doc):
         key = match.group(1)
         if key in ALLOWED_PLACEHOLDERS:
             return values[key]
-        return match.group(0)
+        raise KeyError(key)
 
     return _PLACEHOLDER_RE.sub(_replace, template)
