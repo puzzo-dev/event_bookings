@@ -16,7 +16,7 @@ def after_install():
 
 def create_event_coa_accounts():
 	"""
-	Creates Event Revenue, Event COGS, and Event Breakage Expense accounts
+	Creates Event Revenue, Event COGS, and Event Damages Expense accounts
 	under the company's existing Income and Expense root accounts.
 	Does NOT assume hardcoded parent names — walks the COA tree dynamically.
 	"""
