@@ -21,9 +21,9 @@ def make_generic():
     booking_remove = ["services"]
     doc_booking.fields = [f for f in doc_booking.fields if f.fieldname not in booking_remove]
     
-    # Rename total_breakage_cost
+    # Rename total_damages_cost
     for f in doc_booking.fields:
-        if f.fieldname == "total_breakage_cost":
+        if f.fieldname == "total_damages_cost":
             f.fieldname = "total_damage_assessment"
             f.label = "Total Damage Assessment"
             

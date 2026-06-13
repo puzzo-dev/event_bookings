@@ -1,6 +1,8 @@
 import frappe
 from frappe.utils import cstr
 
+from event_bookings.utils.seed import seed_event_types
+
 
 def after_install():
 	"""
@@ -10,18 +12,6 @@ def after_install():
 	"""
 	seed_event_types()
 	create_event_coa_accounts()
-
-
-def seed_event_types():
-	"""Create default Event Type records if none exist."""
-	default_types = ["Wedding", "Corporate", "Birthday", "Conference", "Private Party"]
-	for t in default_types:
-		try:
-			if not frappe.db.exists("Event Type", t):
-				frappe.get_doc({"doctype": "Event Type", "type_name": t}).insert(ignore_permissions=True)
-		except Exception:
-			frappe.log_error(title=f"Failed to seed Event Type: {t}")
-	frappe.db.commit()
 
 
 def create_event_coa_accounts():

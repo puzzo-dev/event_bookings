@@ -7,11 +7,11 @@
  "engine": "InnoDB",
  "field_order": [
   "default_warehouse",
-  "breakage_warehouse",
+  "damages_warehouse",
   "default_cost_center",
   "default_income_account",
   "default_cogs_account",
-  "default_breakage_account",
+  "default_damages_account",
   "default_rental_item",
   "default_shift_type",
   "default_service_item",
@@ -29,9 +29,9 @@
    "options": "Warehouse"
   },
   {
-   "fieldname": "breakage_warehouse",
+   "fieldname": "damages_warehouse",
    "fieldtype": "Link",
-   "label": "Breakage Warehouse",
+   "label": "Damages Warehouse",
    "options": "Warehouse"
   },
   {
@@ -53,9 +53,9 @@
    "options": "Account"
   },
   {
-   "fieldname": "default_breakage_account",
+   "fieldname": "default_damages_account",
    "fieldtype": "Link",
-   "label": "Default Breakage Expense Account",
+   "label": "Default Damages Expense Account",
    "options": "Account"
   },
   {

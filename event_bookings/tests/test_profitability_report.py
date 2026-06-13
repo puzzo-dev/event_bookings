@@ -25,7 +25,7 @@ class TestGetColumns(unittest.TestCase):
 			"total_estimated",
 			"total_actual",
 			"cogs",
-			"breakage_cost",
+			"damages_cost",
 			"net_profit",
 			"margin_pct",
 		]
@@ -33,7 +33,7 @@ class TestGetColumns(unittest.TestCase):
 
 	def test_currency_columns_have_correct_fieldtype(self):
 		cols = get_columns()
-		currency_fields = {"total_estimated", "total_actual", "cogs", "breakage_cost", "net_profit"}
+		currency_fields = {"total_estimated", "total_actual", "cogs", "damages_cost", "net_profit"}
 		for col in cols:
 			if col["fieldname"] in currency_fields:
 				self.assertEqual(col["fieldtype"], "Currency", f"{col['fieldname']} should be Currency")
@@ -49,7 +49,7 @@ class TestGetData(unittest.TestCase):
 			booking_status="Invoiced",
 			total_estimated=50000,
 			total_actual=60000,
-			breakage_cost=5000,
+			damages_cost=5000,
 		)
 		row.update(overrides)
 		return row
@@ -63,19 +63,19 @@ class TestGetData(unittest.TestCase):
 
 	def test_uses_estimated_when_no_actual(self, mock_frappe):
 		mock_frappe.get_all.return_value = [
-			self._make_booking(total_actual=0, total_estimated=40000, breakage_cost=0)
+			self._make_booking(total_actual=0, total_estimated=40000, damages_cost=0)
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["net_profit"], 40000)
 
 	def test_margin_percentage(self, mock_frappe):
-		mock_frappe.get_all.return_value = [self._make_booking(total_actual=100000, breakage_cost=20000)]
+		mock_frappe.get_all.return_value = [self._make_booking(total_actual=100000, damages_cost=20000)]
 		data = get_data({})
 		self.assertAlmostEqual(data[0]["margin_pct"], 80.0)
 
 	def test_zero_revenue_margin(self, mock_frappe):
 		mock_frappe.get_all.return_value = [
-			self._make_booking(total_actual=0, total_estimated=0, breakage_cost=0)
+			self._make_booking(total_actual=0, total_estimated=0, damages_cost=0)
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["margin_pct"], 0)
