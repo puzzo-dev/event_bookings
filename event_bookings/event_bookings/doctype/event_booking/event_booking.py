@@ -40,15 +40,17 @@ class EventBooking(Document):
 		):
 			self.event_cost_center = settings.default_cost_center
 
-	def set_cost_center(self):
-		settings = self.get_settings()
-		if not self.event_cost_center and settings.default_cost_center:
-			self.event_cost_center = settings.default_cost_center
+	def get_cost_center(self):
+		"""Return the event's cost center, falling back to the default from Event Settings."""
+		if self.event_cost_center:
+			return self.event_cost_center
+		return self.get_settings().default_cost_center
 
 	def ensure_event_cost_center(self):
 		settings = self.get_settings()
 		if not settings.auto_create_cost_center_per_event:
-			self.set_cost_center()
+			if not self.event_cost_center and settings.default_cost_center:
+				self.event_cost_center = settings.default_cost_center
 			return
 
 		if self.event_cost_center:
