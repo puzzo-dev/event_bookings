@@ -168,7 +168,6 @@ doc_events = {
 
 scheduler_events = {
 	"daily": ["event_bookings.utils.scheduler.daily"],
-	"hourly": ["event_bookings.utils.scheduler.hourly"],
 }
 
 # Testing
@@ -268,10 +267,8 @@ fixtures = [
 					"Sales Order",
 					"Sales Invoice",
 					"Purchase Invoice",
-					"Journal Entry",
 					"Material Request",
 					"Stock Entry",
-					"Expense Claim",
 					"Shift Assignment",
 					"Cost Center",
 				],
@@ -319,7 +316,6 @@ fixtures = [
 			]
 		],
 	},
-	{"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
 	{
 		"dt": "Number Card",
 		"filters": [

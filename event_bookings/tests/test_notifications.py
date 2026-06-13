@@ -86,6 +86,26 @@ class TestSendEventReminder(unittest.TestCase):
 		send_event_reminder(doc, 3)
 		mock_frappe.sendmail.assert_not_called()
 
+	def test_logs_error_on_email_failure(self, _fmt, mock_frappe):
+		from event_bookings.utils.notifications import send_event_reminder
+
+		settings = SimpleNamespace(notification_email="mgr@test.com", enable_whatsapp=False)
+		mock_frappe.get_cached_doc.return_value = settings
+		mock_frappe.db.get_value.return_value = None
+		mock_frappe.sendmail.side_effect = Exception("SMTP error")
+
+		doc = SimpleNamespace(
+			name="EVT-001",
+			event_name="Gala",
+			customer="Acme",
+			event_date="2026-07-15",
+			event_location="Hall",
+			contact_person=None,
+			event_planner=None,
+		)
+		send_event_reminder(doc, 3)
+		mock_frappe.log_error.assert_called_once()
+
 
 @patch("event_bookings.utils.notifications.frappe")
 @patch("event_bookings.utils.notifications.formatdate", side_effect=lambda d: d)

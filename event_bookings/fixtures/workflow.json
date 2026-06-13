@@ -21,8 +21,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "New",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "New",
     "workflow_builder_id": null
    },
    {
@@ -37,8 +37,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Quoted",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Quoted",
     "workflow_builder_id": null
    },
    {
@@ -53,8 +53,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Negotiating",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Negotiating",
     "workflow_builder_id": null
    },
    {
@@ -69,8 +69,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Confirmed",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Confirmed",
     "workflow_builder_id": null
    },
    {
@@ -85,8 +85,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "In Preparation",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "In Preparation",
     "workflow_builder_id": null
    },
    {
@@ -101,8 +101,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Executed",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Executed",
     "workflow_builder_id": null
    },
    {
@@ -117,8 +117,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Invoiced",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Invoiced",
     "workflow_builder_id": null
    },
    {
@@ -133,14 +133,14 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Paid",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Paid",
     "workflow_builder_id": null
    },
    {
     "allow_edit": "Event Manager",
     "avoid_status_override": 0,
-    "doc_status": "1",
+    "doc_status": "0",
     "is_optional_state": 0,
     "message": null,
     "next_action_email_template": null,
@@ -149,8 +149,8 @@
     "parenttype": "Workflow",
     "send_email": 1,
     "state": "Cancelled",
-    "update_field": null,
-    "update_value": null,
+    "update_field": "booking_status",
+    "update_value": "Cancelled",
     "workflow_builder_id": null
    }
   ],
@@ -314,6 +314,6 @@
   ],
   "workflow_data": null,
   "workflow_name": "Event Booking Workflow",
-  "workflow_state_field": "workflow_state"
+  "workflow_state_field": "booking_status"
  }
 ]

@@ -237,6 +237,7 @@ class EventBooking(Document):
 			return
 
 		se.insert(ignore_permissions=True)
+		se.submit()
 		self.damage_cost = (self.damage_cost or 0) + total_damage
 
 	# -----------------------------------------------------------------
@@ -261,6 +262,7 @@ class EventBooking(Document):
 				)
 				shift.insert(ignore_permissions=True)
 		self.update_staff_assignment_counts()
+		self._sync_assigned_staff()
 
 	def update_staff_assignment_counts(self):
 		for req in self.staff_requirements:
@@ -273,6 +275,27 @@ class EventBooking(Document):
 				},
 			)
 			req.qty_assigned = count
+		self._sync_assigned_staff()
+
+	def _sync_assigned_staff(self):
+		"""Populate the assigned_staff child table from linked Shift Assignments."""
+		self.assigned_staff = []
+		shifts = frappe.get_all(
+			"Shift Assignment",
+			filters={"event_booking": self.name, "docstatus": ("<", 2)},
+			fields=["name", "employee", "employee_name", "designation", "start_date"],
+		)
+		for sa in shifts:
+			self.append(
+				"assigned_staff",
+				{
+					"employee": sa.employee,
+					"employee_name": sa.employee_name,
+					"designation": sa.designation,
+					"shift_date": sa.start_date,
+					"shift_assignment": sa.name,
+				},
+			)
 
 	# -----------------------------------------------------------------
 	# Utilities
@@ -290,6 +313,7 @@ def record_damages(event_booking, items):
 		items = json.loads(items)
 
 	doc = frappe.get_doc("Event Booking", event_booking)
+	frappe.has_permission("Event Booking", "write", doc=doc, throw=True)
 	doc.create_damage_stock_entry(items)
 	doc.save(ignore_permissions=True)
 

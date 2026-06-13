@@ -48,8 +48,7 @@ def approve_quotation(event_booking):
 	if doc.booking_status != "Quoted":
 		frappe.throw("This booking is not in Quoted status.")
 
-	doc.booking_status = "Confirmed"
-	doc.save(ignore_permissions=True)
+	frappe.utils.apply_workflow(doc, "Confirm")
 	return {"status": "success", "message": "Booking confirmed successfully."}
 
 

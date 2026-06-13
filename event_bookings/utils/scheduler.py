@@ -11,11 +11,6 @@ def daily():
 	send_unstaffed_alerts()
 
 
-def hourly():
-	"""Hourly scheduled tasks."""
-	pass
-
-
 def sync_invoice_payment_status():
 	"""Transition Invoiced → Paid when linked Sales Invoice is paid."""
 	events = frappe.get_all(
