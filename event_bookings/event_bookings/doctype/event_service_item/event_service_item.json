@@ -13,7 +13,7 @@
   "rate",
   "amount",
   "is_stock_item",
-  "qty_broken"
+  "qty_damaged"
  ],
  "fields": [
   {
@@ -70,9 +70,9 @@
   },
   {
    "depends_on": "eval:doc.is_stock_item",
-   "fieldname": "qty_broken",
+   "fieldname": "qty_damaged",
    "fieldtype": "Float",
-   "label": "Qty Broken / Lost",
+   "label": "Qty Damaged / Lost",
    "non_negative": 1
   }
  ],

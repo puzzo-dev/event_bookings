@@ -7,17 +7,15 @@
  "engine": "InnoDB",
  "field_order": [
   "default_warehouse",
-  "damages_warehouse",
+  "damage_warehouse",
   "default_cost_center",
   "default_income_account",
   "default_cogs_account",
-  "default_damages_account",
+  "default_damage_account",
   "default_rental_item",
   "default_shift_type",
   "default_service_item",
   "auto_create_cost_center_per_event",
-  "auto_create_project",
-  "require_review",
   "notification_email",
   "enable_whatsapp"
  ],
@@ -29,9 +27,9 @@
    "options": "Warehouse"
   },
   {
-   "fieldname": "damages_warehouse",
+   "fieldname": "damage_warehouse",
    "fieldtype": "Link",
-   "label": "Damages Warehouse",
+   "label": "Damage Warehouse",
    "options": "Warehouse"
   },
   {
@@ -53,9 +51,9 @@
    "options": "Account"
   },
   {
-   "fieldname": "default_damages_account",
+   "fieldname": "default_damage_account",
    "fieldtype": "Link",
-   "label": "Default Damages Expense Account",
+   "label": "Default Damage Expense Account",
    "options": "Account"
   },
   {
@@ -69,18 +67,6 @@
    "fieldname": "auto_create_cost_center_per_event",
    "fieldtype": "Check",
    "label": "Auto-Create Cost Center per Event"
-  },
-  {
-   "default": "0",
-   "fieldname": "auto_create_project",
-   "fieldtype": "Check",
-   "label": "Auto-Create Project"
-  },
-  {
-   "default": "0",
-   "fieldname": "require_review",
-   "fieldtype": "Check",
-   "label": "Require Post-Event Review"
   },
   {
    "fieldname": "notification_email",
@@ -115,7 +101,26 @@
  "module": "Event Bookings",
  "name": "Event Settings",
  "owner": "Administrator",
- "permissions": [],
+ "permissions": [
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "Event Manager",
+   "write": 1
+  },
+  {
+   "create": 1,
+   "delete": 1,
+   "read": 1,
+   "role": "System Manager",
+   "write": 1
+  },
+  {
+   "read": 1,
+   "role": "Event User"
+  }
+ ],
  "row_format": "Dynamic",
  "rows_threshold_for_grid_search": 20,
  "sort_field": "modified",

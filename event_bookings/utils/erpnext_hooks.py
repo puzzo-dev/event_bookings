@@ -42,6 +42,14 @@ def on_stock_entry_submit(doc, method):
 		_update_linked_event_booking(doc)
 
 
+def on_purchase_order_submit(doc, method):
+	_update_linked_event_booking(doc)
+
+
+def on_purchase_invoice_submit(doc, method):
+	_update_linked_event_booking(doc, callback=lambda eb: eb.recalculate_purchase_cost())
+
+
 def on_shift_assignment_update(doc, method):
 	_update_linked_event_booking(doc, callback=lambda eb: eb.update_staff_assignment_counts())
 

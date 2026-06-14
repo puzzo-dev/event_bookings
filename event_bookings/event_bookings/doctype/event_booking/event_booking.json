@@ -34,11 +34,13 @@
   "sales_order",
   "sales_invoice",
   "material_request",
+  "sec_purchase",
+  "total_purchase_cost",
   "sec_staffing",
   "staff_requirements",
   "assigned_staff",
   "sec_post",
-  "damages_cost",
+  "damage_cost",
   "col_rev",
   "client_feedback",
   "review_requested",
@@ -229,9 +231,25 @@
    "label": "Post-Event"
   },
   {
-   "fieldname": "damages_cost",
+   "fieldname": "sec_purchase",
+   "fieldtype": "Section Break",
+   "label": "Purchases & Expenses"
+  },
+  {
+   "description": "Total from submitted Purchase Invoices linked to this booking",
+   "fieldname": "total_purchase_cost",
    "fieldtype": "Currency",
-   "label": "Damages / Losses",
+   "label": "Total Purchase Cost",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_staffing_break",
+   "fieldtype": "Section Break"
+  },
+  {
+   "fieldname": "damage_cost",
+   "fieldtype": "Currency",
+   "label": "Damage Cost",
    "read_only": 1
   },
   {
@@ -266,7 +284,48 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
+ "links": [
+  {
+   "group": "Selling",
+   "link_doctype": "Quotation",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Selling",
+   "link_doctype": "Sales Order",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Accounts",
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Stock",
+   "link_doctype": "Material Request",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Stock",
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Buying",
+   "link_doctype": "Purchase Order",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Buying",
+   "link_doctype": "Purchase Invoice",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "HR",
+   "link_doctype": "Shift Assignment",
+   "link_fieldname": "event_booking"
+  }
+ ],
  "modified": "2026-06-13 15:46:18.824620",
  "modified_by": "Administrator",
  "module": "Event Bookings",
@@ -340,5 +399,6 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1,
+ "track_seen": 1,
  "track_views": 1
 }

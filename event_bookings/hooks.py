@@ -64,6 +64,14 @@ required_apps = ["erpnext", "hrms"]
 # 	"Role": "home_page"
 # }
 
+has_website_permission = {
+	"Event Booking": "event_bookings.api.portal.has_website_permission",
+}
+
+portal_menu_items = [
+	{"title": "My Bookings", "route": "/my-bookings", "role": "Customer"},
+]
+
 # Generators
 # ----------
 
@@ -83,7 +91,6 @@ required_apps = ["erpnext", "hrms"]
 # ------------
 
 # before_install = "event_bookings.install.before_install"
-# after_install = "event_bookings.install.after_install"
 
 # Uninstallation
 # ------------
@@ -150,6 +157,12 @@ doc_events = {
 	"Stock Entry": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
 	},
+	"Purchase Order": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_purchase_order_submit",
+	},
+	"Purchase Invoice": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_purchase_invoice_submit",
+	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 	},
@@ -159,12 +172,7 @@ doc_events = {
 # ---------------
 
 scheduler_events = {
-	"daily": [
-		"event_bookings.utils.scheduler.daily"
-	],
-	"hourly": [
-		"event_bookings.utils.scheduler.hourly"
-	],
+	"daily": ["event_bookings.utils.scheduler.daily"],
 }
 
 # Testing
@@ -253,18 +261,35 @@ after_install = "event_bookings.install.after_install"
 # Fixtures
 # --------
 fixtures = [
-    {"dt": "Custom Field", "filters": [["dt", "in", [
-        "Quotation", "Sales Order", "Sales Invoice",
-        "Purchase Invoice", "Journal Entry",
-        "Material Request", "Stock Entry", "Expense Claim",
-        "Shift Assignment", "Cost Center"
-    ]]]},
-    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
-    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
-    {"dt": "Number Card", "filters": [["name", "in", [
-        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
-    ]]]},
-    {"dt": "Dashboard Chart", "filters": [["name", "in", [
-        "Monthly Events", "Event Revenue Trend"
-    ]]]},
+	{
+		"dt": "Custom Field",
+		"filters": [
+			[
+				"dt",
+				"in",
+				[
+					"Quotation",
+					"Sales Order",
+					"Sales Invoice",
+					"Purchase Order",
+					"Purchase Invoice",
+					"Material Request",
+					"Stock Entry",
+					"Shift Assignment",
+					"Cost Center",
+				],
+			]
+		],
+	},
+	{"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
+	{
+		"dt": "Number Card",
+		"filters": [
+			["name", "in", ["Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"]]
+		],
+	},
+	{
+		"dt": "Dashboard Chart",
+		"filters": [["name", "in", ["Monthly Events", "Event Revenue Trend", "Bookings by Status"]]],
+	},
 ]

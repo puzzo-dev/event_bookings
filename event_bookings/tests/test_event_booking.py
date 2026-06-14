@@ -1,16 +1,32 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from event_bookings.tests.fixtures import get_or_create_test_customer, get_or_create_test_event_type
-
 
 class TestEventBooking(FrappeTestCase):
 	def setUp(self):
-		self.test_customer = get_or_create_test_customer()
-		self.test_event_type = get_or_create_test_event_type()
+		self.test_customer = self._create_test_customer()
+		self.test_event_type = self._create_test_event_type()
 
 	def tearDown(self):
 		frappe.db.rollback()
+
+	def _create_test_customer(self):
+		if not frappe.db.exists("Customer", "Test Event Customer"):
+			doc = frappe.get_doc(
+				{
+					"doctype": "Customer",
+					"customer_name": "Test Event Customer",
+					"customer_type": "Individual",
+				}
+			)
+			doc.insert(ignore_permissions=True)
+		return "Test Event Customer"
+
+	def _create_test_event_type(self):
+		if not frappe.db.exists("Event Type", "Test Event"):
+			doc = frappe.get_doc({"doctype": "Event Type", "type_name": "Test Event"})
+			doc.insert(ignore_permissions=True)
+		return "Test Event"
 
 	def test_event_booking_creation(self):
 		doc = frappe.get_doc(

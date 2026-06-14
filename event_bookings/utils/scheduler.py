@@ -1,4 +1,5 @@
 import frappe
+from event_bookings.utils.notifications import send_event_reminder, send_unstaffed_alert
 from frappe.utils import add_days, today
 
 
@@ -7,17 +8,13 @@ def daily():
 	for task in (
 		sync_invoice_payment_status,
 		lambda: send_pre_event_reminders(days=3),
+		lambda: send_pre_event_reminders(days=1),
 		send_unstaffed_alerts,
 	):
 		try:
 			task()
 		except Exception:
-			frappe.log_error(title=f"Event Bookings daily task failed: {task.__name__}")
-
-
-def hourly():
-	"""Hourly scheduled tasks."""
-	pass
+			frappe.log_error(title=f"Event Bookings daily task failed: {getattr(task, '__name__', 'lambda')}")
 
 
 def sync_invoice_payment_status():
@@ -26,18 +23,21 @@ def sync_invoice_payment_status():
 		"Event Booking",
 		filters={"booking_status": "Invoiced", "sales_invoice": ("is", "set")},
 		fields=["name", "sales_invoice"],
+		limit_page_length=500,
 	)
 	for eb in events:
 		try:
 			si_status = frappe.db.get_value("Sales Invoice", eb.sales_invoice, "status")
 			if si_status == "Paid":
-				frappe.db.set_value("Event Booking", eb.name, "booking_status", "Paid")
+				doc = frappe.get_doc("Event Booking", eb.name)
+				doc.booking_status = "Paid"
+				doc.save(ignore_permissions=True)
 		except Exception:
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
 
 
 def send_pre_event_reminders(days=3):
-	"""Send reminders to staff T-3 and T-1 days before event."""
+	"""Send reminders to staff T-N days before event."""
 	target_date = add_days(today(), days)
 	events = frappe.get_all(
 		"Event Booking",
@@ -46,10 +46,11 @@ def send_pre_event_reminders(days=3):
 			"booking_status": ("in", ["In Preparation", "Confirmed"]),
 		},
 		fields=["name", "event_name", "event_date"],
+		limit_page_length=500,
 	)
-	for _ev in events:
-		# Placeholder for notification logic
-		pass
+	for ev in events:
+		doc = frappe.get_doc("Event Booking", ev.name)
+		send_event_reminder(doc, days)
 
 
 def send_unstaffed_alerts():
@@ -58,10 +59,14 @@ def send_unstaffed_alerts():
 		"Event Booking",
 		filters={"booking_status": "In Preparation"},
 		fields=["name"],
+		limit_page_length=500,
 	)
 	for ev in events:
 		doc = frappe.get_doc("Event Booking", ev.name)
+		unstaffed = []
 		for req in doc.staff_requirements:
-			if (req.qty_assigned or 0) < req.qty_required:
-				# Placeholder for notification logic
-				pass
+			gap = (req.qty_required or 0) - (req.qty_assigned or 0)
+			if gap > 0:
+				unstaffed.append({"designation": req.designation, "gap": gap})
+		if unstaffed:
+			send_unstaffed_alert(doc, unstaffed)

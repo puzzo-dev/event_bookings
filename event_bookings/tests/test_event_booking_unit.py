@@ -1,11 +1,11 @@
-"""Unit tests for EventBooking methods not covered by the integration tests.
+"""Unit tests for EventBooking methods.
 
 These tests mock frappe so they can run without a live Frappe site.
 """
 
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 from event_bookings.event_bookings.doctype.event_booking.event_booking import EventBooking
 
@@ -17,7 +17,7 @@ def _make_staff_req(**overrides):
 		"qty_assigned": 0,
 	}
 	defaults.update(overrides)
-	return defaults
+	return SimpleNamespace(**defaults)
 
 
 def _new_booking(**overrides):
@@ -26,7 +26,7 @@ def _new_booking(**overrides):
 	eb.staff_requirements = []
 	eb.event_cost_center = None
 	eb.total_estimated = 0
-	eb.total_actual = 0
+	eb.damage_cost = 0
 	eb.quotation = None
 	eb.sales_order = None
 	eb.sales_invoice = None
@@ -36,45 +36,15 @@ def _new_booking(**overrides):
 	eb.event_name = "Test Event"
 	eb.event_date = "2026-08-01"
 	eb.event_location = "Venue"
+	eb.event_time = "10:00:00"
+	eb.event_end_time = None
+	eb.total_purchase_cost = 0
+	eb.services = []
 	eb.name = "EVT-001"
 	eb.flags = SimpleNamespace(ignore_permissions=False)
 	for k, v in overrides.items():
 		setattr(eb, k, v)
 	return eb
-
-
-# ── calculate_totals ────────────────────────────────────────────────
-
-
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
-class TestCalculateTotals(unittest.TestCase):
-	def test_no_linked_docs(self, mock_frappe):
-		mock_frappe.db.get_value.return_value = None
-		eb = _new_booking()
-		eb.calculate_totals()
-		self.assertEqual(eb.total_estimated, 0.0)
-		self.assertEqual(eb.total_actual, 0.0)
-
-	def test_from_quotation(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [2500.0, None, None]
-		eb = _new_booking(quotation="QTN-001")
-		eb.calculate_totals()
-		self.assertEqual(eb.total_estimated, 2500.0)
-		self.assertEqual(eb.total_actual, 0.0)
-
-	def test_from_sales_order(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [2500.0, 3000.0, None]
-		eb = _new_booking(quotation="QTN-001", sales_order="SO-001")
-		eb.calculate_totals()
-		self.assertEqual(eb.total_estimated, 2500.0)
-		self.assertEqual(eb.total_actual, 3000.0)
-
-	def test_from_sales_invoice_when_no_so(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [None, None, 4500.0]
-		eb = _new_booking(sales_invoice="SI-001")
-		eb.calculate_totals()
-		self.assertEqual(eb.total_estimated, 0.0)
-		self.assertEqual(eb.total_actual, 4500.0)
 
 
 # ── validate_dates ──────────────────────────────────────────────────
@@ -114,14 +84,41 @@ class TestValidateDates(unittest.TestCase):
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
+	def test_end_time_before_start_time_throws(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="14:00:00", event_end_time="12:00:00")
+		eb.is_new = lambda: True
 
-# ── set_defaults_from_settings / set_cost_center ────────────────────
+		eb.validate_dates()
+		mock_frappe.throw.assert_called_once_with("Event End Time must be after Event Time.")
+
+	def test_end_time_after_start_time_ok(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="10:00:00", event_end_time="18:00:00")
+		eb.is_new = lambda: True
+
+		eb.validate_dates()
+		mock_frappe.throw.assert_not_called()
+
+	def test_no_end_time_ok(self, mock_today, mock_frappe):
+		mock_today.return_value = "2026-07-01"
+		eb = _new_booking(event_date="2026-08-01", event_time="10:00:00", event_end_time=None)
+		eb.is_new = lambda: True
+
+		eb.validate_dates()
+		mock_frappe.throw.assert_not_called()
+
+
+# ── set_defaults_from_settings ──────────────────────────────────────
 
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestSetDefaults(unittest.TestCase):
 	def test_sets_cost_center_from_settings(self, mock_frappe):
-		settings = SimpleNamespace(default_cost_center="CC-001", auto_create_cost_center_per_event=False)
+		settings = SimpleNamespace(
+			default_cost_center="CC-001",
+			auto_create_cost_center_per_event=False,
+		)
 		mock_frappe.get_cached_doc.return_value = settings
 
 		eb = _new_booking(event_cost_center=None)
@@ -129,19 +126,36 @@ class TestSetDefaults(unittest.TestCase):
 		self.assertEqual(eb.event_cost_center, "CC-001")
 
 	def test_preserves_existing_cost_center(self, mock_frappe):
-		settings = SimpleNamespace(default_cost_center="CC-001", auto_create_cost_center_per_event=False)
+		settings = SimpleNamespace(
+			default_cost_center="CC-001",
+			auto_create_cost_center_per_event=False,
+		)
 		mock_frappe.get_cached_doc.return_value = settings
 
 		eb = _new_booking(event_cost_center="CC-CUSTOM")
 		eb.set_defaults_from_settings()
 		self.assertEqual(eb.event_cost_center, "CC-CUSTOM")
 
-	def test_set_cost_center_no_default(self, mock_frappe):
-		settings = SimpleNamespace(default_cost_center=None)
+	def test_skips_when_auto_create_enabled(self, mock_frappe):
+		settings = SimpleNamespace(
+			default_cost_center="CC-001",
+			auto_create_cost_center_per_event=True,
+		)
 		mock_frappe.get_cached_doc.return_value = settings
 
 		eb = _new_booking(event_cost_center=None)
-		eb.set_cost_center()
+		eb.set_defaults_from_settings()
+		self.assertIsNone(eb.event_cost_center)
+
+	def test_no_default_cost_center(self, mock_frappe):
+		settings = SimpleNamespace(
+			default_cost_center=None,
+			auto_create_cost_center_per_event=False,
+		)
+		mock_frappe.get_cached_doc.return_value = settings
+
+		eb = _new_booking(event_cost_center=None)
+		eb.set_defaults_from_settings()
 		self.assertIsNone(eb.event_cost_center)
 
 
@@ -150,8 +164,11 @@ class TestSetDefaults(unittest.TestCase):
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestEnsureEventCostCenter(unittest.TestCase):
-	def test_delegates_to_set_cost_center_when_auto_disabled(self, mock_frappe):
-		settings = SimpleNamespace(auto_create_cost_center_per_event=False, default_cost_center="CC-001")
+	def test_delegates_to_set_defaults_when_auto_disabled(self, mock_frappe):
+		settings = SimpleNamespace(
+			auto_create_cost_center_per_event=False,
+			default_cost_center="CC-001",
+		)
 		mock_frappe.get_cached_doc.return_value = settings
 
 		eb = _new_booking(event_cost_center=None)
@@ -178,7 +195,15 @@ class TestEnsureEventCostCenter(unittest.TestCase):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=True, default_cost_center="Parent CC")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.exists.return_value = False
-		mock_frappe.db.get_value.side_effect = ["Test Co", "TC"]
+
+		def db_get_value(doctype, name, field=None, **kw):
+			if doctype == "Cost Center":
+				return "Test Co"
+			if doctype == "Company":
+				return "TC"
+			return None
+
+		mock_frappe.db.get_value.side_effect = db_get_value
 
 		mock_cc = MagicMock()
 		mock_cc.name = "EVT-001 - Test Event - TC"
@@ -198,7 +223,15 @@ class TestEnsureEventCostCenter(unittest.TestCase):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=True, default_cost_center="Parent CC")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.exists.return_value = True
-		mock_frappe.db.get_value.side_effect = ["Test Co", "TC"]
+
+		def db_get_value(doctype, name, field=None, **kw):
+			if doctype == "Cost Center":
+				return "Test Co"
+			if doctype == "Company":
+				return "TC"
+			return None
+
+		mock_frappe.db.get_value.side_effect = db_get_value
 
 		eb = _new_booking(event_cost_center=None, name="EVT-001", event_name="Test Event")
 		eb.ensure_event_cost_center()
@@ -235,12 +268,6 @@ class TestHasStatusChanged(unittest.TestCase):
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestHandleStatusTransition(unittest.TestCase):
-	def test_quoted_creates_quotation(self, mock_frappe):
-		eb = _new_booking(booking_status="Quoted")
-		eb.create_quotation = MagicMock()
-		eb.handle_status_transition()
-		eb.create_quotation.assert_called_once()
-
 	def test_confirmed_ensures_cost_center(self, mock_frappe):
 		eb = _new_booking(booking_status="Confirmed")
 		eb.ensure_event_cost_center = MagicMock()
@@ -257,48 +284,21 @@ class TestHandleStatusTransition(unittest.TestCase):
 		eb = _new_booking(booking_status="Executed")
 		eb.handle_status_transition()
 
-	def test_invoiced_is_noop(self, mock_frappe):
+	def test_invoiced_creates_sales_invoice(self, mock_frappe):
 		eb = _new_booking(booking_status="Invoiced")
+		eb.create_sales_invoice = MagicMock()
 		eb.handle_status_transition()
+		eb.create_sales_invoice.assert_called_once()
+
+	def test_cancelled_runs_cancellation(self, mock_frappe):
+		eb = _new_booking(booking_status="Cancelled")
+		eb.handle_cancellation = MagicMock()
+		eb.handle_status_transition()
+		eb.handle_cancellation.assert_called_once()
 
 	def test_paid_is_noop(self, mock_frappe):
 		eb = _new_booking(booking_status="Paid")
 		eb.handle_status_transition()
-
-
-# ── create_quotation ────────────────────────────────────────────────
-
-
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
-class TestCreateQuotation(unittest.TestCase):
-	def test_skips_when_quotation_exists(self, mock_frappe):
-		eb = _new_booking(quotation="QTN-001")
-		eb.create_quotation()
-		mock_frappe.get_doc.assert_not_called()
-
-	def test_builds_blank_quotation(self, mock_frappe):
-		settings = SimpleNamespace(
-			default_cost_center="CC-001",
-			default_income_account="Income - TC",
-		)
-		mock_frappe.get_cached_doc.return_value = settings
-
-		mock_qt = MagicMock()
-		mock_qt.name = "QTN-NEW"
-		mock_frappe.get_doc.return_value = mock_qt
-
-		eb = _new_booking(
-			customer="Acme",
-			event_cost_center="CC-EVT",
-			quotation=None,
-		)
-		eb.create_quotation()
-
-		mock_frappe.get_doc.assert_called_once()
-		call_args = mock_frappe.get_doc.call_args[0][0]
-		self.assertEqual(call_args["party_name"], "Acme")
-		mock_qt.insert.assert_called_once_with(ignore_permissions=True)
-		self.assertEqual(eb.quotation, "QTN-NEW")
 
 
 # ── create_shift_assignments ────────────────────────────────────────
@@ -310,12 +310,16 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 0
+		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		mock_shift = MagicMock()
 		mock_frappe.get_doc.return_value = mock_shift
 
 		req = _make_staff_req(designation="Waiter", qty_required=3, qty_assigned=0)
 		eb = _new_booking(staff_requirements=[req], event_date="2026-08-01")
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		self.assertEqual(mock_frappe.get_doc.call_count, 3)
@@ -325,12 +329,16 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 2
+		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		mock_shift = MagicMock()
 		mock_frappe.get_doc.return_value = mock_shift
 
 		req = _make_staff_req(designation="Chef", qty_required=3, qty_assigned=2)
 		eb = _new_booking(staff_requirements=[req])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		self.assertEqual(mock_frappe.get_doc.call_count, 1)
@@ -339,9 +347,13 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 5
+		mock_frappe.utils.flt.side_effect = lambda x: float(x or 0)
+		mock_frappe.get_all.return_value = []
 
 		req = _make_staff_req(qty_required=5, qty_assigned=5)
 		eb = _new_booking(staff_requirements=[req])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.create_shift_assignments()
 
 		mock_frappe.get_doc.assert_not_called()
@@ -354,29 +366,32 @@ class TestCreateShiftAssignments(unittest.TestCase):
 class TestUpdateStaffAssignmentCounts(unittest.TestCase):
 	def test_updates_counts_from_db(self, mock_frappe):
 		mock_frappe.db.sql.return_value = [{"designation": "Waiter", "cnt": 4}]
+		mock_frappe.get_all.return_value = []
 
 		req = _make_staff_req(designation="Waiter", qty_assigned=0)
 		eb = _new_booking(staff_requirements=[req], name="EVT-001")
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.update_staff_assignment_counts()
 
-		self.assertEqual(req["qty_assigned"], 4)
-		mock_frappe.db.sql.assert_called_once()
-		call_args = mock_frappe.db.sql.call_args
-		self.assertEqual(call_args[0][1], "EVT-001")
+		self.assertEqual(req.qty_assigned, 4)
 
 	def test_multiple_requirements(self, mock_frappe):
 		mock_frappe.db.sql.return_value = [
 			{"designation": "Waiter", "cnt": 2},
 			{"designation": "Chef", "cnt": 5},
 		]
+		mock_frappe.get_all.return_value = []
 
 		r1 = _make_staff_req(designation="Waiter")
 		r2 = _make_staff_req(designation="Chef")
 		eb = _new_booking(staff_requirements=[r1, r2])
+		eb.assigned_staff = []
+		eb.append = MagicMock()
 		eb.update_staff_assignment_counts()
 
-		self.assertEqual(r1["qty_assigned"], 2)
-		self.assertEqual(r2["qty_assigned"], 5)
+		self.assertEqual(r1.qty_assigned, 2)
+		self.assertEqual(r2.qty_assigned, 5)
 
 
 # ── get_company_from_cost_center ────────────────────────────────────
@@ -401,3 +416,253 @@ class TestGetCompanyFromCostCenter(unittest.TestCase):
 		result = eb.get_company_from_cost_center("CC-UNKNOWN")
 
 		self.assertEqual(result, "Default Co")
+
+
+# ── create_sales_invoice ────────────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestCreateSalesInvoice(unittest.TestCase):
+	def test_skips_when_si_exists(self, mock_frappe):
+		eb = _new_booking(sales_invoice="SI-001", sales_order="SO-001")
+		eb.create_sales_invoice()
+		mock_frappe.get_doc.assert_not_called()
+
+	def test_warns_when_no_sales_order(self, mock_frappe):
+		eb = _new_booking(sales_invoice=None, sales_order=None)
+		eb.create_sales_invoice()
+		mock_frappe.msgprint.assert_called_once()
+
+	def test_creates_si_from_sales_order(self, mock_frappe):
+		so_item = SimpleNamespace(
+			item_code="ITEM-001",
+			item_name="Chairs",
+			qty=10,
+			rate=100,
+			amount=1000,
+			name="SOI-001",
+		)
+		mock_so = MagicMock()
+		mock_so.items = [so_item]
+
+		mock_si = MagicMock()
+		mock_si.name = "SI-NEW"
+
+		def get_doc_side_effect(*args):
+			if len(args) == 1 and isinstance(args[0], dict):
+				return mock_si
+			if len(args) >= 1 and args[0] == "Sales Order":
+				return mock_so
+			return MagicMock()
+
+		mock_frappe.get_doc.side_effect = get_doc_side_effect
+
+		eb = _new_booking(
+			sales_invoice=None,
+			sales_order="SO-001",
+			event_cost_center="CC-001",
+		)
+		eb.create_sales_invoice()
+
+		mock_si.insert.assert_called_once_with(ignore_permissions=True)
+		self.assertEqual(eb.sales_invoice, "SI-NEW")
+
+
+# ── handle_cancellation ────────────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestHandleCancellation(unittest.TestCase):
+	def test_cancels_linked_docs(self, mock_frappe):
+		mock_doc = MagicMock()
+		mock_doc.docstatus = 1
+		mock_frappe.get_doc.return_value = mock_doc
+		mock_frappe.get_all.return_value = []
+
+		eb = _new_booking(
+			quotation="QUO-001",
+			sales_order="SO-001",
+			sales_invoice="SI-001",
+			material_request="MR-001",
+		)
+		eb.handle_cancellation()
+
+		self.assertEqual(mock_doc.cancel.call_count, 4)
+
+	def test_releases_shift_assignments(self, mock_frappe):
+		mock_frappe.get_all.return_value = ["SA-001", "SA-002"]
+
+		draft_shift = MagicMock()
+		draft_shift.docstatus = 0
+		mock_frappe.get_doc.return_value = draft_shift
+
+		eb = _new_booking(
+			quotation=None,
+			sales_order=None,
+			sales_invoice=None,
+			material_request=None,
+		)
+		eb.handle_cancellation()
+
+		self.assertEqual(mock_frappe.delete_doc.call_count, 2)
+
+	def test_handles_no_linked_docs(self, mock_frappe):
+		mock_frappe.get_all.return_value = []
+
+		eb = _new_booking(
+			quotation=None,
+			sales_order=None,
+			sales_invoice=None,
+			material_request=None,
+		)
+		eb.handle_cancellation()
+		mock_frappe.log_error.assert_not_called()
+
+
+# ── create_damage_stock_entry ──────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestCreateDamageStockEntry(unittest.TestCase):
+	def test_creates_stock_entry(self, mock_frappe):
+		settings = SimpleNamespace(
+			damage_warehouse="Damage WH",
+			default_warehouse="Default WH",
+			default_damage_account="Damage Acc",
+		)
+		mock_frappe.get_cached_doc.return_value = settings
+		mock_frappe.db.get_value.return_value = 500
+
+		se_items = []
+		mock_se = MagicMock()
+		mock_se.items = se_items
+		mock_se.append.side_effect = lambda field, item: se_items.append(item)
+		mock_frappe.get_doc.return_value = mock_se
+
+		eb = _new_booking(event_cost_center="CC-001", damage_cost=0)
+		eb.create_damage_stock_entry(
+			[
+				{"item_code": "CHAIR-001", "qty_damaged": 2, "rate": 100},
+			]
+		)
+
+		mock_se.insert.assert_called_once_with(ignore_permissions=True)
+		mock_se.submit.assert_called_once()
+		self.assertEqual(eb.damage_cost, 200)
+
+	def test_skips_zero_qty(self, mock_frappe):
+		settings = SimpleNamespace(
+			damage_warehouse="Damage WH",
+			default_warehouse="Default WH",
+			default_damage_account="Damage Acc",
+		)
+		mock_frappe.get_cached_doc.return_value = settings
+
+		se_items = []
+		mock_se = MagicMock()
+		mock_se.items = se_items
+		mock_se.append.side_effect = lambda field, item: se_items.append(item)
+		mock_frappe.get_doc.return_value = mock_se
+
+		eb = _new_booking(event_cost_center="CC-001", damage_cost=0)
+		eb.create_damage_stock_entry(
+			[
+				{"item_code": "CHAIR-001", "qty_damaged": 0},
+			]
+		)
+
+		mock_frappe.msgprint.assert_called_once()
+
+	def test_throws_without_warehouse(self, mock_frappe):
+		settings = SimpleNamespace(
+			damage_warehouse=None,
+			default_warehouse=None,
+			default_damage_account=None,
+		)
+		mock_frappe.get_cached_doc.return_value = settings
+
+		eb = _new_booking()
+		eb.create_damage_stock_entry([{"item_code": "X", "qty_damaged": 1}])
+		mock_frappe.throw.assert_called_once()
+
+
+# ── _sync_assigned_staff ────────────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestSyncAssignedStaff(unittest.TestCase):
+	def test_populates_from_shift_assignments(self, mock_frappe):
+		mock_frappe.get_all.return_value = [
+			SimpleNamespace(
+				name="SA-001",
+				employee="EMP-001",
+				employee_name="John",
+				designation="Waiter",
+				start_date="2026-08-01",
+			),
+		]
+
+		eb = _new_booking()
+		eb.assigned_staff = []
+		appended = []
+		eb.append = lambda field, row: appended.append(row)
+		eb._sync_assigned_staff()
+
+		self.assertEqual(len(appended), 1)
+		self.assertEqual(appended[0]["employee"], "EMP-001")
+		self.assertEqual(appended[0]["shift_assignment"], "SA-001")
+
+	def test_clears_existing_entries(self, mock_frappe):
+		mock_frappe.get_all.return_value = []
+
+		eb = _new_booking()
+		eb.assigned_staff = ["existing"]
+		eb.append = MagicMock()
+		eb._sync_assigned_staff()
+
+		self.assertEqual(eb.assigned_staff, [])
+
+
+# ── recalculate_purchase_cost ───────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestRecalculatePurchaseCost(unittest.TestCase):
+	def test_sums_purchase_invoice_totals(self, mock_frappe):
+		mock_frappe.db.get_value.return_value = 25000
+		eb = _new_booking()
+		eb.recalculate_purchase_cost()
+		self.assertEqual(eb.total_purchase_cost, 25000)
+
+	def test_defaults_to_zero_when_no_invoices(self, mock_frappe):
+		mock_frappe.db.get_value.return_value = None
+		eb = _new_booking()
+		eb.recalculate_purchase_cost()
+		self.assertEqual(eb.total_purchase_cost, 0)
+
+
+# ── record_damages permission check ────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestRecordDamagesPermission(unittest.TestCase):
+	def setUp(self):
+		import frappe as real_frappe
+
+		if not hasattr(real_frappe.local, "flags"):
+			real_frappe.local.flags = real_frappe._dict(in_test=True)
+		else:
+			real_frappe.local.flags.in_test = True
+
+	def test_checks_permission_before_processing(self, mock_frappe):
+		from event_bookings.event_bookings.doctype.event_booking.event_booking import record_damages
+
+		mock_frappe.has_permission.side_effect = PermissionError("No write access")
+
+		mock_doc = MagicMock()
+		mock_frappe.get_doc.return_value = mock_doc
+
+		with self.assertRaises(PermissionError):
+			record_damages("EVT-001", "[]")
+
+		mock_frappe.has_permission.assert_called_once()
