@@ -1,12 +1,14 @@
 import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import today
+from frappe.utils import getdate, today
 
 
 class EventBooking(Document):
 	def validate(self):
 		self.validate_dates()
+		self.calculate_totals()
+		self.calculate_damages()
 
 	def before_insert(self):
 		self.set_defaults_from_settings()
@@ -19,8 +21,23 @@ class EventBooking(Document):
 	# Validations
 	# -----------------------------------------------------------------
 
+	def calculate_damages(self):
+		total = 0.0
+		for svc in self.services:
+			if svc.is_stock_item and svc.qty_broken:
+				rate = svc.rate or 1
+				total += svc.qty_broken * rate
+		self.damages_cost = total
+
+	def calculate_totals(self):
+		total = 0.0
+		for svc in self.services:
+			svc.amount = (svc.qty or 0) * (svc.rate or 0)
+			total += svc.amount
+		self.total_estimated = total
+
 	def validate_dates(self):
-		if self.event_date and self.event_date < today():
+		if self.event_date and getdate(self.event_date) < getdate(today()):
 			if self.is_new():
 				frappe.throw("Event Date cannot be in the past for new bookings.")
 
@@ -30,6 +47,11 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 	# Defaults
 	# -----------------------------------------------------------------
+
+	def set_cost_center(self):
+		settings = self.get_settings()
+		if not self.event_cost_center and settings.default_cost_center:
+			self.event_cost_center = settings.default_cost_center
 
 	def set_defaults_from_settings(self):
 		settings = self.get_settings()
@@ -91,10 +113,14 @@ class EventBooking(Document):
 	def handle_status_transition(self):
 		status = self.booking_status
 
-		if status == "Confirmed":
+		if status == "Quoted":
+			self.create_quotation()
+
+		elif status == "Confirmed":
 			self.ensure_event_cost_center()
 
 		elif status == "In Preparation":
+			self.create_material_request()
 			self.create_shift_assignments()
 
 		elif status == "Invoiced":
@@ -241,6 +267,63 @@ class EventBooking(Document):
 		self.damage_cost = (self.damage_cost or 0) + total_damage
 
 	# -----------------------------------------------------------------
+	# Document Creation Helpers
+	# -----------------------------------------------------------------
+
+	def create_quotation(self):
+		if self.quotation:
+			return
+		settings = self.get_settings()
+		qt = frappe.get_doc(
+			{
+				"doctype": "Quotation",
+				"quotation_to": "Customer",
+				"party_name": self.customer,
+				"event_booking": self.name,
+				"cost_center": self.event_cost_center or settings.default_cost_center,
+			}
+		)
+		for svc in self.services:
+			qt.append(
+				"items",
+				{
+					"item_code": svc.item,
+					"qty": svc.qty,
+					"rate": svc.rate,
+					"income_account": settings.default_income_account,
+				},
+			)
+		qt.insert(ignore_permissions=True)
+		self.quotation = qt.name
+
+	def create_material_request(self):
+		if self.material_request:
+			return
+		settings = self.get_settings()
+		stock_items = [s for s in self.services if s.is_stock_item]
+		if not stock_items:
+			return
+		mr = frappe.get_doc(
+			{
+				"doctype": "Material Request",
+				"material_request_type": "Purchase",
+				"event_booking": self.name,
+			}
+		)
+		for svc in stock_items:
+			mr.append(
+				"items",
+				{
+					"item_code": svc.item,
+					"qty": svc.qty,
+					"warehouse": settings.default_warehouse,
+					"cost_center": self.event_cost_center or settings.default_cost_center,
+				},
+			)
+		mr.insert(ignore_permissions=True)
+		self.material_request = mr.name
+
+	# -----------------------------------------------------------------
 	# Shift Assignments (HRMS Integration)
 	# -----------------------------------------------------------------
 
@@ -251,8 +334,8 @@ class EventBooking(Document):
 
 		failed = []
 		for req in self.staff_requirements:
-			needed = frappe.utils.flt(req.qty_required) - frappe.utils.flt(req.qty_assigned or 0)
-			for _ in range(int(needed)):
+			needed = int(req.qty_required or 0) - int(req.qty_assigned or 0)
+			for _ in range(max(0, needed)):
 				try:
 					shift = frappe.get_doc(
 						{
