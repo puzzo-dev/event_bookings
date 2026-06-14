@@ -24,10 +24,10 @@ class EventBooking(Document):
 	def calculate_damages(self):
 		total = 0.0
 		for svc in self.services:
-			if svc.is_stock_item and svc.qty_broken:
+			if svc.is_stock_item and svc.qty_damaged:
 				rate = svc.rate or 1
-				total += svc.qty_broken * rate
-		self.damages_cost = total
+				total += svc.qty_damaged * rate
+		self.damage_cost = total
 
 	def calculate_totals(self):
 		total = 0.0
@@ -47,11 +47,6 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 	# Defaults
 	# -----------------------------------------------------------------
-
-	def set_cost_center(self):
-		settings = self.get_settings()
-		if not self.event_cost_center and settings.default_cost_center:
-			self.event_cost_center = settings.default_cost_center
 
 	def set_defaults_from_settings(self):
 		settings = self.get_settings()

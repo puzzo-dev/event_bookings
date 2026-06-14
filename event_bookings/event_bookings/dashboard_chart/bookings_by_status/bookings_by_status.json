@@ -4,7 +4,7 @@
  "chart_name": "Bookings by Status",
  "chart_type": "Group By",
  "color": null,
- "currency": "NGN",
+ "currency": null,
  "custom_options": null,
  "docstatus": 0,
  "doctype": "Dashboard Chart",
