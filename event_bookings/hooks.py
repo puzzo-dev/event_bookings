@@ -282,46 +282,6 @@ fixtures = [
 		],
 	},
 	{"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
-	{"dt": "Workflow", "filters": [["document_type", "=", "Event Booking"]]},
-	{
-		"dt": "Workflow State",
-		"filters": [
-			[
-				"name",
-				"in",
-				[
-					"New",
-					"Quoted",
-					"Negotiating",
-					"Confirmed",
-					"In Preparation",
-					"Executed",
-					"Invoiced",
-					"Paid",
-					"Cancelled",
-				],
-			]
-		],
-	},
-	{
-		"dt": "Workflow Action Master",
-		"filters": [
-			[
-				"name",
-				"in",
-				[
-					"Send Quote",
-					"Negotiate",
-					"Confirm",
-					"Prepare",
-					"Execute",
-					"Invoice",
-					"Mark Paid",
-					"Cancel",
-				],
-			]
-		],
-	},
 	{
 		"dt": "Number Card",
 		"filters": [

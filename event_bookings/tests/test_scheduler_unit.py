@@ -85,7 +85,8 @@ class TestSyncInvoicePaymentStatus(unittest.TestCase):
 
 		sync_invoice_payment_status()
 
-		mock_frappe.utils.apply_workflow.assert_called_once_with(mock_doc, "Mark Paid")
+		self.assertEqual(mock_doc.booking_status, "Paid")
+		mock_doc.save.assert_called_once_with(ignore_permissions=True)
 
 	def test_skips_unpaid_invoice(self, mock_frappe):
 		from event_bookings.utils.scheduler import sync_invoice_payment_status

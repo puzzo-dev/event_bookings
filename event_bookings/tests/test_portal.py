@@ -130,7 +130,8 @@ class TestApproveQuotation(unittest.TestCase):
 
 		result = approve_quotation("EVT-001")
 
-		mock_frappe.utils.apply_workflow.assert_called_once_with(mock_doc, "Confirm")
+		self.assertEqual(mock_doc.booking_status, "Confirmed")
+		mock_doc.save.assert_called_once_with(ignore_permissions=True)
 		self.assertEqual(result["status"], "success")
 
 
