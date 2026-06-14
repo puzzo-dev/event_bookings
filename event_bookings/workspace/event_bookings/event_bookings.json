@@ -9,7 +9,7 @@
    "label": "Revenue Trend"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Getting Started\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Quick Links\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
  "creation": "2026-06-13 03:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -24,17 +24,16 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "New Event Booking",
-   "link_to": "Event Booking",
-   "link_type": "DocType",
-   "onboard": 1,
-   "type": "Link"
+   "label": "Sales / Selling",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
   },
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Event Bookings List",
-   "link_to": "Event Booking",
+   "label": "Quotation",
+   "link_to": "Quotation",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -42,8 +41,8 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Event Types",
-   "link_to": "Event Type",
+   "label": "Sales Order",
+   "link_to": "Sales Order",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
@@ -51,11 +50,54 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Event Settings",
-   "link_to": "Event Settings",
+   "label": "Sales Invoice",
+   "link_to": "Sales Invoice",
    "link_type": "DocType",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Buying / Purchase",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Order",
+   "link_to": "Purchase Order",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Purchase Invoice",
+   "link_to": "Purchase Invoice",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Material Request",
+   "link_to": "Material Request",
+   "link_type": "DocType",
+   "onboard": 0,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
   },
   {
    "hidden": 0,
@@ -65,30 +107,22 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Pipeline Report",
+   "link_to": "Event Booking Pipeline",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
  "modified": "2026-06-13 03:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings",
- "number_cards": [
-  {
-   "label": "Upcoming Events",
-   "number_card_name": "Upcoming Events"
-  },
-  {
-   "label": "Events This Month",
-   "number_card_name": "Events This Month"
-  },
-  {
-   "label": "Pending Invoices",
-   "number_card_name": "Pending Invoices"
-  },
-  {
-   "label": "Total Revenue",
-   "number_card_name": "Total Revenue"
-  }
- ],
+ "number_cards": [],
  "parent_page": "",
  "public": 1,
  "quick_lists": [],

@@ -27,4 +27,5 @@ def create_print_format():
 		print("Print Format already exists.")
 
 
-create_print_format()
+# Run manually via: bench --site <site> execute event_bookings.create_print_format.create_print_format
+# create_print_format()

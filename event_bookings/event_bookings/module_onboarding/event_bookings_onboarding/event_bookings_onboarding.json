@@ -1,0 +1,38 @@
+{
+ "allow_roles": [
+  {
+   "role": "Event Manager"
+  },
+  {
+   "role": "Event User"
+  },
+  {
+   "role": "System Manager"
+  }
+ ],
+ "creation": "2026-06-13 22:48:37.610980",
+ "docstatus": 0,
+ "doctype": "Module Onboarding",
+ "documentation_url": "https://docs.erpnext.com",
+ "idx": 0,
+ "is_complete": 0,
+ "modified": "2026-06-13 22:48:37.610980",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Bookings Onboarding",
+ "owner": "Administrator",
+ "steps": [
+  {
+   "step": "Configure Event Settings"
+  },
+  {
+   "step": "Create Event Type"
+  },
+  {
+   "step": "Create Event Booking"
+  }
+ ],
+ "subtitle": "Get Started with Event Bookings",
+ "success_message": "Awesome! You are all set to manage Event Bookings.",
+ "title": "Event Bookings Onboarding"
+}

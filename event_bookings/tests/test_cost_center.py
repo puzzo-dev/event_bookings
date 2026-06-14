@@ -56,7 +56,7 @@ class TestEventCostCenter(FrappeTestCase):
         settings = frappe.get_single("Event Settings")
         settings.auto_create_cost_center_per_event = 1
         parent_cc = frappe.db.get_value(
-            "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 0}, "name"
+            "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 1}, "name"
         )
         settings.default_cost_center = parent_cc
         settings.save(ignore_permissions=True)
@@ -64,8 +64,10 @@ class TestEventCostCenter(FrappeTestCase):
         eb = self._make_event()
         self.assertFalse(eb.event_cost_center)
 
-        eb.booking_status = "Confirmed"
-        eb.save(ignore_permissions=True)
+        # Step through valid workflow transitions to reach Confirmed
+        for status in ("Quoted", "Negotiating", "Confirmed"):
+            eb.booking_status = status
+            eb.save(ignore_permissions=True)
 
         self.assertTrue(eb.event_cost_center)
         self.assertIn(eb.name, eb.event_cost_center)

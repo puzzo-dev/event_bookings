@@ -39,6 +39,7 @@ class TestGetColumns(unittest.TestCase):
 				self.assertEqual(col["fieldtype"], "Currency", f"{col['fieldname']} should be Currency")
 
 
+@patch("event_bookings.report.event_booking_profitability.event_booking_profitability._get_cogs", return_value=0)
 @patch("event_bookings.report.event_booking_profitability.event_booking_profitability.frappe")
 class TestGetData(unittest.TestCase):
 	def _make_booking(self, **overrides):
@@ -54,63 +55,63 @@ class TestGetData(unittest.TestCase):
 		row.update(overrides)
 		return row
 
-	def test_profit_calculated_from_actual_revenue(self, mock_frappe):
+	def test_profit_calculated_from_actual_revenue(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = [self._make_booking()]
 		data = get_data({})
 
 		self.assertEqual(len(data), 1)
 		self.assertEqual(data[0]["net_profit"], 55000)  # 60000 - 5000
 
-	def test_uses_estimated_when_no_actual(self, mock_frappe):
+	def test_uses_estimated_when_no_actual(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = [
 			self._make_booking(total_actual=0, total_estimated=40000, damages_cost=0)
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["net_profit"], 40000)
 
-	def test_margin_percentage(self, mock_frappe):
+	def test_margin_percentage(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = [self._make_booking(total_actual=100000, damages_cost=20000)]
 		data = get_data({})
 		self.assertAlmostEqual(data[0]["margin_pct"], 80.0)
 
-	def test_zero_revenue_margin(self, mock_frappe):
+	def test_zero_revenue_margin(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = [
 			self._make_booking(total_actual=0, total_estimated=0, damages_cost=0)
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["margin_pct"], 0)
 
-	def test_cogs_defaults_to_zero(self, mock_frappe):
+	def test_cogs_defaults_to_zero(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = [self._make_booking()]
 		data = get_data({})
 		self.assertEqual(data[0]["cogs"], 0)
 
-	def test_filter_by_customer(self, mock_frappe):
+	def test_filter_by_customer(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
 		get_data({"customer": "Acme"})
 		call_kwargs = mock_frappe.get_all.call_args
 		self.assertEqual(call_kwargs[1]["filters"]["customer"], "Acme")
 
-	def test_filter_by_event_type(self, mock_frappe):
+	def test_filter_by_event_type(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
 		get_data({"event_type": "Wedding"})
 		call_kwargs = mock_frappe.get_all.call_args
 		self.assertEqual(call_kwargs[1]["filters"]["event_type"], "Wedding")
 
-	def test_filter_by_status(self, mock_frappe):
+	def test_filter_by_status(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
 		get_data({"booking_status": "Paid"})
 		call_kwargs = mock_frappe.get_all.call_args
 		self.assertEqual(call_kwargs[1]["filters"]["booking_status"], "Paid")
 
-	def test_filter_by_date_range(self, mock_frappe):
+	def test_filter_by_date_range(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
 		get_data({"from_date": "2026-01-01", "to_date": "2026-12-31"})
 		call_kwargs = mock_frappe.get_all.call_args
 		# Note: current implementation overwrites from_date with to_date filter
 		self.assertIn("event_date", call_kwargs[1]["filters"])
 
-	def test_empty_filters(self, mock_frappe):
+	def test_empty_filters(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
 		data = get_data({})
 		self.assertEqual(data, [])
