@@ -33,6 +33,8 @@
   "sales_order",
   "sales_invoice",
   "material_request",
+  "sec_purchase",
+  "total_purchase_cost",
   "sec_staffing",
   "staff_requirements",
   "assigned_staff",
@@ -200,6 +202,18 @@
    "read_only": 1
   },
   {
+   "fieldname": "sec_purchase",
+   "fieldtype": "Section Break",
+   "label": "Purchases & Expenses"
+  },
+  {
+   "description": "Total from submitted Purchase Invoices linked to this booking",
+   "fieldname": "total_purchase_cost",
+   "fieldtype": "Currency",
+   "label": "Total Purchase Cost",
+   "read_only": 1
+  },
+  {
    "fieldname": "sec_staffing",
    "fieldtype": "Section Break",
    "label": "Staffing"
@@ -275,6 +289,16 @@
   {
    "group": "Stock",
    "link_doctype": "Stock Entry",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Buying",
+   "link_doctype": "Purchase Order",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "group": "Buying",
+   "link_doctype": "Purchase Invoice",
    "link_fieldname": "event_booking"
   },
   {

@@ -38,6 +38,7 @@ def _new_booking(**overrides):
 	eb.event_location = "Venue"
 	eb.event_time = "10:00:00"
 	eb.event_end_time = None
+	eb.total_purchase_cost = 0
 	eb.name = "EVT-001"
 	eb.flags = SimpleNamespace(ignore_permissions=False)
 	for k, v in overrides.items():
@@ -624,6 +625,24 @@ class TestSyncAssignedStaff(unittest.TestCase):
 		eb._sync_assigned_staff()
 
 		self.assertEqual(eb.assigned_staff, [])
+
+
+# ── recalculate_purchase_cost ───────────────────────────────────────
+
+
+@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+class TestRecalculatePurchaseCost(unittest.TestCase):
+	def test_sums_purchase_invoice_totals(self, mock_frappe):
+		mock_frappe.db.get_value.return_value = 25000
+		eb = _new_booking()
+		eb.recalculate_purchase_cost()
+		self.assertEqual(eb.total_purchase_cost, 25000)
+
+	def test_defaults_to_zero_when_no_invoices(self, mock_frappe):
+		mock_frappe.db.get_value.return_value = None
+		eb = _new_booking()
+		eb.recalculate_purchase_cost()
+		self.assertEqual(eb.total_purchase_cost, 0)
 
 
 # ── record_damages permission check ────────────────────────────────

@@ -3,6 +3,8 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from event_bookings.utils.erpnext_hooks import (
+	on_purchase_invoice_submit,
+	on_purchase_order_submit,
 	on_quotation_submit,
 	on_sales_invoice_submit,
 	on_sales_order_submit,
@@ -19,12 +21,16 @@ class _FakeEB:
 		self.sales_order = None
 		self.sales_invoice = None
 		self.total_actual = None
+		self.total_purchase_cost = 0
 
 	def save(self, **kwargs):
 		self._saved = True
 
 	def update_staff_assignment_counts(self):
 		self._staff_updated = True
+
+	def recalculate_purchase_cost(self):
+		self._purchase_cost_recalculated = True
 
 
 @patch("event_bookings.utils.erpnext_hooks.frappe")
@@ -112,6 +118,43 @@ class TestOnStockEntrySubmit(unittest.TestCase):
 			name="STE-003",
 		)
 		on_stock_entry_submit(doc, "on_submit")
+		mock_frappe.get_doc.assert_not_called()
+
+
+@patch("event_bookings.utils.erpnext_hooks.frappe")
+class TestOnPurchaseOrderSubmit(unittest.TestCase):
+	def test_saves_booking_on_submit(self, mock_frappe):
+		eb = _FakeEB()
+		mock_frappe.get_doc.return_value = eb
+
+		doc = SimpleNamespace(event_booking="EVT-001", name="PO-001")
+		on_purchase_order_submit(doc, "on_submit")
+
+		mock_frappe.get_doc.assert_called_once_with("Event Booking", "EVT-001")
+		self.assertTrue(eb._saved)
+
+	def test_skips_when_no_event_booking(self, mock_frappe):
+		doc = SimpleNamespace(event_booking=None, name="PO-002")
+		on_purchase_order_submit(doc, "on_submit")
+		mock_frappe.get_doc.assert_not_called()
+
+
+@patch("event_bookings.utils.erpnext_hooks.frappe")
+class TestOnPurchaseInvoiceSubmit(unittest.TestCase):
+	def test_recalculates_purchase_cost(self, mock_frappe):
+		eb = _FakeEB()
+		mock_frappe.get_doc.return_value = eb
+
+		doc = SimpleNamespace(event_booking="EVT-001", name="PINV-001")
+		on_purchase_invoice_submit(doc, "on_submit")
+
+		mock_frappe.get_doc.assert_called_once_with("Event Booking", "EVT-001")
+		self.assertTrue(eb._purchase_cost_recalculated)
+		self.assertTrue(eb._saved)
+
+	def test_skips_when_no_event_booking(self, mock_frappe):
+		doc = SimpleNamespace(event_booking="", name="PINV-002")
+		on_purchase_invoice_submit(doc, "on_submit")
 		mock_frappe.get_doc.assert_not_called()
 
 
