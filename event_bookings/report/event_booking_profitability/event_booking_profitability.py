@@ -92,11 +92,26 @@ def get_data(filters):
 
 
 def _get_cogs_map(event_names):
-	"""Sum total_outgoing_value from submitted Material Issue Stock Entries
+	"""Sum costs from submitted Purchase Invoices and Material Issue Stock Entries
 	linked to the given event bookings."""
 	if not event_names:
 		return {}
 
+	cogs_map = {}
+
+	# Purchase Invoice costs (vendor expenses attributed to events)
+	invoices = frappe.get_all(
+		"Purchase Invoice",
+		filters={
+			"event_booking": ("in", event_names),
+			"docstatus": 1,
+		},
+		fields=["event_booking", "grand_total"],
+	)
+	for pi in invoices:
+		cogs_map[pi.event_booking] = cogs_map.get(pi.event_booking, 0) + (pi.grand_total or 0)
+
+	# Stock Entry costs (material issue / damage write-offs)
 	entries = frappe.get_all(
 		"Stock Entry",
 		filters={
@@ -106,8 +121,7 @@ def _get_cogs_map(event_names):
 		},
 		fields=["event_booking", "total_outgoing_value"],
 	)
-
-	cogs_map = {}
 	for se in entries:
 		cogs_map[se.event_booking] = cogs_map.get(se.event_booking, 0) + (se.total_outgoing_value or 0)
+
 	return cogs_map

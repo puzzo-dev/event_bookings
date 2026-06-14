@@ -313,6 +313,15 @@ class EventBooking(Document):
 				},
 			)
 
+	def recalculate_purchase_cost(self):
+		"""Sum grand_total from all submitted Purchase Invoices linked to this booking."""
+		total = frappe.db.get_value(
+			"Purchase Invoice",
+			filters={"event_booking": self.name, "docstatus": 1},
+			fieldname="sum(grand_total)",
+		)
+		self.total_purchase_cost = total or 0
+
 	# -----------------------------------------------------------------
 	# Utilities
 	# -----------------------------------------------------------------

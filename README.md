@@ -64,6 +64,12 @@ Each state is gated by role (Sales User, Event Manager, Accounts User).
 - `assigned_staff` child table auto-populated from Shift Assignments
 - Staff counts (`qty_assigned`) synced on Shift Assignment updates
 
+### Purchase & Expense Tracking
+- Link **Purchase Orders** and **Purchase Invoices** to Event Bookings via the `event_booking` field
+- `total_purchase_cost` auto-accumulated from submitted Purchase Invoices
+- Profitability report includes purchase costs in COGS calculation
+- Dashboard connections show related POs and PIs on the Event Booking form
+
 ### Damage Reconciliation
 - "Record Damages" dialog on Executed bookings
 - Creates Material Issue Stock Entry (submitted) for inventory write-off

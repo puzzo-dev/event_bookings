@@ -56,33 +56,49 @@ class TestGetData(unittest.TestCase):
 		return row
 
 	def test_profit_calculated_from_actual_revenue(self, mock_frappe):
-		mock_frappe.get_all.return_value = [self._make_booking()]
+		mock_frappe.get_all.side_effect = [
+			[self._make_booking()],
+			[],  # Purchase Invoices
+			[],  # Stock Entries
+		]
 		data = get_data({})
 
 		self.assertEqual(len(data), 1)
 		self.assertEqual(data[0]["net_profit"], 55000)  # 60000 - 5000
 
 	def test_uses_estimated_when_no_actual(self, mock_frappe):
-		mock_frappe.get_all.return_value = [
-			self._make_booking(total_actual=0, total_estimated=40000, damage_cost=0)
+		mock_frappe.get_all.side_effect = [
+			[self._make_booking(total_actual=0, total_estimated=40000, damage_cost=0)],
+			[],  # Purchase Invoices
+			[],  # Stock Entries
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["net_profit"], 40000)
 
 	def test_margin_percentage(self, mock_frappe):
-		mock_frappe.get_all.return_value = [self._make_booking(total_actual=100000, damage_cost=20000)]
+		mock_frappe.get_all.side_effect = [
+			[self._make_booking(total_actual=100000, damage_cost=20000)],
+			[],  # Purchase Invoices
+			[],  # Stock Entries
+		]
 		data = get_data({})
 		self.assertAlmostEqual(data[0]["margin_pct"], 80.0)
 
 	def test_zero_revenue_margin(self, mock_frappe):
-		mock_frappe.get_all.return_value = [
-			self._make_booking(total_actual=0, total_estimated=0, damage_cost=0)
+		mock_frappe.get_all.side_effect = [
+			[self._make_booking(total_actual=0, total_estimated=0, damage_cost=0)],
+			[],  # Purchase Invoices
+			[],  # Stock Entries
 		]
 		data = get_data({})
 		self.assertEqual(data[0]["margin_pct"], 0)
 
 	def test_cogs_defaults_to_zero(self, mock_frappe):
-		mock_frappe.get_all.return_value = [self._make_booking()]
+		mock_frappe.get_all.side_effect = [
+			[self._make_booking()],
+			[],  # Purchase Invoices
+			[],  # Stock Entries
+		]
 		data = get_data({})
 		self.assertEqual(data[0]["cogs"], 0)
 
@@ -157,15 +173,22 @@ class TestGetCogsMap(unittest.TestCase):
 		result = _get_cogs_map([])
 		self.assertEqual(result, {})
 
-	def test_sums_stock_entry_values(self, mock_frappe):
-		mock_frappe.get_all.return_value = [
-			_dict(event_booking="EVT-001", total_outgoing_value=1000),
-			_dict(event_booking="EVT-001", total_outgoing_value=500),
-			_dict(event_booking="EVT-002", total_outgoing_value=2000),
+	def test_sums_purchase_and_stock_entry_values(self, mock_frappe):
+		mock_frappe.get_all.side_effect = [
+			# Purchase Invoices
+			[
+				_dict(event_booking="EVT-001", grand_total=3000),
+				_dict(event_booking="EVT-002", grand_total=2000),
+			],
+			# Stock Entries (Material Issue)
+			[
+				_dict(event_booking="EVT-001", total_outgoing_value=1000),
+				_dict(event_booking="EVT-001", total_outgoing_value=500),
+			],
 		]
 		result = _get_cogs_map(["EVT-001", "EVT-002"])
-		self.assertEqual(result["EVT-001"], 1500)
-		self.assertEqual(result["EVT-002"], 2000)
+		self.assertEqual(result["EVT-001"], 4500)  # 3000 PI + 1000 + 500 SE
+		self.assertEqual(result["EVT-002"], 2000)  # 2000 PI only
 
 	def test_cogs_deducted_from_profit(self, mock_frappe):
 		booking = _dict(
@@ -179,8 +202,11 @@ class TestGetCogsMap(unittest.TestCase):
 		)
 		mock_frappe.get_all.side_effect = [
 			[booking],
-			[_dict(event_booking="EVT-001", total_outgoing_value=10000)],
+			# Purchase Invoices
+			[_dict(event_booking="EVT-001", grand_total=5000)],
+			# Stock Entries
+			[_dict(event_booking="EVT-001", total_outgoing_value=5000)],
 		]
 		data = get_data({})
-		self.assertEqual(data[0]["cogs"], 10000)
+		self.assertEqual(data[0]["cogs"], 10000)  # 5000 PI + 5000 SE
 		self.assertEqual(data[0]["net_profit"], 45000)  # 60000 - 10000 - 5000

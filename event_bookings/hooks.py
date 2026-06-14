@@ -157,6 +157,12 @@ doc_events = {
 	"Stock Entry": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
 	},
+	"Purchase Order": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_purchase_order_submit",
+	},
+	"Purchase Invoice": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_purchase_invoice_submit",
+	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 	},
@@ -265,6 +271,7 @@ fixtures = [
 					"Quotation",
 					"Sales Order",
 					"Sales Invoice",
+					"Purchase Order",
 					"Purchase Invoice",
 					"Material Request",
 					"Stock Entry",
