@@ -365,7 +365,7 @@ class TestCreateShiftAssignments(unittest.TestCase):
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestUpdateStaffAssignmentCounts(unittest.TestCase):
 	def test_updates_counts_from_db(self, mock_frappe):
-		mock_frappe.db.count.return_value = 4
+		mock_frappe.db.sql.return_value = [{"designation": "Waiter", "cnt": 4}]
 		mock_frappe.get_all.return_value = []
 
 		req = _make_staff_req(designation="Waiter", qty_assigned=0)
@@ -375,17 +375,12 @@ class TestUpdateStaffAssignmentCounts(unittest.TestCase):
 		eb.update_staff_assignment_counts()
 
 		self.assertEqual(req.qty_assigned, 4)
-		mock_frappe.db.count.assert_called_once_with(
-			"Shift Assignment",
-			filters={
-				"event_booking": "EVT-001",
-				"designation": "Waiter",
-				"docstatus": ("<", 2),
-			},
-		)
 
 	def test_multiple_requirements(self, mock_frappe):
-		mock_frappe.db.count.side_effect = [2, 5]
+		mock_frappe.db.sql.return_value = [
+			{"designation": "Waiter", "cnt": 2},
+			{"designation": "Chef", "cnt": 5},
+		]
 		mock_frappe.get_all.return_value = []
 
 		r1 = _make_staff_req(designation="Waiter")

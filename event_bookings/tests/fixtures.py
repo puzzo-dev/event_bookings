@@ -24,7 +24,7 @@ def get_or_create_test_event_type(name="Test Event"):
 def get_or_create_test_item(item_code):
 	"""Return a test Item, creating it if needed."""
 	if not frappe.db.exists("Item", item_code):
-		frappe.get_doc(
+		item = frappe.get_doc(
 			{
 				"doctype": "Item",
 				"item_code": item_code,
@@ -34,5 +34,6 @@ def get_or_create_test_item(item_code):
 				"is_stock_item": 0,
 				"standard_rate": 500,
 			}
-		).insert(ignore_permissions=True)
+		)
+		item.insert(ignore_permissions=True, set_name=item_code)
 	return item_code

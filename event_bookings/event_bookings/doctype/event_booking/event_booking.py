@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 import frappe
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -8,33 +10,57 @@ class EventBooking(Document):
 	def validate(self):
 		self.validate_dates()
 		self.calculate_totals()
-		self.calculate_damages()
 
 	def before_insert(self):
 		self.set_defaults_from_settings()
 
 	def before_save(self):
 		if self.has_status_changed():
+			self._validate_status_transition()
 			self.handle_status_transition()
+
+	VALID_STATUS_TRANSITIONS: ClassVar[dict] = {
+		"New": {"Quoted", "Cancelled"},
+		"Quoted": {"Negotiating", "Cancelled"},
+		"Negotiating": {"Confirmed", "Cancelled"},
+		"Confirmed": {"In Preparation", "Cancelled"},
+		"In Preparation": {"Executed", "Cancelled"},
+		"Executed": {"Invoiced", "Cancelled"},
+		"Invoiced": {"Paid", "Cancelled"},
+		"Paid": {"Cancelled"},
+		"Cancelled": set(),
+	}
+
+	def _validate_status_transition(self):
+		if self.is_new():
+			return
+		old_status = frappe.db.get_value("Event Booking", self.name, "booking_status")
+		if old_status == self.booking_status:
+			return
+		allowed = self.VALID_STATUS_TRANSITIONS.get(old_status, set())
+		if self.booking_status not in allowed:
+			frappe.throw(
+				f"Invalid status transition: '{old_status}' → '{self.booking_status}'. "
+				f"Allowed transitions from '{old_status}': {', '.join(allowed) or 'none'}."
+			)
 
 	# -----------------------------------------------------------------
 	# Validations
 	# -----------------------------------------------------------------
 
-	def calculate_damages(self):
-		total = 0.0
-		for svc in self.services:
-			if svc.is_stock_item and svc.qty_damaged:
-				rate = svc.rate or 1
-				total += svc.qty_damaged * rate
-		self.damage_cost = total
-
 	def calculate_totals(self):
-		total = 0.0
-		for svc in self.services:
-			svc.amount = (svc.qty or 0) * (svc.rate or 0)
-			total += svc.amount
-		self.total_estimated = total
+		self.total_estimated = self._get_doc_total("Quotation", self.quotation, "grand_total")
+		self.total_actual = self._get_doc_total("Sales Order", self.sales_order, "grand_total")
+		if not self.total_actual and self.sales_invoice:
+			self.total_actual = self._get_doc_total("Sales Invoice", self.sales_invoice, "grand_total")
+
+	def _get_doc_total(self, doctype, name, total_field):
+		if not name:
+			return 0.0
+		try:
+			return frappe.db.get_value(doctype, name, total_field) or 0.0
+		except Exception:
+			return 0.0
 
 	def validate_dates(self):
 		if self.event_date and getdate(self.event_date) < getdate(today()):
@@ -278,16 +304,8 @@ class EventBooking(Document):
 				"cost_center": self.event_cost_center or settings.default_cost_center,
 			}
 		)
-		for svc in self.services:
-			qt.append(
-				"items",
-				{
-					"item_code": svc.item,
-					"qty": svc.qty,
-					"rate": svc.rate,
-					"income_account": settings.default_income_account,
-				},
-			)
+		if not frappe.has_permission("Quotation", "create"):
+			frappe.throw("You do not have permission to create a Quotation.")
 		qt.insert(ignore_permissions=True)
 		self.quotation = qt.name
 
@@ -328,7 +346,7 @@ class EventBooking(Document):
 			frappe.throw("Set a Default Shift Type in Event Settings before creating Shift Assignments.")
 
 		failed = []
-		for req in self.staff_requirements:
+		for req in self.get("staff_requirements") or []:
 			needed = int(req.qty_required or 0) - int(req.qty_assigned or 0)
 			for _ in range(max(0, needed)):
 				try:
@@ -359,16 +377,23 @@ class EventBooking(Document):
 			)
 
 	def update_staff_assignment_counts(self):
-		for req in self.staff_requirements:
-			count = frappe.db.count(
-				"Shift Assignment",
-				filters={
-					"event_booking": self.name,
-					"designation": req.designation,
-					"docstatus": ("<", 2),
-				},
-			)
-			req.qty_assigned = count
+		rows = frappe.db.sql(
+			"""
+			SELECT designation, COUNT(*) as cnt
+			FROM `tabShift Assignment`
+			WHERE event_booking = %s AND docstatus < 2
+			GROUP BY designation
+			""",
+			self.name,
+			as_dict=True,
+		)
+		counts = {r.get("designation"): r.get("cnt") for r in rows}
+		for req in self.get("staff_requirements") or []:
+			count = counts.get(req.get("designation") if isinstance(req, dict) else req.designation, 0)
+			if isinstance(req, dict):
+				req["qty_assigned"] = count
+			else:
+				req.qty_assigned = count
 		self._sync_assigned_staff()
 
 	def _sync_assigned_staff(self):
@@ -423,6 +448,9 @@ def record_damages(event_booking, items):
 
 @frappe.whitelist()
 def make_quotation(source_name, target_doc=None):
+	if not frappe.has_permission("Event Booking", "read", source_name):
+		frappe.throw("You do not have permission to read this Event Booking.")
+
 	def set_missing_values(source, target):
 		target.quotation_to = "Customer"
 		target.event_booking = source.name
@@ -445,3 +473,68 @@ def make_quotation(source_name, target_doc=None):
 	)
 
 	return doclist
+
+
+@frappe.whitelist()
+def make_project(source_name, target_doc=None):
+	if not frappe.has_permission("Event Booking", "read", source_name):
+		frappe.throw("You do not have permission to read this Event Booking.")
+
+	def set_missing_values(source, target):
+		target.project_name = source.event_name or source.name
+		target.customer = source.customer
+		target.expected_start_date = source.booking_date or source.event_date
+		target.expected_end_date = source.event_date
+
+	doclist = get_mapped_doc(
+		"Event Booking",
+		source_name,
+		{
+			"Event Booking": {
+				"doctype": "Project",
+				"field_map": {
+					"event_cost_center": "cost_center",
+				},
+			}
+		},
+		target_doc,
+		set_missing_values,
+	)
+
+	return doclist
+
+
+@frappe.whitelist()
+def get_items_from_quotation(quotation_name):
+	if not quotation_name:
+		return []
+	qt = frappe.get_doc("Quotation", quotation_name)
+	return [
+		{
+			"item_code": item.item_code,
+			"item_name": item.item_name,
+			"qty": item.qty,
+			"uom": item.uom,
+			"rate": item.rate,
+			"amount": item.amount,
+		}
+		for item in qt.items
+	]
+
+
+@frappe.whitelist()
+def get_items_from_sales_order(sales_order_name):
+	if not sales_order_name:
+		return []
+	so = frappe.get_doc("Sales Order", sales_order_name)
+	return [
+		{
+			"item_code": item.item_code,
+			"item_name": item.item_name,
+			"qty": item.qty,
+			"uom": item.uom,
+			"rate": item.rate,
+			"amount": item.amount,
+		}
+		for item in so.items
+	]
