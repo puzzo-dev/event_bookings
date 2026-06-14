@@ -21,7 +21,7 @@ class EventBooking(Document):
 
 	VALID_STATUS_TRANSITIONS: ClassVar[dict] = {
 		"New": {"Quoted", "Cancelled"},
-		"Quoted": {"Negotiating", "Cancelled"},
+		"Quoted": {"Negotiating", "Confirmed", "Cancelled"},
 		"Negotiating": {"Confirmed", "Cancelled"},
 		"Confirmed": {"In Preparation", "Cancelled"},
 		"In Preparation": {"Executed", "Cancelled"},
