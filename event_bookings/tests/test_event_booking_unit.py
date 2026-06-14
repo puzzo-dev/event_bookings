@@ -39,6 +39,7 @@ def _new_booking(**overrides):
 	eb.event_time = "10:00:00"
 	eb.event_end_time = None
 	eb.total_purchase_cost = 0
+	eb.services = []
 	eb.name = "EVT-001"
 	eb.flags = SimpleNamespace(ignore_permissions=False)
 	for k, v in overrides.items():
