@@ -55,8 +55,10 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 		result = format_whatsapp_message(tpl, doc)
 		self.assertEqual(result, "Event: John & Jane's Wedding — 2026")
 
+	@patch("frappe.throw")
+	@patch("frappe.log_error")
 	@patch("frappe.utils.formatdate", side_effect=lambda d: d)
-	def test_missing_placeholder_raises(self, _fmt):
+	def test_missing_placeholder_raises(self, _fmt, mock_log, mock_throw):
 		tpl = "Event: {event_name} by {organizer}"
-		with self.assertRaises(KeyError):
-			format_whatsapp_message(tpl, self._make_doc())
+		format_whatsapp_message(tpl, self._make_doc())
+		mock_throw.assert_called_once()

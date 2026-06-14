@@ -31,9 +31,7 @@ def sync_invoice_payment_status():
 		try:
 			si_status = frappe.db.get_value("Sales Invoice", eb.sales_invoice, "status")
 			if si_status == "Paid":
-				doc = frappe.get_doc("Event Booking", eb.name)
-				doc.booking_status = "Paid"
-				doc.save(ignore_permissions=True)
+				frappe.db.set_value("Event Booking", eb.name, "booking_status", "Paid")
 		except Exception:
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
 

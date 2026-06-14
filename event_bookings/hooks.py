@@ -260,15 +260,6 @@ fixtures = [
         "Shift Assignment", "Cost Center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
-    {"dt": "Workflow", "filters": [["document_type", "=", "Event Booking"]]},
-    {"dt": "Workflow State", "filters": [["name", "in", [
-        "New", "Quoted", "Negotiating", "Confirmed",
-        "In Preparation", "Executed", "Invoiced", "Paid", "Cancelled"
-    ]]]},
-    {"dt": "Workflow Action Master", "filters": [["name", "in", [
-        "Send Quote", "Negotiate", "Confirm", "Prepare",
-        "Execute", "Invoice", "Mark Paid", "Cancel"
-    ]]]},
     {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"

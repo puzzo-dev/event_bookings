@@ -16,23 +16,15 @@ def make_generic():
     
     doc.save(ignore_permissions=True)
     
-    # 2. Update Event Booking
+    # 2. Rename total_damages_cost to damages_cost if it exists on Event Booking
     doc_booking = frappe.get_doc("DocType", "Event Booking")
-    booking_remove = ["services"]
-    doc_booking.fields = [f for f in doc_booking.fields if f.fieldname not in booking_remove]
-    
-    # Rename total_damages_cost
     for f in doc_booking.fields:
         if f.fieldname == "total_damages_cost":
-            f.fieldname = "total_damage_assessment"
-            f.label = "Total Damage Assessment"
-            
+            f.fieldname = "damages_cost"
+            f.label = "Damages / Losses"
+
     doc_booking.save(ignore_permissions=True)
-    
-    # Drop Event Service Item table if it exists
-    if frappe.db.exists("DocType", "Event Service Item"):
-        frappe.delete_doc("DocType", "Event Service Item", force=1)
-        
+
     # Add Custom Fields to Sales Order Item
     create_sales_order_item_fields()
 

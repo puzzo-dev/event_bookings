@@ -18,14 +18,9 @@ class TestSyncInvoicePaymentStatus(unittest.TestCase):
 		]
 		mock_frappe.db.get_value.return_value = "Paid"
 
-		doc = MagicMock()
-		mock_frappe.get_doc.return_value = doc
-
 		sync_invoice_payment_status()
 
-		mock_frappe.get_doc.assert_called_once_with("Event Booking", "EVT-001")
-		self.assertEqual(doc.booking_status, "Paid")
-		doc.save.assert_called_once_with(ignore_permissions=True)
+		mock_frappe.db.set_value.assert_called_once_with("Event Booking", "EVT-001", "booking_status", "Paid")
 
 	def test_does_not_transition_when_invoice_unpaid(self, mock_frappe):
 		mock_frappe.get_all.return_value = [
@@ -53,13 +48,10 @@ class TestSyncInvoicePaymentStatus(unittest.TestCase):
 
 		mock_frappe.db.get_value.side_effect = get_value_side_effect
 
-		doc_a = MagicMock()
-		mock_frappe.get_doc.return_value = doc_a
-
 		sync_invoice_payment_status()
 
-		mock_frappe.get_doc.assert_called_once_with("Event Booking", "EVT-A")
-		self.assertEqual(doc_a.booking_status, "Paid")
+		mock_frappe.get_doc.assert_not_called()
+		mock_frappe.db.set_value.assert_called_once_with("Event Booking", "EVT-A", "booking_status", "Paid")
 
 
 @patch("event_bookings.utils.scheduler.frappe")
