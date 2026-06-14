@@ -53,7 +53,7 @@ class TestOnQuotationSubmit(unittest.TestCase):
 
 @patch("event_bookings.utils.erpnext_hooks.frappe")
 class TestOnSalesOrderSubmit(unittest.TestCase):
-	def test_links_sales_order_and_sets_total(self, mock_frappe):
+	def test_links_sales_order_to_booking(self, mock_frappe):
 		eb = _FakeEB()
 		mock_frappe.get_doc.return_value = eb
 
@@ -61,7 +61,6 @@ class TestOnSalesOrderSubmit(unittest.TestCase):
 		on_sales_order_submit(doc, "on_submit")
 
 		self.assertEqual(eb.sales_order, "SO-001")
-		self.assertEqual(eb.total_actual, 75000)
 
 	def test_skips_when_no_event_booking(self, mock_frappe):
 		doc = SimpleNamespace(event_booking="", name="SO-002", grand_total=0)

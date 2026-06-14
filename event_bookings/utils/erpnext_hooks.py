@@ -30,7 +30,7 @@ def on_quotation_submit(doc, method):
 
 
 def on_sales_order_submit(doc, method):
-	_update_linked_event_booking(doc, sales_order=doc.name, total_actual=doc.grand_total)
+	_update_linked_event_booking(doc, sales_order=doc.name)
 
 
 def on_sales_invoice_submit(doc, method):
@@ -52,3 +52,13 @@ def on_purchase_invoice_submit(doc, method):
 
 def on_shift_assignment_update(doc, method):
 	_update_linked_event_booking(doc, callback=lambda eb: eb.update_staff_assignment_counts())
+
+
+# def on_quotation_cancel(doc, method):
+# 	_update_linked_event_booking(doc, quotation=None)
+#
+# def on_sales_order_cancel(doc, method):
+# 	_update_linked_event_booking(doc, sales_order=None)
+#
+# def on_sales_invoice_cancel(doc, method):
+# 	_update_linked_event_booking(doc, sales_invoice=None)

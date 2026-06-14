@@ -5,11 +5,11 @@ from event_bookings.install import (
 	_get_first_active_root,
 	after_install,
 	create_event_coa_accounts,
-	seed_event_types,
 )
+from event_bookings.utils.seed import seed_event_types
 
 
-@patch("event_bookings.install.frappe")
+@patch("event_bookings.utils.seed.frappe")
 class TestSeedEventTypes(unittest.TestCase):
 	def test_creates_missing_types(self, mock_frappe):
 		mock_frappe.db.exists.return_value = False

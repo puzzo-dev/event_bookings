@@ -45,7 +45,7 @@ class TestEventBooking(FrappeTestCase):
 		self.assertTrue(doc.name)
 		self.assertTrue(doc.name.startswith("EVT-"))
 
-	def test_total_estimated_calculation(self):
+	def test_total_estimated_zero_without_linked_quotation(self):
 		doc = frappe.get_doc(
 			{
 				"doctype": "Event Booking",
@@ -56,19 +56,10 @@ class TestEventBooking(FrappeTestCase):
 				"event_time": "18:00:00",
 				"event_location": "Test Venue",
 				"booking_status": "New",
-				"services": [
-					{
-						"item": "Test Item",
-						"item_name": "Test Item",
-						"qty": 10,
-						"rate": 500,
-						"amount": 5000,
-					}
-				],
 			}
 		)
 		doc.insert(ignore_permissions=True)
-		self.assertEqual(doc.total_estimated, 5000)
+		self.assertEqual(doc.total_estimated, 0)
 
 	def test_past_date_validation(self):
 		from frappe.exceptions import ValidationError
