@@ -110,7 +110,7 @@ cd apps/event_bookings
 python -m pytest event_bookings/tests/ -q
 ```
 
-109 unit tests covering all modules. Tests use `unittest.mock` to mock `frappe` — no live Frappe site required.
+121 unit tests covering all modules. Tests use `unittest.mock` to mock `frappe` — no live Frappe site required.
 
 ## License
 

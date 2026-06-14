@@ -3,7 +3,7 @@
  "chart_name": "Event Revenue Trend",
  "chart_type": "Sum",
  "creation": "2026-06-13 05:54:07.475571",
- "currency": "NGN",
+ "currency": null,
  "docstatus": 0,
  "doctype": "Dashboard Chart",
  "document_type": "Event Booking",
