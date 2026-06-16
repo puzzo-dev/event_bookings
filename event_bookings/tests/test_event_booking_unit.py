@@ -33,6 +33,8 @@ def _new_booking(**overrides):
 	eb.booking_status = "New"
 	eb.customer = "Test Customer"
 	eb.event_name = "Test Event"
+	eb.event_date = "2026-08-01"
+	eb.event_time = "18:00:00"
 	eb.event_timing = "2026-08-01 18:00:00"
 	eb.event_location = "Venue"
 	eb.name = "EVT-001"
@@ -132,12 +134,12 @@ class TestValidateDates(unittest.TestCase):
 		mock_frappe.throw.assert_not_called()
 
 	def test_end_time_before_timing_throws(self, mock_today, mock_frappe):
-		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_time="2026-08-01 12:00:00")
+		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_datetime="2026-08-01 12:00:00")
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 
 	def test_end_time_equal_timing_throws(self, mock_today, mock_frappe):
-		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_time="2026-08-01 18:00:00")
+		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_datetime="2026-08-01 18:00:00")
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 

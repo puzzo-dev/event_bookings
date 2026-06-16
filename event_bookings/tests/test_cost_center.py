@@ -30,10 +30,11 @@ class TestEventCostCenter(FrappeTestCase):
             "event_name": "Cost Center Test Event",
             "customer": self.customer,
             "event_type": self.event_type,
-            "event_timing": frappe.utils.add_days(frappe.utils.today(), 14) + " 18:00:00",
+            "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
+            "event_time": "18:00:00",
             "event_location": "Test Venue",
             "booking_status": "New",
-            "booking_date": frappe.utils.now(),
+            "booking_date": frappe.utils.today(),
         }
         defaults.update(kwargs)
         doc = frappe.get_doc(defaults)

@@ -10,7 +10,8 @@ class TestEventBooking(FrappeTestCase):
 		doc = frappe.new_doc("Event Booking")
 		doc.event_name = "Test Event"
 		doc.booking_status = "New"
-		doc.event_timing = frappe.utils.add_days(frappe.utils.today(), 7) + " 10:00:00"
+		doc.event_date = frappe.utils.add_days(frappe.utils.today(), 7)
+		doc.event_time = "10:00:00"
 		doc.event_location = "Test Venue"
 		self.assertTrue(doc.event_name)
 
@@ -19,7 +20,8 @@ class TestEventBooking(FrappeTestCase):
 		doc = frappe.new_doc("Event Booking")
 		doc.event_name = "Test Event"
 		doc.booking_status = "New"
-		doc.event_timing = frappe.utils.add_days(frappe.utils.today(), 7) + " 10:00:00"
+		doc.event_date = frappe.utils.add_days(frappe.utils.today(), 7)
+		doc.event_time = "10:00:00"
 		doc.event_location = "Test Venue"
 		# Any status value should be accepted without a hardcoded transition error
 		doc.booking_status = "Paid"
