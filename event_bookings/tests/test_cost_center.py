@@ -30,49 +30,39 @@ class TestEventCostCenter(FrappeTestCase):
             "event_name": "Cost Center Test Event",
             "customer": self.customer,
             "event_type": self.event_type,
-            "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
-            "event_time": "18:00:00",
+            "event_timing": frappe.utils.add_days(frappe.utils.today(), 14) + " 18:00:00",
             "event_location": "Test Venue",
             "booking_status": "New",
+            "booking_date": frappe.utils.now(),
         }
         defaults.update(kwargs)
         doc = frappe.get_doc(defaults)
         doc.insert(ignore_permissions=True)
         return doc
 
-    def test_auto_cost_center_disabled_uses_default(self):
-        settings = frappe.get_single("Event Settings")
-        settings.auto_create_cost_center_per_event = 0
+    def test_manual_cost_center_selection(self):
+        """User can manually select a Cost Center on the Event Booking form."""
         parent_cc = frappe.db.get_value(
             "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 0}, "name"
         )
-        settings.default_cost_center = parent_cc
-        settings.save(ignore_permissions=True)
-
-        eb = self._make_event()
+        eb = self._make_event(event_cost_center=parent_cc)
         self.assertEqual(eb.event_cost_center, parent_cc)
 
-    def test_auto_cost_center_creates_child_on_confirm(self):
-        settings = frappe.get_single("Event Settings")
-        settings.auto_create_cost_center_per_event = 1
+    def test_cost_center_can_be_created_from_form(self):
+        """User can create a new Cost Center from the Event Booking form Link field."""
         parent_cc = frappe.db.get_value(
             "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 1}, "name"
         )
-        settings.default_cost_center = parent_cc
-        settings.save(ignore_permissions=True)
+        cc = frappe.get_doc({
+            "doctype": "Cost Center",
+            "cost_center_name": "_Test Event CC",
+            "parent_cost_center": parent_cc,
+            "company": frappe.defaults.get_defaults().get("company"),
+            "is_event_cost_center": 1,
+        }).insert(ignore_permissions=True)
 
-        eb = self._make_event()
-        self.assertFalse(eb.event_cost_center)
-
-        # Step through valid workflow transitions to reach Confirmed
-        for status in ("Quoted", "Negotiating", "Confirmed"):
-            eb.booking_status = status
-            eb.save(ignore_permissions=True)
-
-        self.assertTrue(eb.event_cost_center)
-        self.assertIn(eb.name, eb.event_cost_center)
-
-        cc = frappe.get_doc("Cost Center", eb.event_cost_center)
+        eb = self._make_event(event_cost_center=cc.name)
+        self.assertEqual(eb.event_cost_center, cc.name)
         self.assertEqual(cc.is_event_cost_center, 1)
         self.assertEqual(cc.parent_cost_center, parent_cc)
 

@@ -16,7 +16,7 @@ def get_columns():
         {"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
         {"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 150},
         {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
-        {"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 120},
+        {"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
         {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
         {"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
         {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
@@ -31,9 +31,9 @@ def get_columns():
 def get_data(filters):
     conditions = {}
     if filters.get("from_date"):
-        conditions["event_date"] = [">=", filters["from_date"]]
+        conditions["event_timing"] = [">=", filters["from_date"]]
     if filters.get("to_date"):
-        conditions["event_date"] = ["<=", filters["to_date"]]
+        conditions["event_timing"] = ["<=", filters["to_date"]]
     if filters.get("customer"):
         conditions["customer"] = filters["customer"]
     if filters.get("event_type"):
@@ -48,27 +48,31 @@ def get_data(filters):
             "name as event_name",
             "customer",
             "event_type",
-            "event_date",
+            "event_timing",
             "booking_status",
             "total_estimated",
             "total_actual",
             "quotation",
             "sales_invoice",
         ],
-        order_by="event_date asc",
+        order_by="event_timing asc",
+        limit_page_length=0,
     )
 
     today = frappe.utils.today()
+    event_names = tuple(eb.event_name for eb in bookings)
+    staff_map = _get_staff_counts_map(event_names)
+
     data = []
     for eb in bookings:
-        days_until = (frappe.utils.getdate(eb.event_date) - frappe.utils.getdate(today)).days if eb.event_date else 0
-        staff_required, staff_assigned = _get_staff_counts(eb.event_name)
+        days_until = (frappe.utils.getdate(eb.event_timing) - frappe.utils.getdate(today)).days if eb.event_timing else 0
+        staff_required, staff_assigned = staff_map.get(eb.event_name, (0, 0))
 
         data.append({
             "event_name": eb.event_name,
             "customer": eb.customer,
             "event_type": eb.event_type,
-            "event_date": eb.event_date,
+            "event_timing": eb.event_timing,
             "booking_status": eb.booking_status,
             "days_until_event": days_until,
             "total_estimated": eb.total_estimated or 0,
@@ -82,16 +86,24 @@ def get_data(filters):
     return data
 
 
-def _get_staff_counts(event_name):
-    """Return (qty_required, qty_assigned) for an event from staff requirements."""
+def _get_staff_counts_map(event_names):
+    """Return a dict mapping event_name → (qty_required, qty_assigned) from staff requirements."""
+    if not event_names:
+        return {}
     rows = frappe.db.sql(
         """
-        SELECT SUM(qty_required), SUM(qty_assigned)
+        SELECT
+            parent,
+            SUM(qty_required) AS qty_required,
+            SUM(qty_assigned) AS qty_assigned
         FROM `tabEvent Staff Requirement`
-        WHERE parent = %s
+        WHERE parent IN %s
+        GROUP BY parent
         """,
-        event_name,
+        (event_names,),
+        as_dict=True,
     )
-    if rows and rows[0]:
-        return rows[0][0] or 0, rows[0][1] or 0
-    return 0, 0
+    return {
+        r.parent: (r.qty_required or 0, r.qty_assigned or 0)
+        for r in rows
+    }

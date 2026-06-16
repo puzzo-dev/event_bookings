@@ -83,7 +83,6 @@ required_apps = ["erpnext", "hrms"]
 # ------------
 
 # before_install = "event_bookings.install.before_install"
-# after_install = "event_bookings.install.after_install"
 
 # Uninstallation
 # ------------
@@ -140,18 +139,23 @@ required_apps = ["erpnext", "hrms"]
 doc_events = {
 	"Quotation": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_quotation_cancel",
 	},
 	"Sales Order": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_order_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_order_cancel",
 	},
 	"Sales Invoice": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_invoice_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
 	"Stock Entry": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_stock_entry_cancel",
 	},
-	"Shift Assignment": {
-		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+	"Material Request": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_material_request_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_material_request_cancel",
 	},
 }
 
@@ -161,9 +165,6 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"event_bookings.utils.scheduler.daily"
-	],
-	"hourly": [
-		"event_bookings.utils.scheduler.hourly"
 	],
 }
 
@@ -253,18 +254,12 @@ after_install = "event_bookings.install.after_install"
 # Fixtures
 # --------
 fixtures = [
-    {"dt": "Custom Field", "filters": [["dt", "in", [
-        "Quotation", "Sales Order", "Sales Invoice",
-        "Purchase Invoice", "Journal Entry",
-        "Material Request", "Stock Entry", "Expense Claim",
-        "Shift Assignment", "Cost Center"
+    # Only sync custom fields owned by this app to avoid capturing other apps' fields.
+    {"dt": "Custom Field", "filters": [["fieldname", "in", [
+        "event_booking", "is_event_cost_center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
-    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
-    ]]]},
-    {"dt": "Dashboard Chart", "filters": [["name", "in", [
-        "Monthly Events", "Event Revenue Trend"
     ]]]},
 ]

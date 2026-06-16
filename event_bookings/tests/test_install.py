@@ -130,10 +130,12 @@ class TestGetFirstActiveRoot(unittest.TestCase):
 		self.assertIsNone(result)
 
 
+@patch("event_bookings.install.create_accounting_dimension")
 @patch("event_bookings.install.create_event_coa_accounts")
 @patch("event_bookings.install.seed_event_types")
 class TestAfterInstall(unittest.TestCase):
-	def test_calls_seed_and_coa(self, mock_seed, mock_coa):
+	def test_calls_seed_and_coa(self, mock_seed, mock_coa, mock_dim):
 		after_install()
 		mock_seed.assert_called_once()
 		mock_coa.assert_called_once()
+		mock_dim.assert_called_once()

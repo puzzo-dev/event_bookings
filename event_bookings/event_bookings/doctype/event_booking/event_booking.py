@@ -1,49 +1,28 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
-from frappe.utils import today, getdate
+from frappe.utils import today, getdate, flt, get_datetime, now_datetime
 
 
 class EventBooking(Document):
 	def validate(self):
 		self.validate_dates()
-		self.calculate_totals()
-
-	def before_insert(self):
-		self.set_defaults_from_settings()
+		if self._linked_docs_changed():
+			self.calculate_totals()
+		if self.booking_status == "Invoiced":
+			self.validate_review_requirement()
 
 	def before_save(self):
-		if self.has_status_changed():
-			self._validate_status_transition()
-			self.handle_status_transition()
+		self._auto_create_event_cost_center()
 
-	VALID_STATUS_TRANSITIONS = {
-		"New": {"Quoted", "Cancelled"},
-		"Quoted": {"Negotiating", "Cancelled"},
-		"Negotiating": {"Confirmed", "Cancelled"},
-		"Confirmed": {"In Preparation", "Cancelled"},
-		"In Preparation": {"Executed", "Cancelled"},
-		"Executed": {"Invoiced", "Cancelled"},
-		"Invoiced": {"Paid", "Cancelled"},
-		"Paid": {"Cancelled"},
-		"Cancelled": set(),
-	}
-
-	def _validate_status_transition(self):
-		if self.is_new():
-			return
-		old_status = frappe.db.get_value("Event Booking", self.name, "booking_status")
-		if old_status == self.booking_status:
-			return
-		allowed = self.VALID_STATUS_TRANSITIONS.get(old_status, set())
-		if self.booking_status not in allowed:
-			frappe.throw(
-				f"Invalid status transition: '{old_status}' → '{self.booking_status}'. "
-				f"Allowed transitions from '{old_status}': {', '.join(allowed) or 'none'}."
-			)
-
-	def on_update(self):
-		pass
+	def _linked_docs_changed(self):
+		"""Return True if any linked document field has changed from previous save."""
+		previous = self.get_doc_before_save()
+		if not previous:
+			return True
+		linked_fields = ("quotation", "sales_order", "sales_invoice", "stock_entry", "material_request")
+		return any(getattr(self, f) != getattr(previous, f) for f in linked_fields)
 
 	# -----------------------------------------------------------------
 	# Validations
@@ -54,114 +33,98 @@ class EventBooking(Document):
 		self.total_actual = self._get_doc_total("Sales Order", self.sales_order, "grand_total")
 		if not self.total_actual and self.sales_invoice:
 			self.total_actual = self._get_doc_total("Sales Invoice", self.sales_invoice, "grand_total")
+		# Calculate planner commission from Sales Partner rate
+		if self.event_planner:
+			commission_rate = frappe.db.get_value("Sales Partner", self.event_planner, "commission_rate") or 0
+			if commission_rate:
+				base = self.total_actual or self.total_estimated or 0
+				self.event_planner_commission_amount = base * (commission_rate / 100)
 
 	def _get_doc_total(self, doctype, name, total_field):
 		if not name:
 			return 0.0
 		try:
 			return frappe.db.get_value(doctype, name, total_field) or 0.0
-		except Exception:
+		except frappe.DatabaseError:
 			return 0.0
 
 	def validate_dates(self):
-		if self.event_date and getdate(self.event_date) < getdate(today()):
+		if self.event_timing and get_datetime(self.event_timing) < now_datetime():
 			if self.is_new():
-				frappe.throw("Event Date cannot be in the past for new bookings.")
+				frappe.throw(_("Event Timing cannot be in the past for new bookings."))
+		if self.event_end_time and self.event_timing:
+			if get_datetime(self.event_end_time) <= get_datetime(self.event_timing):
+				frappe.throw(_("Event End Time must be after Event Timing."))
 
-	# -----------------------------------------------------------------
-	# Defaults
-	# -----------------------------------------------------------------
+	def _auto_create_event_cost_center(self):
+		"""Auto-create a per-event Cost Center when status moves to Confirmed.
 
-	def set_cost_center(self):
-		settings = self.get_settings()
-		if not self.event_cost_center and settings.default_cost_center:
-			self.event_cost_center = settings.default_cost_center
-
-	def set_defaults_from_settings(self):
-		settings = self.get_settings()
-		if (
-			not self.event_cost_center
-			and settings.default_cost_center
-			and not settings.auto_create_cost_center_per_event
-		):
-			self.event_cost_center = settings.default_cost_center
-
-	def get_cost_center(self):
-		"""Return the event's cost center, falling back to the default from Event Settings."""
-		if self.event_cost_center:
-			return self.event_cost_center
-		return self.get_settings().default_cost_center
-
-	def ensure_event_cost_center(self):
+		Non-blocking: Validation or duplicate errors are logged, not thrown,
+		so the Event Booking save always succeeds.
+		"""
+		if not self.has_value_changed("booking_status"):
+			return
+		if self.booking_status != "Confirmed" or self.event_cost_center:
+			return
 		settings = self.get_settings()
 		if not settings.auto_create_cost_center_per_event:
-			if not self.event_cost_center and settings.default_cost_center:
-				self.event_cost_center = settings.default_cost_center
 			return
-
-		if self.event_cost_center:
-			return
-
-		parent_cc = settings.default_cost_center
-		if not parent_cc:
-			frappe.throw("Set a Default Cost Center in Event Settings to auto-create per-event cost centers.")
-
-		cc_name = f"{self.name} - {self.event_name}"
-		company = self.get_company_from_cost_center(parent_cc)
-		abbr = frappe.db.get_value("Company", company, "abbr")
-		full_cc_name = f"{cc_name} - {abbr}"
-
-		if not frappe.db.exists("Cost Center", full_cc_name):
-			if not frappe.has_permission("Cost Center", "create"):
-				frappe.throw("You do not have permission to create a Cost Center.")
-			cc = frappe.get_doc(
-				{
-					"doctype": "Cost Center",
-					"cost_center_name": cc_name,
-					"parent_cost_center": parent_cc,
-					"is_event_cost_center": 1,
-					"company": company,
-				}
-			)
+		default_cc = settings.default_cost_center
+		if not default_cc:
+			frappe.throw(_(
+				"Default Cost Center is required when Auto-Create Cost Center per Event is enabled. "
+				"Please configure it in Event Booking Settings."
+			))
+		company = frappe.defaults.get_defaults().get("company")
+		if not company:
+			company = frappe.db.get_value("Cost Center", default_cc, "company")
+		cc_name = f"{self.event_name} - {self.name}"
+		try:
+			cc = frappe.get_doc({
+				"doctype": "Cost Center",
+				"cost_center_name": cc_name,
+				"parent_cost_center": default_cc,
+				"company": company,
+				"is_event_cost_center": 1,
+			})
 			cc.insert(ignore_permissions=True)
-			full_cc_name = cc.name
+			self.event_cost_center = cc.name
+		except frappe.DuplicateEntryError:
+			# If somehow a Cost Center with this name already exists, try to link it.
+			existing = frappe.db.get_value("Cost Center", {"cost_center_name": cc_name}, "name")
+			if existing:
+				self.event_cost_center = existing
+		except frappe.ValidationError:
+			frappe.log_error(title=f"Failed to auto-create Cost Center for {self.name}")
 
-		self.event_cost_center = full_cc_name
-
-	def get_company_from_cost_center(self, cost_center):
-		return frappe.db.get_value(
-			"Cost Center", cost_center, "company"
-		) or frappe.defaults.get_defaults().get("company")
-
-	# -----------------------------------------------------------------
-	# Status Transition Hook
-	# -----------------------------------------------------------------
-
-	def has_status_changed(self):
-		if self.is_new():
-			return False
-		old_status = frappe.db.get_value("Event Booking", self.name, "booking_status")
-		return old_status != self.booking_status
-
-	def handle_status_transition(self):
-		status = self.booking_status
-
-		if status == "Quoted":
-			self.create_quotation()
-
-		elif status == "Confirmed":
-			self.ensure_event_cost_center()
-
-		elif status == "In Preparation":
-			self.create_shift_assignments()
+	def validate_review_requirement(self):
+		settings = self.get_settings()
+		if not settings.require_review:
+			return
+		if not frappe.db.exists("Booking Review", {
+			"event_booking": self.name,
+			"review_status": "Approved",
+		}):
+			frappe.throw(_(
+				"A post-event review is required before invoicing. "
+				"Please submit and approve a Booking Review for {0}."
+			).format(self.name))
 
 	# -----------------------------------------------------------------
-	# Document Creation Helpers
+	# Document Creation Helpers (called manually via action buttons)
 	# -----------------------------------------------------------------
 
 	def create_quotation(self):
 		if self.quotation:
 			return
+		if not frappe.has_permission("Quotation", "create"):
+			frappe.throw(
+				_(
+					"You do not have permission to create a Quotation. "
+					"Please ask a Sales Manager to create it for you."
+				),
+				frappe.PermissionError,
+			)
 		settings = self.get_settings()
 		qt = frappe.get_doc({
 			"doctype": "Quotation",
@@ -170,83 +133,26 @@ class EventBooking(Document):
 			"event_booking": self.name,
 			"cost_center": self.event_cost_center or settings.default_cost_center,
 		})
-		if not frappe.has_permission("Quotation", "create"):
-			frappe.throw("You do not have permission to create a Quotation.")
-		qt.insert(ignore_permissions=True)
+		try:
+			qt.insert()
+		except frappe.exceptions.ValidationError as e:
+			frappe.throw(_("Failed to create Quotation: {0}").format(str(e)))
 		self.quotation = qt.name
-
-	# -----------------------------------------------------------------
-	# Shift Assignments (HRMS Integration)
-	# -----------------------------------------------------------------
-
-	def create_shift_assignments(self):
-		settings = self.get_settings()
-		if not settings.default_shift_type:
-			frappe.throw("Set a Default Shift Type in Event Settings before creating Shift Assignments.")
-
-		failed = []
-		for req in self.get("staff_requirements") or []:
-			needed = int(req.get("qty_required") or 0) - int(req.get("qty_assigned") or 0)
-			for _ in range(max(0, needed)):
-				try:
-					shift = frappe.get_doc(
-						{
-							"doctype": "Shift Assignment",
-							"employee": None,
-							"designation": req.get("designation"),
-							"shift_type": settings.default_shift_type,
-							"date": self.event_date,
-							"status": "Planned",
-							"event_booking": self.name,
-						}
-					)
-					if not frappe.has_permission("Shift Assignment", "create"):
-						frappe.throw("You do not have permission to create a Shift Assignment.")
-					shift.insert(ignore_permissions=True)
-				except Exception:
-					failed.append(req.get("designation"))
-					frappe.log_error(title=f"Shift Assignment failed for {self.name} / {req.get('designation')}")
-
-		self.update_staff_assignment_counts()
-
-		if failed:
-			frappe.msgprint(
-				f"Some Shift Assignments could not be created: {', '.join(failed)}. Check the Error Log.",
-				indicator="orange",
-				alert=True,
-			)
-
-	def update_staff_assignment_counts(self):
-		rows = frappe.db.sql(
-			"""
-			SELECT designation, COUNT(*) as cnt
-			FROM `tabShift Assignment`
-			WHERE event_booking = %s AND docstatus < 2
-			GROUP BY designation
-			""",
-			self.name,
-			as_dict=True,
-		)
-		counts = {r.get("designation"): r.get("cnt") for r in rows}
-		for req in self.get("staff_requirements") or []:
-			count = counts.get(req.get("designation"), 0)
-			if isinstance(req, dict):
-				req["qty_assigned"] = count
-			else:
-				req.qty_assigned = count
 
 	# -----------------------------------------------------------------
 	# Utilities
 	# -----------------------------------------------------------------
 
 	def get_settings(self):
-		return frappe.get_cached_doc("Event Settings", "Event Settings")
+		return frappe.get_cached_doc("Event Booking Settings", "Event Booking Settings")
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def make_quotation(source_name, target_doc=None):
 	if not frappe.has_permission("Event Booking", "read", source_name):
-		frappe.throw("You do not have permission to read this Event Booking.")
+		frappe.throw(_("You do not have permission to read this Event Booking."))
+	if not frappe.has_permission("Quotation", "create"):
+		frappe.throw(_("You do not have permission to create a Quotation."))
 
 	def set_missing_values(source, target):
 		target.quotation_to = "Customer"
@@ -271,16 +177,18 @@ def make_quotation(source_name, target_doc=None):
 
 	return doclist
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def make_project(source_name, target_doc=None):
 	if not frappe.has_permission("Event Booking", "read", source_name):
-		frappe.throw("You do not have permission to read this Event Booking.")
+		frappe.throw(_("You do not have permission to read this Event Booking."))
+	if not frappe.has_permission("Project", "create"):
+		frappe.throw(_("You do not have permission to create a Project."))
 
 	def set_missing_values(source, target):
 		target.project_name = source.event_name or source.name
 		target.customer = source.customer
-		target.expected_start_date = source.booking_date or source.event_date
-		target.expected_end_date = source.event_date
+		target.expected_start_date = source.booking_date or source.event_timing
+		target.expected_end_date = getdate(source.event_timing)
 
 	doclist = get_mapped_doc(
 		"Event Booking",
@@ -300,10 +208,12 @@ def make_project(source_name, target_doc=None):
 	return doclist
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def get_items_from_quotation(quotation_name):
 	if not quotation_name:
 		return []
+	if not frappe.has_permission("Quotation", "read", quotation_name):
+		frappe.throw(_("You do not have permission to read this Quotation."))
 	qt = frappe.get_doc("Quotation", quotation_name)
 	return [
 		{
@@ -318,10 +228,12 @@ def get_items_from_quotation(quotation_name):
 	]
 
 
-@frappe.whitelist()
+@frappe.whitelist(allow_guest=False)
 def get_items_from_sales_order(sales_order_name):
 	if not sales_order_name:
 		return []
+	if not frappe.has_permission("Sales Order", "read", sales_order_name):
+		frappe.throw(_("You do not have permission to read this Sales Order."))
 	so = frappe.get_doc("Sales Order", sales_order_name)
 	return [
 		{
@@ -334,3 +246,5 @@ def get_items_from_sales_order(sales_order_name):
 		}
 		for item in so.items
 	]
+
+

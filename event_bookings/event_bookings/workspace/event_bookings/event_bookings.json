@@ -6,11 +6,11 @@
   },
   {
    "chart_name": "Event Revenue Trend",
-   "label": "Revenue Trend"
+   "label": "Event Revenue Trend"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
- "creation": "2026-06-13 03:00:00.000000",
+ "content": "[{\"id\":\"YiAebGTL0R\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"id\":\"KF7oaoNM72\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"id\":\"GrkQ8Yd3TL\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"yqtHjhrHXo\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":2}},{\"id\":\"OHTwJDAs1X\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"id\":\"Nm0IWhtf3e\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":2}},{\"id\":\"YEcWCrrYSs\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Booking Settings\",\"col\":2}},{\"id\":\"TI64RnzUgx\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Review\",\"col\":3}},{\"id\":\"TPjripw9q4\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Links</b></span>\",\"col\":12}},{\"id\":\"KObA3ELe6t\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"id\":\"e8JTxn6b9v\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"id\":\"PwTNGmElNK\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "creation": "2026-06-16 12:46:14.229290",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -18,7 +18,8 @@
  "hide_custom": 0,
  "icon": "calendar",
  "idx": 0,
- "is_editable": 1,
+ "indicator_color": "green",
+ "is_hidden": 0,
  "label": "Event Bookings",
  "links": [
   {
@@ -33,6 +34,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Quotation",
+   "link_count": 0,
    "link_to": "Quotation",
    "link_type": "DocType",
    "onboard": 0,
@@ -42,6 +44,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Sales Order",
+   "link_count": 0,
    "link_to": "Sales Order",
    "link_type": "DocType",
    "onboard": 0,
@@ -51,6 +54,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Sales Invoice",
+   "link_count": 0,
    "link_to": "Sales Invoice",
    "link_type": "DocType",
    "onboard": 0,
@@ -68,6 +72,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Purchase Order",
+   "link_count": 0,
    "link_to": "Purchase Order",
    "link_type": "DocType",
    "onboard": 0,
@@ -77,6 +82,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Purchase Invoice",
+   "link_count": 0,
    "link_to": "Purchase Invoice",
    "link_type": "DocType",
    "onboard": 0,
@@ -86,6 +92,7 @@
    "hidden": 0,
    "is_query_report": 0,
    "label": "Material Request",
+   "link_count": 0,
    "link_to": "Material Request",
    "link_type": "DocType",
    "onboard": 0,
@@ -103,6 +110,7 @@
    "hidden": 0,
    "is_query_report": 1,
    "label": "Profitability Report",
+   "link_count": 0,
    "link_to": "Event Booking Profitability",
    "link_type": "Report",
    "onboard": 0,
@@ -112,30 +120,40 @@
    "hidden": 0,
    "is_query_report": 1,
    "label": "Pipeline Report",
+   "link_count": 0,
    "link_to": "Event Booking Pipeline",
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-06-13 03:00:00.000000",
+ "modified": "2026-06-16 17:12:34.288804",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings",
  "number_cards": [],
+ "owner": "Administrator",
  "parent_page": "",
  "public": 1,
  "quick_lists": [],
  "roles": [
-  {"role": "Event Manager"},
-  {"role": "Event User"},
-  {"role": "Sales Manager"},
-  {"role": "System Manager"}
+  {
+   "role": "Event Manager"
+  },
+  {
+   "role": "Event User"
+  },
+  {
+   "role": "Sales Manager"
+  },
+  {
+   "role": "System Manager"
+  }
  ],
- "sequence_id": 1,
+ "sequence_id": 1.0,
  "shortcuts": [
   {
-   "color": "Blue",
+   "color": "blue",
    "doc_view": "New",
    "format": "",
    "icon": "plus",
@@ -145,7 +163,7 @@
    "type": "DocType"
   },
   {
-   "color": "Green",
+   "color": "green",
    "doc_view": "List",
    "format": "",
    "icon": "list",
@@ -155,7 +173,7 @@
    "type": "DocType"
   },
   {
-   "color": "Orange",
+   "color": "orange",
    "doc_view": "List",
    "format": "",
    "icon": "settings",
@@ -165,12 +183,22 @@
    "type": "DocType"
   },
   {
-   "color": "Grey",
-   "doc_view": "List",
+   "color": "grey",
+   "doc_view": "",
    "format": "",
    "icon": "settings",
-   "label": "Event Settings",
-   "link_to": "Event Settings",
+   "label": "Event Booking Settings",
+   "link_to": "Event Booking Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "pink",
+   "doc_view": "List",
+   "format": "",
+   "icon": "star",
+   "label": "Booking Review",
+   "link_to": "Booking Review",
    "stats_filter": "",
    "type": "DocType"
   }
