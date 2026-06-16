@@ -19,10 +19,11 @@ class TestEventBooking(FrappeTestCase):
 				"event_name": "Test Birthday Party",
 				"customer": self.test_customer,
 				"event_type": self.test_event_type,
-				"event_timing": frappe.utils.add_days(frappe.utils.today(), 7) + " 18:00:00",
+				"event_date": frappe.utils.add_days(frappe.utils.today(), 7),
+				"event_time": "18:00:00",
 				"event_location": "Test Venue",
 				"booking_status": "New",
-				"booking_date": frappe.utils.now(),
+				"booking_date": frappe.utils.today(),
 			}
 		)
 		doc.insert(ignore_permissions=True)
@@ -36,10 +37,11 @@ class TestEventBooking(FrappeTestCase):
 				"event_name": "Test Calculation",
 				"customer": self.test_customer,
 				"event_type": self.test_event_type,
-				"event_timing": frappe.utils.add_days(frappe.utils.today(), 7) + " 18:00:00",
+				"event_date": frappe.utils.add_days(frappe.utils.today(), 7),
+				"event_time": "18:00:00",
 				"event_location": "Test Venue",
 				"booking_status": "New",
-				"booking_date": frappe.utils.now(),
+				"booking_date": frappe.utils.today(),
 			}
 		)
 		doc.insert(ignore_permissions=True)
@@ -54,10 +56,11 @@ class TestEventBooking(FrappeTestCase):
 				"event_name": "Test Past Date",
 				"customer": self.test_customer,
 				"event_type": self.test_event_type,
-				"event_timing": frappe.utils.add_days(frappe.utils.today(), -1) + " 18:00:00",
+				"event_date": frappe.utils.add_days(frappe.utils.today(), -1),
+				"event_time": "18:00:00",
 				"event_location": "Test Venue",
 				"booking_status": "New",
-				"booking_date": frappe.utils.now(),
+				"booking_date": frappe.utils.today(),
 			}
 		)
 		with self.assertRaises(ValidationError):

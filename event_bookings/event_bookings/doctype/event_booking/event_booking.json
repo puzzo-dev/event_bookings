@@ -12,6 +12,7 @@
   "event_name",
   "booking_status",
   "booking_date",
+  "booking_time",
   "customer",
   "contact_person",
   "col_type",
@@ -20,7 +21,9 @@
   "event_cost_center",
   "project",
   "sec_logistics",
-  "event_timing",
+  "event_date",
+  "event_time",
+  "event_end_date",
   "event_end_time",
   "col_loc",
   "guest_count",
@@ -70,12 +73,17 @@
    "search_index": 1
   },
   {
-   "default": "Now",
+   "default": "Today",
    "fieldname": "booking_date",
-   "fieldtype": "Datetime",
+   "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Booking Date & Time",
+   "label": "Booking Date",
    "reqd": 1
+  },
+  {
+   "fieldname": "booking_time",
+   "fieldtype": "Time",
+   "label": "Booking Time"
   },
   {
    "fieldname": "customer",
@@ -133,15 +141,37 @@
   {
    "fieldname": "event_timing",
    "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Event Datetime"
+  },
+  {
+   "fieldname": "event_date",
+   "fieldtype": "Date",
    "in_list_view": 1,
-   "label": "Event Timing",
-   "reqd": 1,
-   "search_index": 1
+   "label": "Event Date",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_time",
+   "fieldtype": "Time",
+   "label": "Event Time",
+   "reqd": 1
+  },
+  {
+   "fieldname": "event_end_datetime",
+   "fieldtype": "Datetime",
+   "hidden": 1,
+   "label": "Event End Datetime"
+  },
+  {
+   "fieldname": "event_end_date",
+   "fieldtype": "Date",
+   "label": "Event End Date"
   },
   {
    "fieldname": "event_end_time",
-   "fieldtype": "Datetime",
-   "label": "Event End Date & Time"
+   "fieldtype": "Time",
+   "label": "Event End Time"
   },
   {
    "fieldname": "col_loc",

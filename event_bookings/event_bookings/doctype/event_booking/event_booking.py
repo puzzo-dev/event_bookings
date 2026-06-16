@@ -7,6 +7,7 @@ from frappe.utils import today, getdate, flt, get_datetime, now_datetime
 
 class EventBooking(Document):
 	def validate(self):
+		self._sync_datetime_fields()
 		self.validate_dates()
 		if self._linked_docs_changed():
 			self.calculate_totals()
@@ -51,10 +52,28 @@ class EventBooking(Document):
 	def validate_dates(self):
 		if self.event_timing and get_datetime(self.event_timing) < now_datetime():
 			if self.is_new():
-				frappe.throw(_("Event Timing cannot be in the past for new bookings."))
-		if self.event_end_time and self.event_timing:
-			if get_datetime(self.event_end_time) <= get_datetime(self.event_timing):
+				frappe.throw(_("Event Date and Time cannot be in the past for new bookings."))
+		if self.event_end_datetime and self.event_timing:
+			if get_datetime(self.event_end_datetime) <= get_datetime(self.event_timing):
 				frappe.throw(_("Event End Time must be after Event Timing."))
+		if self.event_end_date and self.event_date:
+			if getdate(self.event_end_date) < getdate(self.event_date):
+				frappe.throw(_("Event End Date must be on or after Event Date."))
+			elif self.event_end_date == self.event_date and self.event_end_time and self.event_time:
+				if self.event_end_time <= self.event_time:
+					frappe.throw(_("Event End Time must be after Event Time."))
+
+	def _sync_datetime_fields(self):
+		"""Combine separate Date + Time fields into hidden Datetime fields for backward compatibility."""
+		from frappe.utils import combine_datetime
+		if self.event_date and self.event_time:
+			self.event_timing = combine_datetime(self.event_date, self.event_time)
+		elif self.event_date:
+			self.event_timing = combine_datetime(self.event_date, "00:00:00")
+		if self.event_end_date and self.event_end_time:
+			self.event_end_datetime = combine_datetime(self.event_end_date, self.event_end_time)
+		elif self.event_end_date:
+			self.event_end_datetime = combine_datetime(self.event_end_date, "00:00:00")
 
 	def _auto_create_event_cost_center(self):
 		"""Auto-create a per-event Cost Center when status moves to Confirmed.
@@ -187,8 +206,8 @@ def make_project(source_name, target_doc=None):
 	def set_missing_values(source, target):
 		target.project_name = source.event_name or source.name
 		target.customer = source.customer
-		target.expected_start_date = source.booking_date or source.event_timing
-		target.expected_end_date = getdate(source.event_timing)
+		target.expected_start_date = source.booking_date or source.event_date
+		target.expected_end_date = getdate(source.event_date)
 
 	doclist = get_mapped_doc(
 		"Event Booking",

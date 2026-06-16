@@ -27,12 +27,33 @@ frappe.ui.form.on("Event Booking", {
         }
     },
 
+    event_date(frm) {
+        _sync_event_timing(frm);
+    },
+
+    event_time(frm) {
+        _sync_event_timing(frm);
+    },
+
+    event_end_date(frm) {
+        _sync_event_end_datetime(frm);
+    },
+
     event_end_time(frm) {
-        if (frm.doc.event_end_time && frm.doc.event_timing) {
-            if (new Date(frm.doc.event_end_time) <= new Date(frm.doc.event_timing)) {
-                frappe.msgprint(__('Event End Time must be after Event Timing.'));
-                frm.set_value('event_end_time', null);
-            }
-        }
+        _sync_event_end_datetime(frm);
     },
 });
+
+function _sync_event_timing(frm) {
+    if (frm.doc.event_date && frm.doc.event_time) {
+        frm.set_value('event_timing', frm.doc.event_date + ' ' + frm.doc.event_time);
+    }
+}
+
+function _sync_event_end_datetime(frm) {
+    const end_date = frm.doc.event_end_date;
+    const end_time = frm.doc.event_end_time;
+    if (end_date && end_time) {
+        frm.set_value('event_end_datetime', end_date + ' ' + end_time);
+    }
+}
