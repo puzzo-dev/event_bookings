@@ -10,7 +10,7 @@ def run():
     results = {}
 
     # 1. Check field exists in meta (works for Single DocTypes)
-    meta = frappe.get_meta("Event Settings")
+    meta = frappe.get_meta("Event Booking Settings")
     results["event_settings_field_exists"] = bool(
         meta.get_field("auto_create_cost_center_per_event")
     )
@@ -22,10 +22,10 @@ def run():
 
     # 3. Check Event Settings values (uses tabSingles)
     results["auto_create_enabled"] = bool(
-        frappe.db.get_single_value("Event Settings", "auto_create_cost_center_per_event")
+        frappe.db.get_single_value("Event Booking Settings", "auto_create_cost_center_per_event")
     )
     results["default_cost_center"] = frappe.db.get_single_value(
-        "Event Settings", "default_cost_center"
+        "Event Booking Settings", "default_cost_center"
     )
 
     # 4. Count event-specific cost centers
@@ -70,8 +70,7 @@ def test_create_event():
         "event_name": "Per-Event CC Verification",
         "customer": customer,
         "event_type": event_type,
-        "event_date": frappe.utils.add_days(frappe.utils.today(), 21),
-        "event_time": "18:00:00",
+        "event_timing": frappe.utils.add_days(frappe.utils.today(), 21) + " 18:00:00",
         "event_location": "Test Venue",
         "booking_status": "New",
     })

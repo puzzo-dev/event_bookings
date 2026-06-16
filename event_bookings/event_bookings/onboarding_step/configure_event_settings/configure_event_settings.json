@@ -10,11 +10,11 @@
  "is_skipped": 0,
  "modified": "2026-06-13 22:48:37.437224",
  "modified_by": "Administrator",
- "name": "Configure Event Settings",
+ "name": "Configure Event Booking Settings",
  "owner": "Administrator",
- "reference_document": "Event Settings",
+ "reference_document": "Event Booking Settings",
  "show_form_tour": 0,
  "show_full_form": 0,
- "title": "Configure Event Settings",
+ "title": "Configure Event Booking Settings",
  "validate_action": 1
 }

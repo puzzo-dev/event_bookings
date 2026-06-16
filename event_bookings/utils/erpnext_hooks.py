@@ -2,27 +2,23 @@ import frappe
 
 
 def _update_linked_event_booking(doc, callback=None, **field_updates):
-	"""Fetch the linked Event Booking, apply field updates, and save.
+	"""Fetch the linked Event Booking and apply field updates.
 
-	Errors are logged and surfaced via msgprint so that failures in Event Booking
-	back-linking do not block the ERPNext document from being submitted.
+	If the Event Booking cannot be successfully updated, the error will bubble up
+	and roll back the ERPNext document submission to ensure data consistency.
 	"""
-	if not doc.event_booking:
+	if not getattr(doc, "event_booking", None):
 		return
-	try:
-		eb = frappe.get_doc("Event Booking", doc.event_booking)
-		for field, value in field_updates.items():
-			setattr(eb, field, value)
-		if callback:
-			callback(eb)
-		eb.save(ignore_permissions=True)
-	except Exception:
-		frappe.log_error(title=f"Event Booking link failed on {doc.doctype} {doc.name}")
-		frappe.msgprint(
-			f"Could not update Event Booking {doc.event_booking}. Check the Error Log.",
-			indicator="orange",
-			alert=True,
-		)
+
+	eb = frappe.get_doc("Event Booking", doc.event_booking)
+	for field, value in field_updates.items():
+		setattr(eb, field, value)
+	if callback:
+		callback(eb)
+
+	# Event Booking is not submittable (docstatus always 0); always use save()
+	# so that validate, before_save, and version tracking fire correctly.
+	eb.save()
 
 
 def on_quotation_submit(doc, method):
@@ -38,19 +34,30 @@ def on_sales_invoice_submit(doc, method):
 
 
 def on_stock_entry_submit(doc, method):
-	if doc.stock_entry_type == "Material Issue":
-		_update_linked_event_booking(doc)
+	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
+		_update_linked_event_booking(doc, stock_entry=doc.name)
 
 
-def on_shift_assignment_update(doc, method):
-	_update_linked_event_booking(doc, callback=lambda eb: eb.update_staff_assignment_counts())
+def on_stock_entry_cancel(doc, method):
+	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
+		_update_linked_event_booking(doc, stock_entry=None)
 
 
-# def on_quotation_cancel(doc, method):
-# 	_update_linked_event_booking(doc, quotation=None)
-#
-# def on_sales_order_cancel(doc, method):
-# 	_update_linked_event_booking(doc, sales_order=None)
-#
-# def on_sales_invoice_cancel(doc, method):
-# 	_update_linked_event_booking(doc, sales_invoice=None)
+def on_quotation_cancel(doc, method):
+	_update_linked_event_booking(doc, quotation=None)
+
+
+def on_sales_order_cancel(doc, method):
+	_update_linked_event_booking(doc, sales_order=None)
+
+
+def on_sales_invoice_cancel(doc, method):
+	_update_linked_event_booking(doc, sales_invoice=None)
+
+
+def on_material_request_submit(doc, method):
+	_update_linked_event_booking(doc, material_request=doc.name)
+
+
+def on_material_request_cancel(doc, method):
+	_update_linked_event_booking(doc, material_request=None)

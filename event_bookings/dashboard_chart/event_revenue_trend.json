@@ -1,5 +1,5 @@
 {
- "based_on": "event_date",
+ "based_on": "event_timing",
  "chart_name": "Event Revenue Trend",
  "chart_type": "Sum",
  "creation": "2026-06-13 03:00:00.000000",

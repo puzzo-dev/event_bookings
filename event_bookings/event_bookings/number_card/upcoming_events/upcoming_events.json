@@ -1,11 +1,10 @@
 {
  "aggregate_function_based_on": "name",
  "creation": "2026-06-13 05:54:07.090378",
- "currency": "NGN",
  "docstatus": 0,
  "doctype": "Number Card",
  "document_type": "Event Booking",
- "filters_json": "[[\"Event Booking\",\"event_date\",\">=\",\"Today\",false]]",
+ "filters_json": "[[\"Event Booking\",\"event_timing\",\">=\",\"Today\",false]]",
  "function": "Count",
  "idx": 0,
  "is_public": 1,

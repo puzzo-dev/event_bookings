@@ -10,13 +10,13 @@
    },
    {
     "chart_name": "Event Revenue Trend",
-    "label": "Revenue Trend",
+    "label": "Event Revenue Trend",
     "parent": "Event Bookings",
     "parentfield": "charts",
     "parenttype": "Workspace"
    }
   ],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>ShortCuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+  "content": "[{\"type\": \"chart\", \"data\": {\"chart_name\": \"Event Revenue Trend\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Monthly Events\", \"col\": 6}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 2}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 2}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -124,7 +124,7 @@
     "type": "Link"
    }
   ],
-  "modified": "2026-06-13 15:50:04.418055",
+  "modified": "2026-06-15 15:30:00.000000",
   "module": "Event Bookings",
   "name": "Event Bookings",
   "number_cards": [],
@@ -161,7 +161,7 @@
   "sequence_id": 1.0,
   "shortcuts": [
    {
-    "color": "Blue",
+    "color": "blue",
     "doc_view": "New",
     "format": "",
     "icon": "plus",
@@ -178,7 +178,7 @@
     "url": null
    },
    {
-    "color": "Green",
+    "color": "green",
     "doc_view": "List",
     "format": "",
     "icon": "list",
@@ -195,7 +195,7 @@
     "url": null
    },
    {
-    "color": "Orange",
+    "color": "orange",
     "doc_view": "List",
     "format": "",
     "icon": "settings",
@@ -212,13 +212,30 @@
     "url": null
    },
    {
-    "color": "Grey",
-    "doc_view": "List",
+    "color": "grey",
+    "doc_view": "",
     "format": "",
     "icon": "settings",
     "kanban_board": null,
-    "label": "Event Settings",
-    "link_to": "Event Settings",
+    "label": "Event Booking Settings",
+    "link_to": "Event Booking Settings",
+    "parent": "Event Bookings",
+    "parentfield": "shortcuts",
+    "parenttype": "Workspace",
+    "report_ref_doctype": null,
+    "restrict_to_domain": null,
+    "stats_filter": "",
+    "type": "DocType",
+    "url": null
+   },
+   {
+    "color": "pink",
+    "doc_view": "List",
+    "format": "",
+    "icon": "star",
+    "kanban_board": null,
+    "label": "Booking Review",
+    "link_to": "Booking Review",
     "parent": "Event Bookings",
     "parentfield": "shortcuts",
     "parenttype": "Workspace",

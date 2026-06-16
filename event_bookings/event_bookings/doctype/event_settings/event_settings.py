@@ -1,9 +1,0 @@
-# Copyright (c) 2026, Avril Beetails and contributors
-# For license information, please see license.txt
-
-# import frappe
-from frappe.model.document import Document
-
-
-class EventSettings(Document):
-	pass

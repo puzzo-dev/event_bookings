@@ -16,10 +16,10 @@
    "width": 150
   },
   {
-   "fieldname": "event_date",
-   "fieldtype": "Date",
-   "label": "Event Date",
-   "width": 120
+   "fieldname": "event_timing",
+   "fieldtype": "Datetime",
+   "label": "Event Timing",
+   "width": 150
   },
   {
    "fieldname": "booking_status",
@@ -43,12 +43,6 @@
    "fieldname": "cogs",
    "fieldtype": "Currency",
    "label": "COGS",
-   "width": 120
-  },
-  {
-   "fieldname": "damages_cost",
-   "fieldtype": "Currency",
-   "label": "Damages / Losses",
    "width": 120
   },
   {

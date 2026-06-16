@@ -12,7 +12,7 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 		defaults = {
 			"event_name": "Annual Gala",
 			"customer": "Acme Corp",
-			"event_date": "2026-07-15",
+			"event_timing": "2026-07-15 18:00:00",
 			"event_location": "Grand Ballroom",
 		}
 		defaults.update(kwargs)
@@ -20,7 +20,7 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 
 	@patch("frappe.utils.formatdate", side_effect=lambda d: d)
 	def test_basic_substitution(self, _fmt):
-		tpl = "Event: {event_name} for {customer} on {event_date} at {event_location}"
+		tpl = "Event: {event_name} for {customer} on {event_timing} at {event_location}"
 		result = format_whatsapp_message(tpl, self._make_doc())
 		self.assertEqual(
 			result,

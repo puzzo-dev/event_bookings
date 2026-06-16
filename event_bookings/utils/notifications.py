@@ -11,7 +11,7 @@ def format_whatsapp_message(template, doc):
 		return template.format(
 			event_name=doc.event_name,
 			customer=doc.customer,
-			event_date=formatdate(doc.event_date),
+			event_timing=formatdate(doc.event_timing) if hasattr(doc, "event_timing") else "",
 			event_location=doc.event_location,
 		)
 	except (KeyError, AttributeError) as exc:

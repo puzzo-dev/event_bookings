@@ -3,10 +3,12 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from event_bookings.utils.erpnext_hooks import (
+	on_quotation_cancel,
 	on_quotation_submit,
+	on_sales_invoice_cancel,
 	on_sales_invoice_submit,
+	on_sales_order_cancel,
 	on_sales_order_submit,
-	on_shift_assignment_update,
 	on_stock_entry_submit,
 )
 
@@ -22,9 +24,6 @@ class _FakeEB:
 
 	def save(self, **kwargs):
 		self._saved = True
-
-	def update_staff_assignment_counts(self):
-		self._staff_updated = True
 
 
 @patch("event_bookings.utils.erpnext_hooks.frappe")
@@ -115,18 +114,31 @@ class TestOnStockEntrySubmit(unittest.TestCase):
 
 
 @patch("event_bookings.utils.erpnext_hooks.frappe")
-class TestOnShiftAssignmentUpdate(unittest.TestCase):
-	def test_updates_staff_counts(self, mock_frappe):
+class TestCancelHooks(unittest.TestCase):
+	def test_quotation_cancel_unlinks(self, mock_frappe):
 		eb = _FakeEB()
 		mock_frappe.get_doc.return_value = eb
 
-		doc = SimpleNamespace(event_booking="EVT-001")
-		on_shift_assignment_update(doc, "on_update")
+		doc = SimpleNamespace(event_booking="EVT-001", name="QTN-001")
+		on_quotation_cancel(doc, "on_cancel")
 
-		self.assertTrue(eb._staff_updated)
-		self.assertTrue(eb._saved)
+		mock_frappe.get_doc.assert_called_once_with("Event Booking", "EVT-001")
+		self.assertIsNone(eb.quotation)
 
-	def test_skips_when_no_event_booking(self, mock_frappe):
-		doc = SimpleNamespace(event_booking="")
-		on_shift_assignment_update(doc, "on_update")
-		mock_frappe.get_doc.assert_not_called()
+	def test_sales_order_cancel_unlinks(self, mock_frappe):
+		eb = _FakeEB()
+		mock_frappe.get_doc.return_value = eb
+
+		doc = SimpleNamespace(event_booking="EVT-001", name="SO-001")
+		on_sales_order_cancel(doc, "on_cancel")
+
+		self.assertIsNone(eb.sales_order)
+
+	def test_sales_invoice_cancel_unlinks(self, mock_frappe):
+		eb = _FakeEB()
+		mock_frappe.get_doc.return_value = eb
+
+		doc = SimpleNamespace(event_booking="EVT-001", name="SINV-001")
+		on_sales_invoice_cancel(doc, "on_cancel")
+
+		self.assertIsNone(eb.sales_invoice)
