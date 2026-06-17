@@ -142,7 +142,8 @@
    "fieldname": "event_timing",
    "fieldtype": "Datetime",
    "hidden": 1,
-   "label": "Event Datetime"
+   "label": "Event Timing",
+   "search_index": 1
   },
   {
    "fieldname": "event_date",

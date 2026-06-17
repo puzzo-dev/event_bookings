@@ -124,21 +124,6 @@ def _build_event_recipients(ev, contact_emails, customer_emails):
 	return recipients
 
 
-def _get_event_notification_recipients(ev):
-	"""Build recipient list from customer primary contact and settings fallback.
-
-	Deprecated for bulk operations; use _build_event_recipients with pre-fetched maps.
-	"""
-	recipients = []
-	if ev.contact_person:
-		email = frappe.db.get_value("Contact", ev.contact_person, "email_id")
-		if email:
-			recipients.append(email)
-	if not recipients:
-		customer_email = frappe.db.get_value("Customer", ev.customer, "email_id")
-		if customer_email:
-			recipients.append(customer_email)
-	return recipients
 
 
 def _get_manager_emails():

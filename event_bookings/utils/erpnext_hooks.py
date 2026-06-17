@@ -18,7 +18,11 @@ def _update_linked_event_booking(doc, callback=None, **field_updates):
 
 	# Event Booking is not submittable (docstatus always 0); always use save()
 	# so that validate, before_save, and version tracking fire correctly.
-	eb.save()
+	try:
+		eb.save()
+	except frappe.ValidationError:
+		frappe.log_error(title=f"Failed to update linked Event Booking {eb.name} on submit of {doc.doctype} {doc.name}")
+		# We do not re-raise because we don't want to block the ERPNext document submission
 
 
 def on_quotation_submit(doc, method):
