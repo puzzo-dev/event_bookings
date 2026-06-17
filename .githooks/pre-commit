@@ -1,10 +1,10 @@
 #!/bin/bash
 # Auto-version: major.minor.fixes based on commits since latest tag
 
-TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-TAG="${TAG#v}"
+RAW_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+TAG="${RAW_TAG#v}"
 BASE=$(echo "$TAG" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
-COMMITS=$(git rev-list --count "${TAG}"..HEAD 2>/dev/null || echo "0")
+COMMITS=$(git rev-list --count "${RAW_TAG}"..HEAD 2>/dev/null || echo "0")
 VERSION="${BASE}.${COMMITS}"
 
 INIT_FILE="event_bookings/__init__.py"
