@@ -209,12 +209,14 @@
    "fieldtype": "Column Break"
   },
   {
+   "default": "0",
    "fieldname": "total_estimated",
    "fieldtype": "Currency",
    "label": "Total Estimated",
    "read_only": 1
   },
   {
+   "default": "0",
    "fieldname": "total_actual",
    "fieldtype": "Currency",
    "label": "Total Actual",
