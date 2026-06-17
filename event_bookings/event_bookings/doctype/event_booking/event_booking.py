@@ -65,15 +65,23 @@ class EventBooking(Document):
 
 	def _sync_datetime_fields(self):
 		"""Combine separate Date + Time fields into hidden Datetime fields for backward compatibility."""
-		from frappe.utils import combine_datetime
+		from datetime import datetime, time as dt_time
+		from frappe.utils import getdate
+
+		def _to_time(t):
+			if isinstance(t, str):
+				hour, minute, second = map(int, t.split(":"))
+				return dt_time(hour, minute, second)
+			return t or dt_time(0, 0, 0)
+
 		if self.event_date and self.event_time:
-			self.event_timing = combine_datetime(self.event_date, self.event_time)
+			self.event_timing = datetime.combine(getdate(self.event_date), _to_time(self.event_time))
 		elif self.event_date:
-			self.event_timing = combine_datetime(self.event_date, "00:00:00")
+			self.event_timing = datetime.combine(getdate(self.event_date), dt_time(0, 0, 0))
 		if self.event_end_date and self.event_end_time:
-			self.event_end_datetime = combine_datetime(self.event_end_date, self.event_end_time)
+			self.event_end_datetime = datetime.combine(getdate(self.event_end_date), _to_time(self.event_end_time))
 		elif self.event_end_date:
-			self.event_end_datetime = combine_datetime(self.event_end_date, "00:00:00")
+			self.event_end_datetime = datetime.combine(getdate(self.event_end_date), dt_time(0, 0, 0))
 
 	def _auto_create_event_cost_center(self):
 		"""Auto-create a per-event Cost Center when status moves to Confirmed.
