@@ -9,8 +9,8 @@
    "label": "Event Revenue Trend"
   }
  ],
- "content": "[{\"id\":\"j4Klw1pqL1\",\"type\":\"onboarding\",\"data\":{\"onboarding_name\":\"Event Bookings Onboarding\",\"col\":12}},{\"id\":\"t9R4OIHABW\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"id\":\"T3IfFwNoNG\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"id\":\"yNmfkOMTUj\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"mgwdQ-kFVS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":4}},{\"id\":\"7a-qUTNz4Z\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":4}},{\"id\":\"fI79hKwKxf\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":4}},{\"id\":\"KcLpCC_7il\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Booking Settings\",\"col\":4}},{\"id\":\"Ikm2QGk_Cd\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Review\",\"col\":4}},{\"id\":\"HQitCbvw_d\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Links</b></span>\",\"col\":12}},{\"id\":\"zNfZgPEFHn\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"id\":\"ZxjFmNDSnI\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"id\":\"nmLhHvrxK0\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
- "creation": "2026-06-17 16:24:09.963532",
+ "content": "[{\"id\":\"-Z8Zm5-JY2\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"id\":\"UkL5hcIQU3\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"id\":\"CtkPvFvPBd\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"5VYeeZjyoL\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":4}},{\"id\":\"6pAUqmhMol\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"id\":\"78WXa7wVZy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":4}},{\"id\":\"aBVf8eePfH\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Booking Settings\",\"col\":4}},{\"id\":\"Sb8D3-aL8-\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Review\",\"col\":4}},{\"id\":\"rBD4fV1-tm\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Links</b></span>\",\"col\":12}},{\"id\":\"XhPkGFc915\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"id\":\"ohkTZOa2Bt\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"id\":\"4CmnO9Uyv8\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "creation": "2026-06-17 20:21:48.256016",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -127,7 +127,7 @@
    "type": "Link"
   }
  ],
- "modified": "2026-06-17 17:02:14.454839",
+ "modified": "2026-06-17 20:29:30.714653",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings",
