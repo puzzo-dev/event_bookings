@@ -8,7 +8,17 @@ def execute(filters=None):
 
     columns = get_columns()
     data = get_data(filters)
-    return columns, data
+    
+    total_est = sum(row.get("total_estimated", 0) for row in data)
+    total_act = sum(row.get("total_actual", 0) for row in data)
+    
+    report_summary = [
+        {"value": len(data), "indicator": "Blue", "label": _("Total Events"), "datatype": "Int"},
+        {"value": total_est, "indicator": "Green", "label": _("Total Estimated Revenue"), "datatype": "Currency"},
+        {"value": total_act, "indicator": "Green", "label": _("Total Actual Revenue"), "datatype": "Currency"},
+    ]
+    
+    return columns, data, None, None, report_summary
 
 
 def get_columns():
@@ -30,10 +40,15 @@ def get_columns():
 
 def get_data(filters):
     conditions = {}
-    if filters.get("from_date"):
-        conditions["event_timing"] = [">=", filters["from_date"]]
-    if filters.get("to_date"):
-        conditions["event_timing"] = ["<=", filters["to_date"]]
+    if filters.get("from_date") and filters.get("to_date"):
+        conditions["event_timing"] = ["between", [
+            f"{filters['from_date']} 00:00:00",
+            f"{filters['to_date']} 23:59:59",
+        ]]
+    elif filters.get("from_date"):
+        conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+    elif filters.get("to_date"):
+        conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
     if filters.get("customer"):
         conditions["customer"] = filters["customer"]
     if filters.get("event_type"):

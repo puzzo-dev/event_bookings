@@ -5,10 +5,32 @@ from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt, get_datetime, now_datetime
 
 
+# Valid booking status transitions.
+# Maps each status to the set of allowed next statuses.
+# System Manager bypasses this check to allow manual corrections.
+VALID_TRANSITIONS = {
+	"New": {"Quoted", "Negotiating", "Confirmed", "Cancelled"},
+	"Quoted": {"Negotiating", "Confirmed", "Cancelled", "New"},
+	"Negotiating": {"Quoted", "Confirmed", "Cancelled"},
+	"Confirmed": {"In Preparation", "Cancelled"},
+	"In Preparation": {"Executed", "Cancelled"},
+	"Executed": {"Invoiced", "Cancelled"},
+	"Invoiced": {"Paid", "Executed"},
+	"Paid": {"Invoiced"},      # allow reversal by manager only
+	"Cancelled": {"New"},      # allow re-opening by manager only
+}
+
+# Statuses that represent committed/financial activity — cannot delete without cancelling first
+_PROTECTED_STATUSES = frozenset({
+	"Confirmed", "In Preparation", "Executed", "Invoiced", "Paid"
+})
+
+
 class EventBooking(Document):
 	def validate(self):
 		self._sync_datetime_fields()
 		self.validate_dates()
+		self._validate_status_transition()
 		if self._linked_docs_changed():
 			self.calculate_totals()
 		if self.booking_status == "Invoiced":
@@ -16,6 +38,36 @@ class EventBooking(Document):
 
 	def before_save(self):
 		self._auto_create_event_cost_center()
+
+	def before_delete(self):
+		if self.booking_status in _PROTECTED_STATUSES:
+			frappe.throw(
+				_(
+					"Cannot delete Event Booking {0} — it is in '{1}' status. "
+					"Cancel the booking first or contact a System Manager."
+				).format(self.name, self.booking_status),
+				frappe.PermissionError,
+			)
+
+	def _validate_status_transition(self):
+		"""Enforce allowed status transitions unless user is System Manager."""
+		if self.is_new() or not self.has_value_changed("booking_status"):
+			return
+
+		if "System Manager" in frappe.get_roles():
+			return
+
+		old_status = self.get_doc_before_save().booking_status
+		new_status = self.booking_status
+
+		allowed = VALID_TRANSITIONS.get(old_status, set())
+		if new_status not in allowed:
+			frappe.throw(
+				_(
+					"Invalid status transition from '{0}' to '{1}'. "
+					"Allowed next statuses are: {2}"
+				).format(old_status, new_status, ", ".join(allowed))
+			)
 
 	def _linked_docs_changed(self):
 		"""Return True if any linked document field has changed from previous save."""
@@ -279,5 +331,3 @@ def get_items_from_sales_order(sales_order_name):
 		}
 		for item in so.items
 	]
-
-

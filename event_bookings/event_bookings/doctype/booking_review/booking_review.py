@@ -105,7 +105,7 @@ def submit_review(event_booking, rating=None, review_text=None):
 		"review_text": review_text,
 		"is_published": 0,
 		"review_status": "Submitted",
-		"submitted_via": "API",
+		"submitted_via": "Direct",  # customer submitted via authenticated session
 	})
 	review.insert()
 	return {"message": "Review submitted successfully.", "name": review.name}

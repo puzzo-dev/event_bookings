@@ -8,6 +8,7 @@
  "field_order": [
   "designation",
   "qty_required",
+  "qty_assigned",
   "notes"
  ],
  "fields": [
@@ -25,6 +26,13 @@
    "in_list_view": 1,
    "label": "Qty Required",
    "reqd": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "qty_assigned",
+   "fieldtype": "Int",
+   "in_list_view": 1,
+   "label": "Qty Assigned"
   },
   {
    "fieldname": "notes",

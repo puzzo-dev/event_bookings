@@ -24,6 +24,7 @@ def get_columns():
         {"fieldname": "damages_cost", "label": _("Damages / Losses"), "fieldtype": "Currency", "width": 120},
         {"fieldname": "net_profit", "label": _("Net Profit"), "fieldtype": "Currency", "width": 140},
         {"fieldname": "margin_pct", "label": _("Margin %"), "fieldtype": "Float", "width": 100},
+        {"fieldname": "revenue_type", "label": _("Revenue Basis"), "fieldtype": "Data", "width": 110},
     ]
 
 
@@ -70,10 +71,15 @@ def _get_damages_map(event_names):
 
 def get_data(filters):
     conditions = {}
-    if filters.get("from_date"):
-        conditions["event_timing"] = [">=", filters["from_date"]]
-    if filters.get("to_date"):
-        conditions["event_timing"] = ["<=", filters["to_date"]]
+    if filters.get("from_date") and filters.get("to_date"):
+        conditions["event_timing"] = ["between", [
+            f"{filters['from_date']} 00:00:00",
+            f"{filters['to_date']} 23:59:59",
+        ]]
+    elif filters.get("from_date"):
+        conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+    elif filters.get("to_date"):
+        conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
     if filters.get("customer"):
         conditions["customer"] = filters["customer"]
     if filters.get("event_type"):
@@ -99,6 +105,7 @@ def get_data(filters):
     data = []
     for eb in bookings:
         revenue = eb.total_actual if eb.total_actual else eb.total_estimated
+        revenue_type = _("Actual") if eb.total_actual else _("Estimated")
         damages = damages_map.get(eb.event_name, 0)
         revenue = revenue or 0
         cogs = cogs_map.get(eb.event_name, 0)
@@ -111,6 +118,7 @@ def get_data(filters):
             "margin_pct": margin_pct,
             "cogs": cogs,
             "damages_cost": damages,
+            "revenue_type": revenue_type,
         })
         data.append(eb)
 
