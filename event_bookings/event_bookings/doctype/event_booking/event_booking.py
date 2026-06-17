@@ -65,12 +65,18 @@ class EventBooking(Document):
 
 	def _sync_datetime_fields(self):
 		"""Combine separate Date + Time fields into hidden Datetime fields for backward compatibility."""
-		from datetime import datetime, time as dt_time
+		from datetime import datetime, time as dt_time, timedelta
 		from frappe.utils import getdate
 
 		def _to_time(t):
 			if isinstance(t, str):
 				hour, minute, second = map(int, t.split(":"))
+				return dt_time(hour, minute, second)
+			if isinstance(t, timedelta):
+				seconds = int(t.total_seconds())
+				hour = seconds // 3600
+				minute = (seconds % 3600) // 60
+				second = seconds % 60
 				return dt_time(hour, minute, second)
 			return t or dt_time(0, 0, 0)
 
