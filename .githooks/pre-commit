@@ -1,0 +1,18 @@
+#!/bin/bash
+# Auto-version: major.minor.fixes based on commits since latest tag
+
+TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+TAG="${TAG#v}"
+BASE=$(echo "$TAG" | sed -E 's/^([0-9]+\.[0-9]+).*/\1/')
+COMMITS=$(git rev-list --count "${TAG}"..HEAD 2>/dev/null || echo "0")
+VERSION="${BASE}.${COMMITS}"
+
+INIT_FILE="event_bookings/__init__.py"
+if [ -f "$INIT_FILE" ]; then
+    CURRENT=$(grep -oP '__version__\s*=\s*"\K[^"]+' "$INIT_FILE" || echo "")
+    if [ "$CURRENT" != "$VERSION" ]; then
+        echo "Bumping version: $CURRENT → $VERSION"
+        sed -i "s/__version__\s*=\s*\".*\"/__version__ = \"$VERSION\"/" "$INIT_FILE"
+        git add "$INIT_FILE"
+    fi
+fi
