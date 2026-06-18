@@ -32,24 +32,29 @@ def after_migrate():
 
 def migrate_workspace_charts():
 	"""
-	Idempotent: ensure the workspace content references the correct Report-based charts.
+	Idempotent: ensure the workspace content references the correct Report-based charts
+	and that all Dashboard Chart records have valid filters_json.
 	"""
 	import json
 
+	# ── 1. Fix stale filters_json in Dashboard Chart records ──────────────
+	_fix_chart_filters_json()
+
+	# ── 2. Sync workspace content and charts child table ──────────────────
 	if not frappe.db.exists("Workspace", "Event Bookings"):
 		return
 
 	ws = frappe.get_doc("Workspace", "Event Bookings")
 
-	# Parse existing content and replace any old chart references
 	try:
 		content = json.loads(ws.content or "[]")
 	except (ValueError, TypeError):
 		content = []
 
+	# Replace any legacy chart references in the content blocks
 	chart_map = {
-		"Event Revenue Trend":  "Event Booking Revenue Trends",
-		"Monthly Events":       "Event Booking Count Trends",
+		"Event Revenue Trend": "Event Booking Revenue Trends",
+		"Monthly Events":      "Event Booking Count Trends",
 	}
 
 	updated = False
@@ -60,9 +65,8 @@ def migrate_workspace_charts():
 				block["data"]["chart_name"] = chart_map[old_name]
 				updated = True
 
-	# Ensure the onboarding block is present at position 0
-	has_onboarding = any(b.get("type") == "onboarding" for b in content)
-	if not has_onboarding:
+	# Ensure onboarding block at position 0
+	if not any(b.get("type") == "onboarding" for b in content):
 		content.insert(0, {
 			"id": "onboard01",
 			"type": "onboarding",
@@ -70,19 +74,76 @@ def migrate_workspace_charts():
 		})
 		updated = True
 
+	# Ensure all three charts are in the content blocks
+	current_chart_blocks = {
+		b["data"]["chart_name"]
+		for b in content
+		if b.get("type") == "chart"
+	}
+	desired_charts = [
+		("Event Booking Revenue Trends", 6),
+		("Event Booking Count Trends",   6),
+		("Events By Event Type",         6),
+	]
+	for chart_name, col in desired_charts:
+		if chart_name not in current_chart_blocks:
+			content.append({
+				"type": "chart",
+				"data": {"chart_name": chart_name, "col": col},
+			})
+			updated = True
+
 	if updated:
 		ws.content = json.dumps(content)
 		ws.module_onboarding = "Event Bookings Onboarding"
-		# Sync the charts child table — remove legacy refs then add current ones
-		legacy_names = {"Monthly Events", "Event Revenue Trend"}
-		ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names]
-		existing_chart_names = {c.chart_name for c in ws.charts}
-		for new_chart in ["Event Booking Revenue Trends", "Event Booking Count Trends"]:
-			if new_chart not in existing_chart_names:
-				ws.append("charts", {"chart_name": new_chart, "label": new_chart})
+
+	# Always sync the charts child table to match all desired charts
+	legacy_names = {"Monthly Events", "Event Revenue Trend"}
+	ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names]
+	existing_chart_names = {c.chart_name for c in ws.charts}
+	for chart_name, _ in desired_charts:
+		if chart_name not in existing_chart_names:
+			ws.append("charts", {"chart_name": chart_name, "label": chart_name})
+			updated = True
+
+	if updated:
 		ws.save(ignore_permissions=True)
 		frappe.db.commit()
 		frappe.logger().info("event_bookings: workspace charts patched successfully")
+
+
+def _fix_chart_filters_json():
+	"""
+	Correct any Dashboard Chart records whose filters_json still references
+	the legacy hidden field 'event_timing'. Run idempotently on every migrate.
+	"""
+	import json
+
+	charts_to_fix = {
+		"Event Booking Revenue Trends": {"period": "Monthly", "based_on": "Revenue", "date_field": "event_date"},
+		"Event Booking Count Trends":   {"period": "Monthly", "based_on": "Count",   "date_field": "event_date"},
+		"Events By Event Type":         {"based_on": "Count"},
+	}
+
+	for chart_name, correct_defaults in charts_to_fix.items():
+		if not frappe.db.exists("Dashboard Chart", chart_name):
+			continue
+
+		raw = frappe.db.get_value("Dashboard Chart", chart_name, "filters_json") or "{}"
+		try:
+			stored = json.loads(raw)
+		except (ValueError, TypeError):
+			stored = {}
+
+		needs_fix = stored.get("date_field") == "event_timing"
+		if needs_fix:
+			stored["date_field"] = "event_date"
+			frappe.db.set_value(
+				"Dashboard Chart", chart_name, "filters_json",
+				json.dumps(stored), update_modified=False,
+			)
+
+	frappe.db.commit()
 
 
 def create_custom_fields():

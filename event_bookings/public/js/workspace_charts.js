@@ -183,16 +183,10 @@ function open_chart_filter_dialog(chart_name) {
 					});
 					d.hide();
 
-					// Force chart refresh
-					const widget = document.querySelector(
-						`.widget[data-widget-type="chart"][data-name="${chart_name}"]`
-					);
-					if (widget && widget.__widget) {
-						widget.__widget.set_chart_filters(values);
-						widget.__widget.setup_chart();
-					} else {
-						// Fallback: reload workspace
-						frappe.workspace.page.reload();
+					// Reload workspace so charts re-fetch with updated filters
+					const route = frappe.get_route && frappe.get_route();
+					if (route && route.length >= 2) {
+						frappe.set_route('workspace', route[1]);
 					}
 				}
 			});
