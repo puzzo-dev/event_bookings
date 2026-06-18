@@ -187,8 +187,8 @@ def get_chart_data(filters, columns, data):
 	return {
 		"data": {"labels": labels, "datasets": datasets},
 		"type": "line",
+		"colors": ["#48BB78"] if based_on == "Revenue" else ["#449CF0"],
 		"fieldtype": "Currency" if based_on == "Revenue" else "Int",
 		"lineOptions": {"regionFill": 1},
-		"axisOptions": {"shortenYAxisNumbers": 1},
 	}
 
