@@ -84,28 +84,20 @@ def get_columns(filters):
 
 	columns = [
 		{
-			"label": _("Event Status"),
-			"fieldname": "booking_status",
+			"label": _("Metric"),
+			"fieldname": "metric",
 			"fieldtype": "Data",
 			"width": 140,
 		}
 	]
 
 	for p in period_list:
-		if based_on == "Revenue":
-			columns.append({
-				"label": p["label"],
-				"fieldname": "period_" + p["label"].replace(" ", "_"),
-				"fieldtype": "Currency",
-				"width": 120,
-			})
-		else:
-			columns.append({
-				"label": p["label"],
-				"fieldname": "period_" + p["label"].replace(" ", "_"),
-				"fieldtype": "Int",
-				"width": 100,
-			})
+		columns.append({
+			"label": p["label"],
+			"fieldname": "period_" + p["label"].replace(" ", "_"),
+			"fieldtype": "Currency" if based_on == "Revenue" else "Int",
+			"width": 120,
+		})
 
 	columns.append({
 		"label": _("Total"),
@@ -121,75 +113,36 @@ def get_data(filters):
 	period_list = get_period_list(filters)
 	based_on = filters.get("based_on", "Revenue")
 	date_field = get_date_field(filters.get("date_field", "event_timing"))
-	booking_statuses = get_booking_statuses(filters)
 
-	rows = []
+	metric_label = _("Total Revenue") if based_on == "Revenue" else _("Total Count")
+	row = {"metric": metric_label}
+	total = 0
 
-	for status in booking_statuses:
-		row = {"booking_status": status}
-		total = 0
-
-		for p in period_list:
-			key = "period_" + p["label"].replace(" ", "_")
-			value = get_period_value(
-				status=status,
-				based_on=based_on,
-				date_field=date_field,
-				from_date=p["from_date"],
-				to_date=p["to_date"],
-				filters=filters,
-			)
-			row[key] = value
-			total += value or 0
-
-		row["total"] = total
-		rows.append(row)
-
-	# Add total row
-	total_row = {"booking_status": _("Total")}
-	grand_total = 0
 	for p in period_list:
 		key = "period_" + p["label"].replace(" ", "_")
-		col_total = sum((r.get(key) or 0) for r in rows)
-		total_row[key] = col_total
-		grand_total += col_total
-	total_row["total"] = grand_total
-	rows.append(total_row)
+		value = get_period_value(
+			based_on=based_on,
+			date_field=date_field,
+			from_date=p["from_date"],
+			to_date=p["to_date"]
+		)
+		row[key] = value
+		total += value or 0
 
-	return rows
-
-
-def get_booking_statuses(filters):
-	"""Return distinct booking_status values in the date range."""
-	date_field = get_date_field(filters.get("date_field", "event_timing"))
-	conditions = get_base_conditions(filters, date_field)
-
-	statuses = frappe.db.sql(
-		f"""
-		SELECT DISTINCT booking_status
-		FROM `tabEvent Booking`
-		WHERE docstatus < 2
-		  AND {conditions["date_filter"]}
-		ORDER BY booking_status
-		""",
-		conditions["values"],
-		as_list=True,
-	)
-	result = [s[0] for s in statuses if s[0]]
-	return result or ["Draft", "Confirmed", "Completed", "Cancelled"]
+	row["total"] = total
+	return [row]
 
 
-def get_period_value(status, based_on, date_field, from_date, to_date, filters):
+def get_period_value(based_on, date_field, from_date, to_date):
 	if based_on == "Revenue":
 		result = frappe.db.sql(
 			f"""
 			SELECT SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0)))
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND booking_status = %s
 			  AND {date_field} >= %s AND {date_field} <= %s
 			""",
-			(status, f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
+			(f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
 		)
 	else:
 		result = frappe.db.sql(
@@ -197,23 +150,12 @@ def get_period_value(status, based_on, date_field, from_date, to_date, filters):
 			SELECT COUNT(name)
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND booking_status = %s
 			  AND {date_field} >= %s AND {date_field} <= %s
 			""",
-			(status, f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
+			(f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
 		)
 
 	return (result[0][0] or 0) if result else 0
-
-
-def get_base_conditions(filters, date_field):
-	from_date = filters.get("from_date", get_first_day(add_months(nowdate(), -11)))
-	to_date = filters.get("to_date", nowdate())
-
-	return {
-		"date_filter": f"{date_field} >= %s AND {date_field} <= %s",
-		"values": (f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
-	}
 
 
 def get_date_field(field_key):
@@ -234,13 +176,11 @@ def get_chart_data(filters, columns, data):
 
 	datasets = []
 	for row in data:
-		if row.get("booking_status") == _("Total"):
-			continue
 		values = [
 			row.get("period_" + p["label"].replace(" ", "_"), 0) or 0
 			for p in period_list
 		]
-		datasets.append({"name": row["booking_status"], "values": values})
+		datasets.append({"name": row["metric"], "values": values})
 
 	based_on = filters.get("based_on", "Revenue")
 
@@ -251,3 +191,4 @@ def get_chart_data(filters, columns, data):
 		"lineOptions": {"regionFill": 1},
 		"axisOptions": {"shortenYAxisNumbers": 1},
 	}
+
