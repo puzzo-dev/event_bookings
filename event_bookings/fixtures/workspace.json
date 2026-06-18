@@ -2,21 +2,28 @@
  {
   "charts": [
    {
-    "chart_name": "Monthly Events",
-    "label": "Monthly Events",
+    "chart_name": "Event Booking Revenue Trends",
+    "label": "Event Booking Revenue Trends",
     "parent": "Event Bookings",
     "parentfield": "charts",
     "parenttype": "Workspace"
    },
    {
-    "chart_name": "Event Revenue Trend",
-    "label": "Event Revenue Trend",
+    "chart_name": "Event Booking Count Trends",
+    "label": "Event Booking Count Trends",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Workspace"
+   },
+   {
+    "chart_name": "Events By Event Type",
+    "label": "Events By Event Type",
     "parent": "Event Bookings",
     "parentfield": "charts",
     "parenttype": "Workspace"
    }
   ],
-  "content": "[{\"type\": \"chart\", \"data\": {\"chart_name\": \"Event Revenue Trend\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Monthly Events\", \"col\": 6}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 4}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+  "content": "[{\"id\": \"onboard01\", \"type\": \"onboarding\", \"data\": {\"onboarding_name\": \"Event Bookings Onboarding\", \"col\": 12}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Revenue Trends\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Count Trends\", \"col\": 6}}, {\"type\": \"chart\", \"data\": {\"chart_name\": \"Events By Event Type\", \"col\": 6}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 4}}, {\"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 4}}, {\"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",

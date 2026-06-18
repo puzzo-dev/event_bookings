@@ -26,7 +26,7 @@ required_apps = ["erpnext", "hrms"]
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = "/assets/event_bookings/js/workspace_charts.js?v=2"
+app_include_js = "/assets/event_bookings/js/workspace_charts.js?v=3"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"

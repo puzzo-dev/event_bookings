@@ -51,9 +51,9 @@ def get_columns(filters):
 def get_data(filters):
 	based_on = filters.get("based_on", "Revenue")
 	company = filters.get("company")
-	
+
 	conditions = ""
-	values = [f"{filters.from_date} 00:00:00", f"{filters.to_date} 23:59:59"]
+	values = [filters.from_date, filters.to_date]
 
 	if company:
 		conditions += " AND company = %s"
@@ -61,24 +61,24 @@ def get_data(filters):
 
 	if based_on == "Revenue":
 		sql = f"""
-			SELECT 
-				event_type, 
+			SELECT
+				event_type,
 				SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0))) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND event_timing >= %s AND event_timing <= %s
+			  AND event_date >= %s AND event_date <= %s
 			  {conditions}
 			GROUP BY event_type
 			ORDER BY value DESC
 		"""
 	else:
 		sql = f"""
-			SELECT 
-				event_type, 
+			SELECT
+				event_type,
 				COUNT(name) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND event_timing >= %s AND event_timing <= %s
+			  AND event_date >= %s AND event_date <= %s
 			  {conditions}
 			GROUP BY event_type
 			ORDER BY value DESC
