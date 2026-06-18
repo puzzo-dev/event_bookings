@@ -18,6 +18,79 @@ def after_install():
 	create_email_templates()
 	create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
 	create_custom_fields()         # creates remaining app custom fields
+	migrate_workspace_charts()     # ensure workspace references current charts
+
+
+def after_migrate():
+	"""
+	Hook executed after every bench migrate.
+	Cleans up any legacy is_standard charts that fixtures cannot delete,
+	and ensures the workspace content block always references the current charts.
+	"""
+	migrate_workspace_charts()
+
+
+def migrate_workspace_charts():
+	"""
+	Idempotent: delete the old is_standard=1 charts (can't be removed by fixtures)
+	and patch the workspace content to reference the new Report-based charts.
+	"""
+	import json
+
+	# ── 1. Remove legacy charts ────────────────────────────────────────────
+	legacy_charts = ["Event Revenue Trend", "Monthly Events"]
+	for name in legacy_charts:
+		if frappe.db.exists("Dashboard Chart", name):
+			frappe.db.set_value("Dashboard Chart", name, "is_standard", 0)
+			frappe.delete_doc("Dashboard Chart", name, force=True, ignore_missing=True)
+			frappe.logger().info(f"event_bookings: deleted legacy chart '{name}'")
+
+	# ── 2. Patch workspace content ─────────────────────────────────────────
+	if not frappe.db.exists("Workspace", "Event Bookings"):
+		return
+
+	ws = frappe.get_doc("Workspace", "Event Bookings")
+
+	# Parse existing content and replace any old chart references
+	try:
+		content = json.loads(ws.content or "[]")
+	except (ValueError, TypeError):
+		content = []
+
+	chart_map = {
+		"Event Revenue Trend":  "Event Booking Revenue Trends",
+		"Monthly Events":       "Event Booking Count Trends",
+	}
+
+	updated = False
+	for block in content:
+		if block.get("type") == "chart":
+			old_name = block.get("data", {}).get("chart_name")
+			if old_name in chart_map:
+				block["data"]["chart_name"] = chart_map[old_name]
+				updated = True
+
+	# Ensure the onboarding block is present at position 0
+	has_onboarding = any(b.get("type") == "onboarding" for b in content)
+	if not has_onboarding:
+		content.insert(0, {
+			"id": "onboard01",
+			"type": "onboarding",
+			"data": {"onboarding_name": "Event Bookings Onboarding", "col": 12},
+		})
+		updated = True
+
+	if updated:
+		ws.content = json.dumps(content)
+		ws.module_onboarding = "Event Bookings Onboarding"
+		# Sync the charts child table too
+		existing_chart_names = {c.chart_name for c in ws.charts}
+		for new_chart in ["Event Booking Revenue Trends", "Event Booking Count Trends"]:
+			if new_chart not in existing_chart_names:
+				ws.append("charts", {"chart_name": new_chart, "label": new_chart})
+		ws.save(ignore_permissions=True)
+		frappe.db.commit()
+		frappe.logger().info("event_bookings: workspace charts patched successfully")
 
 
 def create_custom_fields():
