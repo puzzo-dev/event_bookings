@@ -11,11 +11,47 @@ def after_install():
 	- Creates event-specific Chart of Accounts accounts
 	- Creates default Email Templates
 	- Registers Event Booking as an Accounting Dimension
+	- Creates custom fields on native doctypes
 	"""
 	seed_event_types()
 	create_event_coa_accounts()
 	create_email_templates()
-	create_accounting_dimension()
+	create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
+	create_custom_fields()         # creates remaining app custom fields
+
+
+def create_custom_fields():
+	"""
+	Create Event Booking link fields on doctypes not covered by the
+	Accounting Dimension auto-generation. Uses frappe.custom.doctype helpers
+	so they are idempotent (safe to run multiple times).
+	"""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+
+	fields = [
+		# Doctype, fieldname, insert_after, extra kwargs
+		("Quotation",           "event_booking", "title",              {}),
+		("Journal Entry",       "event_booking", "title",              {}),
+		("Material Request",    "event_booking", "title",              {}),
+		("Stock Reconciliation","event_booking", "title",              {}),
+		("Cost Center",         "is_event_cost_center", "disabled",   {"fieldtype": "Check", "label": "Is Event Cost Center"}),
+	]
+
+	for dt, fieldname, insert_after, extra in fields:
+		df = {
+			"fieldname": fieldname,
+			"fieldtype": extra.get("fieldtype", "Link"),
+			"label": extra.get("label", "Event Booking"),
+			"options": "Event Booking" if extra.get("fieldtype", "Link") == "Link" else None,
+			"insert_after": insert_after,
+			"search_index": 1,
+		}
+		df.update({k: v for k, v in extra.items() if k not in ("fieldtype", "label")})
+
+		try:
+			create_custom_field(dt, df)
+		except Exception:
+			frappe.log_error(title=f"Failed to create custom field {fieldname} on {dt}")
 
 
 def create_accounting_dimension():
