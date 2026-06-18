@@ -24,7 +24,7 @@
   "chart_name": "Event Booking Count Trends",
   "chart_type": "Report",
   "color": "#449CF0",
-  "custom_options": "{\"type\": \"bar\", \"tooltipOptions\": {}}",
+  "custom_options": "{\"type\": \"line\", \"tooltipOptions\": {}, \"lineOptions\": {\"regionFill\": 1}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
   "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"event_timing\"}",
@@ -36,7 +36,7 @@
   "report_name": "Event Booking Trends",
   "roles": [],
   "timeseries": 0,
-  "type": "Bar",
+  "type": "Line",
   "use_report_chart": 1,
   "y_axis": [],
   "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"

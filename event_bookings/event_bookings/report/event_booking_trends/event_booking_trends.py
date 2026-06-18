@@ -193,6 +193,11 @@ def get_chart_data(filters, columns, data):
 		]
 		datasets.append({"name": row["metric"], "values": values})
 
+	# Skip chart rendering when there is no data to avoid SVG errors
+	all_zero = all(v == 0 for ds in datasets for v in ds["values"])
+	if all_zero:
+		return None
+
 	based_on = filters.get("based_on", "Revenue")
 
 	return {
