@@ -1,15 +1,15 @@
 {
  "charts": [
   {
-   "chart_name": "Monthly Events",
-   "label": "Monthly Events"
+   "chart_name": "Event Booking Revenue Trends",
+   "label": "Event Booking Revenue Trends"
   },
   {
-   "chart_name": "Event Revenue Trend",
-   "label": "Event Revenue Trend"
+   "chart_name": "Event Booking Count Trends",
+   "label": "Event Booking Count Trends"
   }
  ],
- "content": "[{\"id\":\"m4MRkKlQFg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"id\":\"MUbZAHJ5M3\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"id\":\"MFJjZWdnMM\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"sL9nL0i0QM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"id\":\"pniihQeVB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":4}},{\"id\":\"JqsVaVc5NS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":4}},{\"id\":\"AqsaHh78tr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Booking Settings\",\"col\":3}},{\"id\":\"G_QRj89sqy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Review\",\"col\":4}},{\"id\":\"PvlVlUqlsy\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Links</b></span>\",\"col\":12}},{\"id\":\"mUYncF4eo3\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"id\":\"R4EQ6ndgWk\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"id\":\"pzzpouJXvV\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+ "content": "[{\"id\":\"onboard01\",\"type\":\"onboarding\",\"data\":{\"onboarding_name\":\"Event Bookings Onboarding\",\"col\":12}},{\"id\":\"m4MRkKlQFg\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Booking Revenue Trends\",\"col\":6}},{\"id\":\"MUbZAHJ5M3\",\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Booking Count Trends\",\"col\":6}},{\"id\":\"MFJjZWdnMM\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"id\":\"sL9nL0i0QM\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"id\":\"pniihQeVB2\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":4}},{\"id\":\"JqsVaVc5NS\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":4}},{\"id\":\"AqsaHh78tr\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Booking Settings\",\"col\":3}},{\"id\":\"G_QRj89sqy\",\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Review\",\"col\":4}},{\"id\":\"PvlVlUqlsy\",\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Links</b></span>\",\"col\":12}},{\"id\":\"mUYncF4eo3\",\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"id\":\"R4EQ6ndgWk\",\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"id\":\"pzzpouJXvV\",\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
  "creation": "2026-06-17 23:00:56.144168",
  "custom_blocks": [],
  "docstatus": 0,
@@ -125,11 +125,22 @@
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Booking Trends",
+   "link_count": 0,
+   "link_to": "Event Booking Trends",
+   "link_type": "Report",
+   "onboard": 0,
+   "type": "Link"
   }
  ],
- "modified": "2026-06-17 23:02:39.278718",
+ "modified": "2026-06-18 12:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
+ "module_onboarding": "Event Bookings Onboarding",
  "name": "Event Bookings",
  "number_cards": [],
  "owner": "Administrator",
