@@ -250,6 +250,7 @@ scheduler_events = {
 # ignore_translatable_strings_from = []
 
 after_install = "event_bookings.install.after_install"
+after_migrate = "event_bookings.install.after_migrate"
 
 # Fixtures
 # --------
