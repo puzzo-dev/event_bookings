@@ -10,10 +10,10 @@ frappe.provide('event_bookings.workspace');
 
 const CHART_CONFIG = {
 	'Event Booking Revenue Trends': {
-		default_filters: { period: 'Monthly', based_on: 'Revenue', date_field: 'event_timing' }
+		default_filters: { period: 'Monthly', based_on: 'Revenue', date_field: 'event_date' }
 	},
 	'Event Booking Count Trends': {
-		default_filters: { period: 'Monthly', based_on: 'Count', date_field: 'event_timing' }
+		default_filters: { period: 'Monthly', based_on: 'Count', date_field: 'event_date' }
 	},
 	'Events By Event Type': {
 		default_filters: { based_on: 'Count' },
@@ -93,11 +93,10 @@ function open_chart_filter_dialog(chart_name) {
 			fieldname: 'date_field',
 			fieldtype: 'Select',
 			options: [
-				{ label: __('Event Timing'), value: 'event_timing' },
-				{ label: __('Booking Date'), value: 'booking_date' },
-				{ label: __('Event Date'), value: 'event_date' }
+				{ label: __('Event Date'), value: 'event_date' },
+				{ label: __('Booking Date'), value: 'booking_date' }
 			],
-			default: cfg.default_filters.date_field || 'event_timing',
+			default: cfg.default_filters.date_field || 'event_date',
 			reqd: 1
 		});
 	}
