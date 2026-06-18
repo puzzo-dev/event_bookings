@@ -12,17 +12,11 @@ frappe.query_reports["Event Booking Trends"] = {
 			"reqd": 1
 		},
 		{
-			"fieldname": "from_date",
-			"label": __("From Date"),
-			"fieldtype": "Date",
-			"default": frappe.datetime.add_months(frappe.datetime.get_today(), -11).substring(0, 7) + '-01',
-			"reqd": 1
-		},
-		{
-			"fieldname": "to_date",
-			"label": __("To Date"),
-			"fieldtype": "Date",
-			"default": frappe.datetime.get_today(),
+			"fieldname": "fiscal_year",
+			"label": __("Fiscal Year"),
+			"fieldtype": "Link",
+			"options": "Fiscal Year",
+			"default": erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
 			"reqd": 1
 		},
 		{
