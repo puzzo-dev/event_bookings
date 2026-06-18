@@ -6,7 +6,6 @@
   "custom_options": "{\"type\": \"line\", \"tooltipOptions\": {}, \"lineOptions\": {\"regionFill\": 1}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}",
   "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Revenue\", \"date_field\": \"event_timing\"}",
   "is_public": 1,
   "is_standard": 0,
@@ -18,7 +17,8 @@
   "timeseries": 0,
   "type": "Line",
   "use_report_chart": 1,
-  "y_axis": []
+  "y_axis": [],
+  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
  },
  {
   "chart_name": "Event Booking Count Trends",
@@ -27,7 +27,6 @@
   "custom_options": "{\"type\": \"bar\", \"tooltipOptions\": {}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}",
   "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"event_timing\"}",
   "is_public": 1,
   "is_standard": 0,
@@ -39,6 +38,28 @@
   "timeseries": 0,
   "type": "Bar",
   "use_report_chart": 1,
-  "y_axis": []
+  "y_axis": [],
+  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+ },
+ {
+  "chart_name": "Events By Event Type",
+  "chart_type": "Report",
+  "color": "#ffca28",
+  "custom_options": "{\"type\": \"donut\", \"tooltipOptions\": {}}",
+  "docstatus": 0,
+  "doctype": "Dashboard Chart",
+  "filters_json": "{\"based_on\": \"Count\"}",
+  "is_public": 1,
+  "is_standard": 0,
+  "module": "Event Bookings",
+  "name": "Events By Event Type",
+  "number_of_groups": 0,
+  "report_name": "Events By Event Type",
+  "roles": [],
+  "timeseries": 0,
+  "type": "Donut",
+  "use_report_chart": 1,
+  "y_axis": [],
+  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
  }
 ]
