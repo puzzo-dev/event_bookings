@@ -73,7 +73,9 @@ def migrate_workspace_charts():
 	if updated:
 		ws.content = json.dumps(content)
 		ws.module_onboarding = "Event Bookings Onboarding"
-		# Sync the charts child table
+		# Sync the charts child table — remove legacy refs then add current ones
+		legacy_names = {"Monthly Events", "Event Revenue Trend"}
+		ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names]
 		existing_chart_names = {c.chart_name for c in ws.charts}
 		for new_chart in ["Event Booking Revenue Trends", "Event Booking Count Trends"]:
 			if new_chart not in existing_chart_names:
