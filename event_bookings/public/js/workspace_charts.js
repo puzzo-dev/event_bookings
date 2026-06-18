@@ -23,8 +23,10 @@ const CHART_CONFIG = {
 };
 
 function init_chart_filters() {
-	if (frappe.get_route()[0] !== 'workspace') return;
-	if (frappe.get_route()[1] !== 'event-bookings') return;
+	const route = frappe.get_route && frappe.get_route();
+	if (!route || !route.length) return;
+	if (route[0] !== 'workspace') return;
+	if (route[1] !== 'event-bookings') return;
 
 	// Wait for widgets to render
 	setTimeout(() => {
@@ -226,7 +228,8 @@ frappe.router.on('change', init_chart_filters);
 
 // Also fire on initial load if already on workspace
 $(document).on('startup', () => {
-	if (frappe.get_route()[0] === 'workspace' && frappe.get_route()[1] === 'event-bookings') {
+	const route = frappe.get_route && frappe.get_route();
+	if (route && route[0] === 'workspace' && route[1] === 'event-bookings') {
 		init_chart_filters();
 	}
 });
