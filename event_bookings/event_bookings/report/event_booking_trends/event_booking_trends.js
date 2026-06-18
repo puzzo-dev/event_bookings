@@ -15,14 +15,14 @@ frappe.query_reports["Event Booking Trends"] = {
 			"fieldname": "from_date",
 			"label": __("From Date"),
 			"fieldtype": "Date",
-			"default": frappe.datetime.month_start(frappe.datetime.add_months(frappe.datetime.get_today(), -6)),
+			"default": frappe.datetime.month_start(frappe.datetime.add_months(frappe.datetime.get_today(), -11)),
 			"reqd": 1
 		},
 		{
 			"fieldname": "to_date",
 			"label": __("To Date"),
 			"fieldtype": "Date",
-			"default": frappe.datetime.month_end(frappe.datetime.add_months(frappe.datetime.get_today(), 5)),
+			"default": frappe.datetime.get_today(),
 			"reqd": 1
 		},
 		{
@@ -45,8 +45,8 @@ frappe.query_reports["Event Booking Trends"] = {
 			"fieldname": "date_field",
 			"label": __("Date Field"),
 			"fieldtype": "Select",
-			"options": "event_date\nbooking_date",
-			"default": "event_date",
+			"options": "booking_date\nevent_date",
+			"default": "booking_date",
 			"reqd": 1
 		}
 	]
