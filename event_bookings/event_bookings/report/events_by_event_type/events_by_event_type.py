@@ -5,6 +5,8 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, get_first_day, nowdate
 
+from erpnext.accounts.utils import get_fiscal_year
+
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
@@ -18,13 +20,17 @@ def execute(filters=None):
 
 
 def validate_filters(filters):
-	if not filters.get("from_date"):
-		# Measured by booking_date over the past 12 months.
-		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
-	if not filters.get("to_date"):
-		filters["to_date"] = nowdate()
 	if not filters.get("based_on"):
 		filters["based_on"] = "Revenue"
+
+	# Derive date range from fiscal year (same pattern as ERPNext trends)
+	if not filters.get("fiscal_year"):
+		filters["fiscal_year"] = get_fiscal_year(nowdate())[0]
+
+	# get_fiscal_year(fiscal_year=...) returns (name, start_date, end_date)
+	fy_info = get_fiscal_year(fiscal_year=filters["fiscal_year"])
+	filters["from_date"] = fy_info[1]
+	filters["to_date"] = fy_info[2]
 
 
 def get_columns(filters):
@@ -100,8 +106,11 @@ def get_chart_data(filters, data):
 		labels.append(row.get("event_type") or "Unknown")
 		values.append(row.get("value") or 0)
 
+	# NOTE: do NOT include 'fieldtype' here — frappe's chart_widget.js uses
+	# it to build a formatTooltipY formatter that returns HTML
+	# (<div style='text-align: right'>…</div>) which the donut legend
+	# renders as raw text.
 	return {
 		"data": {"labels": labels, "datasets": [{"name": filters.get("based_on", "Revenue"), "values": values}]},
 		"type": "donut",
-		"fieldtype": "Currency" if filters.get("based_on") == "Revenue" else "Int",
 	}

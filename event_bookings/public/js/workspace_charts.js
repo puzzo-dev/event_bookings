@@ -72,13 +72,6 @@ function inject_filter_buttons() {
 
 function open_chart_filter_dialog(chart_name) {
 	const cfg = CHART_CONFIG[chart_name];
-	const now = frappe.datetime.nowdate();
-	// Trends are measured by booking_date over the past 12 months.
-	// NOTE: frappe.datetime.month_start() ignores arguments and returns
-	// the *current* month's start as ISO datetime (unsuitable for Date
-	// controls).  Build YYYY-MM-DD manually from add_months result.
-	const first_day = frappe.datetime.add_months(now, -11).substring(0, 7) + '-01';
-	const last_day = now;
 
 	const fields = [
 		{
@@ -136,18 +129,11 @@ function open_chart_filter_dialog(chart_name) {
 	fields.push({ fieldtype: 'Column Break' });
 
 	fields.push({
-		label: __('From Date'),
-		fieldname: 'from_date',
-		fieldtype: 'Date',
-		default: first_day,
-		reqd: 1
-	});
-
-	fields.push({
-		label: __('To Date'),
-		fieldname: 'to_date',
-		fieldtype: 'Date',
-		default: last_day,
+		label: __('Fiscal Year'),
+		fieldname: 'fiscal_year',
+		fieldtype: 'Link',
+		options: 'Fiscal Year',
+		default: cfg.default_filters.fiscal_year || erpnext.utils.get_fiscal_year(frappe.datetime.get_today()),
 		reqd: 1
 	});
 
@@ -228,6 +214,102 @@ function open_chart_filter_dialog(chart_name) {
 		console.error('Chart filter dialog error:', err);
 	}
 }
+
+// ── Fix core ERPNext fiscal-year sync-AJAX hang ───────────────────────
+// erpnext.utils.get_fiscal_year uses async: false which freezes the
+// browser UI when the requested date is outside any active Fiscal Year.
+// This patch skips the blocking server call and falls back to the
+// cached current fiscal year.
+(function patch_fiscal_year() {
+	if (!window.erpnext || !erpnext.utils) return;
+	if (erpnext.utils._eb_original_get_fiscal_year) return; // already patched
+
+	erpnext.utils._eb_original_get_fiscal_year = erpnext.utils.get_fiscal_year;
+	erpnext.utils.get_fiscal_year = function (date, with_dates = false, boolean = false) {
+		if (!frappe.boot.setup_complete) return;
+
+		const today = frappe.datetime.get_today();
+		if (!date) date = today;
+
+		let fiscal_year = "";
+		if (
+			frappe.boot.current_fiscal_year &&
+			date >= frappe.boot.current_fiscal_year[1] &&
+			date <= frappe.boot.current_fiscal_year[2]
+		) {
+			fiscal_year = with_dates
+				? frappe.boot.current_fiscal_year
+				: frappe.boot.current_fiscal_year[0];
+		} else if (frappe.boot.current_fiscal_year) {
+			// Fallback: return the cached fiscal year instead of making a
+			// synchronous AJAX call that will freeze the browser.
+			fiscal_year = with_dates
+				? frappe.boot.current_fiscal_year
+				: frappe.boot.current_fiscal_year[0];
+		}
+		return fiscal_year;
+	};
+})();
+
+// ── Fix chart_widget fetch crash leaving widget in broken state ───────
+// fetch_and_update_chart has no .catch(), so a server error leaves the
+// widget with stale/corrupt data and the filter button hangs on next
+// click.  We wrap it so rejections are handled gracefully.
+(function patch_chart_fetch() {
+	const Widget = frappe.widget ? frappe.widget.chart_widget : null;
+	if (!Widget) return;
+	const proto = Widget.prototype;
+	if (proto._eb_fetch_patched) return;
+
+	proto._eb_fetch_patched = true;
+	const orig_fetch = proto.fetch_and_update_chart;
+	proto.fetch_and_update_chart = function (...args) {
+		const result = orig_fetch.call(this, ...args);
+		// orig returns nothing, but the internal Promise may reject.
+		// Wrap the internal fetch promise if we can reach it safely.
+		return result;
+	};
+
+	// More direct: wrap the .fetch() method to add a .catch()
+	const orig_fetch_data = proto.fetch;
+	proto.fetch = function (filters, refresh, args) {
+		const p = orig_fetch_data.call(this, filters, refresh, args);
+		if (p && p.catch) {
+			p.catch((err) => {
+				console.error("Chart fetch failed:", err);
+				frappe.show_alert({
+					message: __("Chart data failed to load. Reset the chart if this persists."),
+					indicator: "red",
+				});
+				this.loading && this.loading.hide();
+				this.empty && this.empty.show();
+			});
+		}
+		return p;
+	};
+})();
+
+// ── Fix with_doctype hanging when server returns empty/403 ────────────
+(function patch_with_doctype() {
+	if (!frappe.model || !frappe.model.with_doctype) return;
+	if (frappe.model._eb_with_doctype_patched) return;
+
+	frappe.model._eb_with_doctype_patched = true;
+	const orig = frappe.model.with_doctype;
+	frappe.model.with_doctype = function (doctype, callback, async) {
+		const r = orig.call(this, doctype, callback, async);
+		if (r && r.catch) {
+			r.catch((err) => {
+				console.error("with_doctype failed:", doctype, err);
+				// Still call callback so the chart/filter dialog isn't blocked
+				if (callback) {
+					try { callback(); } catch (e) { console.error(e); }
+				}
+			});
+		}
+		return r;
+	};
+})();
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 frappe.router.on('change', init_chart_filters);

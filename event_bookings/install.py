@@ -118,15 +118,19 @@ def _fix_chart_filters_json():
 	Trends are measured by when a booking was made, not the (future) event
 	date. Repairs legacy 'event_timing'/'event_date' values idempotently on
 	every migrate. Also normalises dynamic_filters_json to static company.
+	Replaces user-created from_date/to_date filters with fiscal_year so charts
+	behave like ERPNext system charts and avoid filter hangs outside fiscal years.
 	Run idempotently on every migrate.
 	"""
 	import json
+
+	from erpnext.accounts.utils import get_fiscal_year
 
 	# Charts that aggregate by date and must use booking_date
 	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
 	all_charts = trend_charts + ["Events By Event Type"]
 	legacy_date_fields = {"event_timing", "event_date"}
-	STATIC_COMPANY = "I-Varse Technologies"
+	current_fy = get_fiscal_year(frappe.utils.nowdate())[0]
 
 	for chart_name in all_charts:
 		if not frappe.db.exists("Dashboard Chart", chart_name):
@@ -145,9 +149,22 @@ def _fix_chart_filters_json():
 			stored["date_field"] = "booking_date"
 			changed = True
 
-		# Ensure company is static in filters_json
-		if stored.get("company") != STATIC_COMPANY:
-			stored["company"] = STATIC_COMPANY
+		# Remove any hardcoded company so the report uses the user's default
+		# company instead of locking charts to a single company.
+		if "company" in stored:
+			stored.pop("company", None)
+			changed = True
+
+		# Remove user-defined from_date / to_date to prevent hangs when dates
+		# fall outside any active Fiscal Year.
+		for obsolete in ("from_date", "to_date"):
+			if obsolete in stored:
+				stored.pop(obsolete, None)
+				changed = True
+
+		# Add fiscal_year if missing (same pattern as ERPNext system charts)
+		if "fiscal_year" not in stored:
+			stored["fiscal_year"] = current_fy
 			changed = True
 
 		if changed:

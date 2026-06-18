@@ -2,6 +2,8 @@ import frappe
 from frappe import _
 from frappe.utils import getdate, add_months, add_days, nowdate, get_first_day, get_last_day
 
+from erpnext.accounts.utils import get_fiscal_year
+
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
@@ -21,14 +23,17 @@ def validate_filters(filters):
 		filters["based_on"] = "Revenue"
 	if not filters.get("date_field"):
 		filters["date_field"] = "booking_date"
-	if not filters.get("from_date"):
-		# Trends are measured by booking_date (when the booking was made),
-		# so the window looks back over the past 12 months.
-		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
-	if not filters.get("to_date"):
-		filters["to_date"] = nowdate()
 	if not filters.get("company"):
 		filters["company"] = frappe.defaults.get_user_default("Company")
+
+	# Derive date range from fiscal year (same pattern as ERPNext trends)
+	if not filters.get("fiscal_year"):
+		filters["fiscal_year"] = get_fiscal_year(nowdate())[0]
+
+	# get_fiscal_year(fiscal_year=...) returns (name, start_date, end_date)
+	fy_info = get_fiscal_year(fiscal_year=filters["fiscal_year"])
+	filters["from_date"] = fy_info[1]
+	filters["to_date"] = fy_info[2]
 
 
 def get_period_list(filters):
@@ -48,6 +53,11 @@ def get_period_list(filters):
 			"to_date": min(period_end, to_date),
 		})
 		current = add_days(period_end, 1)
+
+	# Safety valve: >24 periods will crash/slow most chart renderers.
+	# Keep the most recent 24 so the user sees current data.
+	if len(periods) > 24:
+		periods = periods[-24:]
 
 	return periods
 
