@@ -254,10 +254,6 @@ after_install = "event_bookings.install.after_install"
 # Fixtures
 # --------
 fixtures = [
-    # Only sync custom fields owned by this app to avoid capturing other apps' fields.
-    {"dt": "Custom Field", "filters": [["fieldname", "in", [
-        "event_booking", "is_event_cost_center"
-    ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
