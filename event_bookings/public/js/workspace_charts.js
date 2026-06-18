@@ -73,8 +73,11 @@ function inject_filter_buttons() {
 function open_chart_filter_dialog(chart_name) {
 	const cfg = CHART_CONFIG[chart_name];
 	const now = frappe.datetime.nowdate();
-	// Trends are measured by booking_date over the past 12 months
-	const first_day = frappe.datetime.month_start(frappe.datetime.add_months(now, -11));
+	// Trends are measured by booking_date over the past 12 months.
+	// NOTE: frappe.datetime.month_start() ignores arguments and returns
+	// the *current* month's start as ISO datetime (unsuitable for Date
+	// controls).  Build YYYY-MM-DD manually from add_months result.
+	const first_day = frappe.datetime.add_months(now, -11).substring(0, 7) + '-01';
 	const last_day = now;
 
 	const fields = [
@@ -159,11 +162,13 @@ function open_chart_filter_dialog(chart_name) {
 		});
 	}
 
-	const d = new frappe.ui.Dialog({
-		title: __('Edit Chart Filters'),
-		fields: fields,
-		primary_action_label: __('Apply'),
-		primary_action(values) {
+	let d;
+	try {
+		d = new frappe.ui.Dialog({
+			title: __('Edit Chart Filters'),
+			fields: fields,
+			primary_action_label: __('Apply'),
+			primary_action(values) {
 			// Strip read-only helper field
 			delete values.chart_name;
 
@@ -215,6 +220,13 @@ function open_chart_filter_dialog(chart_name) {
 		});
 
 	d.show();
+	} catch (err) {
+		frappe.show_alert({
+			message: __('Unable to open chart filter dialog'),
+			indicator: 'red'
+		});
+		console.error('Chart filter dialog error:', err);
+	}
 }
 
 // ── Bootstrap ──────────────────────────────────────────────────────────

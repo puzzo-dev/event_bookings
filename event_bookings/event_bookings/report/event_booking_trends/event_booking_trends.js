@@ -15,7 +15,7 @@ frappe.query_reports["Event Booking Trends"] = {
 			"fieldname": "from_date",
 			"label": __("From Date"),
 			"fieldtype": "Date",
-			"default": frappe.datetime.month_start(frappe.datetime.add_months(frappe.datetime.get_today(), -11)),
+			"default": frappe.datetime.add_months(frappe.datetime.get_today(), -11).substring(0, 7) + '-01',
 			"reqd": 1
 		},
 		{
