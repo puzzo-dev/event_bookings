@@ -114,18 +114,18 @@ def migrate_workspace_charts():
 
 def _fix_chart_filters_json():
 	"""
-	Correct any Dashboard Chart records whose filters_json still references
-	the legacy hidden field 'event_timing'. Run idempotently on every migrate.
+	Normalise the date_field on the trend Dashboard Charts to 'booking_date'.
+	Trends are measured by when a booking was made, not the (future) event
+	date. Repairs legacy 'event_timing'/'event_date' values idempotently on
+	every migrate. Run idempotently on every migrate.
 	"""
 	import json
 
-	charts_to_fix = {
-		"Event Booking Revenue Trends": {"period": "Monthly", "based_on": "Revenue", "date_field": "event_date"},
-		"Event Booking Count Trends":   {"period": "Monthly", "based_on": "Count",   "date_field": "event_date"},
-		"Events By Event Type":         {"based_on": "Count"},
-	}
+	# Charts that aggregate by date and must use booking_date
+	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
+	legacy_date_fields = {"event_timing", "event_date"}
 
-	for chart_name, correct_defaults in charts_to_fix.items():
+	for chart_name in trend_charts:
 		if not frappe.db.exists("Dashboard Chart", chart_name):
 			continue
 
@@ -135,9 +135,8 @@ def _fix_chart_filters_json():
 		except (ValueError, TypeError):
 			stored = {}
 
-		needs_fix = stored.get("date_field") == "event_timing"
-		if needs_fix:
-			stored["date_field"] = "event_date"
+		if stored.get("date_field") in legacy_date_fields:
+			stored["date_field"] = "booking_date"
 			frappe.db.set_value(
 				"Dashboard Chart", chart_name, "filters_json",
 				json.dumps(stored), update_modified=False,

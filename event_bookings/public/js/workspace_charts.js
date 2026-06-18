@@ -10,10 +10,10 @@ frappe.provide('event_bookings.workspace');
 
 const CHART_CONFIG = {
 	'Event Booking Revenue Trends': {
-		default_filters: { period: 'Monthly', based_on: 'Revenue', date_field: 'event_date' }
+		default_filters: { period: 'Monthly', based_on: 'Revenue', date_field: 'booking_date' }
 	},
 	'Event Booking Count Trends': {
-		default_filters: { period: 'Monthly', based_on: 'Count', date_field: 'event_date' }
+		default_filters: { period: 'Monthly', based_on: 'Count', date_field: 'booking_date' }
 	},
 	'Events By Event Type': {
 		default_filters: { based_on: 'Count' },
@@ -73,9 +73,9 @@ function inject_filter_buttons() {
 function open_chart_filter_dialog(chart_name) {
 	const cfg = CHART_CONFIG[chart_name];
 	const now = frappe.datetime.nowdate();
-	// Event bookings are forward-looking: span 6 months past to 6 months future
-	const first_day = frappe.datetime.month_start(frappe.datetime.add_months(now, -6));
-	const last_day = frappe.datetime.month_end(frappe.datetime.add_months(now, 5));
+	// Trends are measured by booking_date over the past 12 months
+	const first_day = frappe.datetime.month_start(frappe.datetime.add_months(now, -11));
+	const last_day = now;
 
 	const fields = [
 		{
@@ -94,10 +94,10 @@ function open_chart_filter_dialog(chart_name) {
 			fieldname: 'date_field',
 			fieldtype: 'Select',
 			options: [
-				{ label: __('Event Date'), value: 'event_date' },
-				{ label: __('Booking Date'), value: 'booking_date' }
+				{ label: __('Booking Date'), value: 'booking_date' },
+				{ label: __('Event Date'), value: 'event_date' }
 			],
-			default: cfg.default_filters.date_field || 'event_date',
+			default: cfg.default_filters.date_field || 'booking_date',
 			reqd: 1
 		});
 	}

@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import add_months, get_first_day, get_last_day, nowdate
+from frappe.utils import add_months, get_first_day, nowdate
 
 
 def execute(filters=None):
@@ -19,10 +19,10 @@ def execute(filters=None):
 
 def validate_filters(filters):
 	if not filters.get("from_date"):
-		# Event bookings are forward-looking; include upcoming events.
-		filters["from_date"] = get_first_day(add_months(nowdate(), -6))
+		# Measured by booking_date over the past 12 months.
+		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
 	if not filters.get("to_date"):
-		filters["to_date"] = get_last_day(add_months(nowdate(), 5))
+		filters["to_date"] = nowdate()
 	if not filters.get("based_on"):
 		filters["based_on"] = "Revenue"
 
@@ -67,7 +67,7 @@ def get_data(filters):
 				SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0))) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND event_date >= %s AND event_date <= %s
+			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type
 			ORDER BY value DESC
@@ -79,7 +79,7 @@ def get_data(filters):
 				COUNT(name) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND event_date >= %s AND event_date <= %s
+			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type
 			ORDER BY value DESC
