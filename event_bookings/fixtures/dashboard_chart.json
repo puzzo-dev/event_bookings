@@ -6,7 +6,7 @@
   "custom_options": "{\"type\": \"line\", \"tooltipOptions\": {}, \"lineOptions\": {\"regionFill\": 1}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Revenue\", \"date_field\": \"booking_date\"}",
+  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Revenue\", \"date_field\": \"booking_date\", \"company\": \"I-Varse Technologies\"}",
   "is_public": 1,
   "is_standard": 0,
   "module": "Event Bookings",
@@ -18,7 +18,7 @@
   "type": "Line",
   "use_report_chart": 1,
   "y_axis": [],
-  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+  "dynamic_filters_json": "{}"
  },
  {
   "chart_name": "Event Booking Count Trends",
@@ -27,7 +27,7 @@
   "custom_options": "{\"type\": \"line\", \"tooltipOptions\": {}, \"lineOptions\": {\"regionFill\": 1}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"booking_date\"}",
+  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"booking_date\", \"company\": \"I-Varse Technologies\"}",
   "is_public": 1,
   "is_standard": 0,
   "module": "Event Bookings",
@@ -39,7 +39,7 @@
   "type": "Line",
   "use_report_chart": 1,
   "y_axis": [],
-  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+  "dynamic_filters_json": "{}"
  },
  {
   "chart_name": "Events By Event Type",
@@ -48,7 +48,7 @@
   "custom_options": "{\"type\": \"donut\", \"tooltipOptions\": {}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "filters_json": "{\"based_on\": \"Count\"}",
+  "filters_json": "{\"based_on\": \"Count\", \"company\": \"I-Varse Technologies\"}",
   "is_public": 1,
   "is_standard": 0,
   "module": "Event Bookings",
@@ -60,6 +60,6 @@
   "type": "Donut",
   "use_report_chart": 1,
   "y_axis": [],
-  "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+  "dynamic_filters_json": "{}"
  }
 ]

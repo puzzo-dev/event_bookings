@@ -117,15 +117,18 @@ def _fix_chart_filters_json():
 	Normalise the date_field on the trend Dashboard Charts to 'booking_date'.
 	Trends are measured by when a booking was made, not the (future) event
 	date. Repairs legacy 'event_timing'/'event_date' values idempotently on
-	every migrate. Run idempotently on every migrate.
+	every migrate. Also normalises dynamic_filters_json to static company.
+	Run idempotently on every migrate.
 	"""
 	import json
 
 	# Charts that aggregate by date and must use booking_date
 	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
+	all_charts = trend_charts + ["Events By Event Type"]
 	legacy_date_fields = {"event_timing", "event_date"}
+	STATIC_COMPANY = "I-Varse Technologies"
 
-	for chart_name in trend_charts:
+	for chart_name in all_charts:
 		if not frappe.db.exists("Dashboard Chart", chart_name):
 			continue
 
@@ -135,11 +138,35 @@ def _fix_chart_filters_json():
 		except (ValueError, TypeError):
 			stored = {}
 
-		if stored.get("date_field") in legacy_date_fields:
+		changed = False
+
+		# Fix date_field on trend charts
+		if chart_name in trend_charts and stored.get("date_field") in legacy_date_fields:
 			stored["date_field"] = "booking_date"
+			changed = True
+
+		# Ensure company is static in filters_json
+		if stored.get("company") != STATIC_COMPANY:
+			stored["company"] = STATIC_COMPANY
+			changed = True
+
+		if changed:
 			frappe.db.set_value(
 				"Dashboard Chart", chart_name, "filters_json",
 				json.dumps(stored), update_modified=False,
+			)
+
+		# Strip dynamic JS expression from dynamic_filters_json
+		raw_dyn = frappe.db.get_value("Dashboard Chart", chart_name, "dynamic_filters_json") or "{}"
+		try:
+			dyn = json.loads(raw_dyn)
+		except (ValueError, TypeError):
+			dyn = {}
+
+		if dyn:
+			frappe.db.set_value(
+				"Dashboard Chart", chart_name, "dynamic_filters_json",
+				"{}", update_modified=False,
 			)
 
 	frappe.db.commit()
