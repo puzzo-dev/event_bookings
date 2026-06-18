@@ -225,11 +225,3 @@ function open_chart_filter_dialog(chart_name) {
 
 // ── Bootstrap ──────────────────────────────────────────────────────────
 frappe.router.on('change', init_chart_filters);
-
-// Also fire on initial load if already on workspace
-$(document).on('startup', () => {
-	const route = frappe.get_route && frappe.get_route();
-	if (route && route[0] === 'workspace' && route[1] === 'event-bookings') {
-		init_chart_filters();
-	}
-});
