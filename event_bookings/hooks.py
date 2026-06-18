@@ -258,4 +258,8 @@ fixtures = [
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
     ]]]},
+    {"dt": "Dashboard Chart", "filters": [["name", "in", [
+        "Event Booking Revenue Trends", "Event Booking Count Trends"
+    ]]]},
+    {"dt": "Report", "filters": [["name", "in", ["Event Booking Trends"]]]},
 ]
