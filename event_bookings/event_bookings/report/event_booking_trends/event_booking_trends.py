@@ -180,18 +180,16 @@ def get_booking_statuses(filters):
 
 
 def get_period_value(status, based_on, date_field, from_date, to_date, filters):
-	conditions = get_base_conditions(filters, date_field)
-
 	if based_on == "Revenue":
 		result = frappe.db.sql(
 			f"""
-			SELECT SUM(total_actual)
+			SELECT SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0)))
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
 			  AND booking_status = %s
-			  AND {date_field} BETWEEN %s AND %s
+			  AND {date_field} >= %s AND {date_field} <= %s
 			""",
-			(status, from_date, to_date),
+			(status, f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
 		)
 	else:
 		result = frappe.db.sql(
@@ -200,9 +198,9 @@ def get_period_value(status, based_on, date_field, from_date, to_date, filters):
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
 			  AND booking_status = %s
-			  AND {date_field} BETWEEN %s AND %s
+			  AND {date_field} >= %s AND {date_field} <= %s
 			""",
-			(status, from_date, to_date),
+			(status, f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
 		)
 
 	return (result[0][0] or 0) if result else 0
@@ -213,8 +211,8 @@ def get_base_conditions(filters, date_field):
 	to_date = filters.get("to_date", nowdate())
 
 	return {
-		"date_filter": f"{date_field} BETWEEN %s AND %s",
-		"values": (from_date, to_date),
+		"date_filter": f"{date_field} >= %s AND {date_field} <= %s",
+		"values": (f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
 	}
 
 
