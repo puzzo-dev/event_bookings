@@ -22,9 +22,11 @@ def validate_filters(filters):
 	if not filters.get("date_field"):
 		filters["date_field"] = "event_date"
 	if not filters.get("from_date"):
-		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
+		# Event bookings are forward-looking, so the trend window spans
+		# 6 months in the past through 6 months into the future.
+		filters["from_date"] = get_first_day(add_months(nowdate(), -6))
 	if not filters.get("to_date"):
-		filters["to_date"] = nowdate()
+		filters["to_date"] = get_last_day(add_months(nowdate(), 5))
 	if not filters.get("company"):
 		filters["company"] = frappe.defaults.get_user_default("Company")
 

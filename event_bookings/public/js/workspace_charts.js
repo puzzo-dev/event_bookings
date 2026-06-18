@@ -73,8 +73,9 @@ function inject_filter_buttons() {
 function open_chart_filter_dialog(chart_name) {
 	const cfg = CHART_CONFIG[chart_name];
 	const now = frappe.datetime.nowdate();
-	const eleven_months_ago = frappe.datetime.add_months(now, -11);
-	const first_day = frappe.datetime.get_first_day(eleven_months_ago);
+	// Event bookings are forward-looking: span 6 months past to 6 months future
+	const first_day = frappe.datetime.month_start(frappe.datetime.add_months(now, -6));
+	const last_day = frappe.datetime.month_end(frappe.datetime.add_months(now, 5));
 
 	const fields = [
 		{
@@ -143,7 +144,7 @@ function open_chart_filter_dialog(chart_name) {
 		label: __('To Date'),
 		fieldname: 'to_date',
 		fieldtype: 'Date',
-		default: now,
+		default: last_day,
 		reqd: 1
 	});
 

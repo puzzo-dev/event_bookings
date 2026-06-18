@@ -3,7 +3,7 @@
 
 import frappe
 from frappe import _
-from frappe.utils import add_months, get_first_day, nowdate
+from frappe.utils import add_months, get_first_day, get_last_day, nowdate
 
 
 def execute(filters=None):
@@ -19,9 +19,10 @@ def execute(filters=None):
 
 def validate_filters(filters):
 	if not filters.get("from_date"):
-		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
+		# Event bookings are forward-looking; include upcoming events.
+		filters["from_date"] = get_first_day(add_months(nowdate(), -6))
 	if not filters.get("to_date"):
-		filters["to_date"] = nowdate()
+		filters["to_date"] = get_last_day(add_months(nowdate(), 5))
 	if not filters.get("based_on"):
 		filters["based_on"] = "Revenue"
 
