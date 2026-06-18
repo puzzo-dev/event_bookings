@@ -114,6 +114,7 @@ def get_data(filters):
 	based_on = filters.get("based_on", "Revenue")
 	date_field = get_date_field(filters.get("date_field", "event_timing"))
 
+	company = filters.get("company")
 	metric_label = _("Total Revenue") if based_on == "Revenue" else _("Total Count")
 	row = {"metric": metric_label}
 	total = 0
@@ -124,7 +125,8 @@ def get_data(filters):
 			based_on=based_on,
 			date_field=date_field,
 			from_date=p["from_date"],
-			to_date=p["to_date"]
+			to_date=p["to_date"],
+			company=company
 		)
 		row[key] = value
 		total += value or 0
@@ -133,7 +135,14 @@ def get_data(filters):
 	return [row]
 
 
-def get_period_value(based_on, date_field, from_date, to_date):
+def get_period_value(based_on, date_field, from_date, to_date, company):
+	conditions = ""
+	values = [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]
+	
+	if company:
+		conditions += " AND company = %s"
+		values.append(company)
+
 	if based_on == "Revenue":
 		result = frappe.db.sql(
 			f"""
@@ -141,8 +150,9 @@ def get_period_value(based_on, date_field, from_date, to_date):
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
 			  AND {date_field} >= %s AND {date_field} <= %s
+			  {conditions}
 			""",
-			(f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
+			tuple(values),
 		)
 	else:
 		result = frappe.db.sql(
@@ -151,8 +161,9 @@ def get_period_value(based_on, date_field, from_date, to_date):
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
 			  AND {date_field} >= %s AND {date_field} <= %s
+			  {conditions}
 			""",
-			(f"{from_date} 00:00:00", f"{to_date} 23:59:59"),
+			tuple(values),
 		)
 
 	return (result[0][0] or 0) if result else 0

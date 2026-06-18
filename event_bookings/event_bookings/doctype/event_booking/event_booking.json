@@ -42,7 +42,11 @@
   "stock_entry",
   "sec_staffing",
   "staff_requirements",
-  "tab_connections"
+  "tab_connections",
+  "event_planner_commission_amount",
+  "event_timing",
+  "event_end_datetime",
+  "company"
  ],
  "fields": [
   {
@@ -279,6 +283,14 @@
    "fieldtype": "Tab Break",
    "label": "Connections",
    "show_dashboard": 1
+  },
+  {
+   "default": "frappe.defaults.get_user_default(\"Company\")",
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
@@ -330,7 +342,7 @@
    "link_fieldname": "event_booking"
   }
  ],
- "modified": "2026-06-16 16:24:00.000000",
+ "modified": "2026-06-18 15:03:45.885698",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Booking",
