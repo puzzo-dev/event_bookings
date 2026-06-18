@@ -32,20 +32,10 @@ def after_migrate():
 
 def migrate_workspace_charts():
 	"""
-	Idempotent: delete the old is_standard=1 charts (can't be removed by fixtures)
-	and patch the workspace content to reference the new Report-based charts.
+	Idempotent: ensure the workspace content references the correct Report-based charts.
 	"""
 	import json
 
-	# ── 1. Remove legacy charts ────────────────────────────────────────────
-	legacy_charts = ["Event Revenue Trend", "Monthly Events"]
-	for name in legacy_charts:
-		if frappe.db.exists("Dashboard Chart", name):
-			frappe.db.set_value("Dashboard Chart", name, "is_standard", 0)
-			frappe.delete_doc("Dashboard Chart", name, force=True, ignore_missing=True)
-			frappe.logger().info(f"event_bookings: deleted legacy chart '{name}'")
-
-	# ── 2. Patch workspace content ─────────────────────────────────────────
 	if not frappe.db.exists("Workspace", "Event Bookings"):
 		return
 
@@ -83,8 +73,7 @@ def migrate_workspace_charts():
 	if updated:
 		ws.content = json.dumps(content)
 		ws.module_onboarding = "Event Bookings Onboarding"
-		# Sync the charts child table too
-		ws.charts = [c for c in ws.charts if c.chart_name not in legacy_charts]
+		# Sync the charts child table
 		existing_chart_names = {c.chart_name for c in ws.charts}
 		for new_chart in ["Event Booking Revenue Trends", "Event Booking Count Trends"]:
 			if new_chart not in existing_chart_names:
