@@ -45,8 +45,8 @@ frappe.query_reports["Event Booking Trends"] = {
 			"fieldname": "date_field",
 			"label": __("Date Field"),
 			"fieldtype": "Select",
-			"options": "event_timing\nbooking_date\nevent_date",
-			"default": "event_timing",
+			"options": "event_date\nbooking_date",
+			"default": "event_date",
 			"reqd": 1
 		}
 	]

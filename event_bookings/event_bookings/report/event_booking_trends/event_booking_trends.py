@@ -20,7 +20,7 @@ def validate_filters(filters):
 	if not filters.get("based_on"):
 		filters["based_on"] = "Revenue"
 	if not filters.get("date_field"):
-		filters["date_field"] = "event_timing"
+		filters["date_field"] = "event_date"
 	if not filters.get("from_date"):
 		filters["from_date"] = get_first_day(add_months(nowdate(), -11))
 	if not filters.get("to_date"):
@@ -112,7 +112,7 @@ def get_columns(filters):
 def get_data(filters):
 	period_list = get_period_list(filters)
 	based_on = filters.get("based_on", "Revenue")
-	date_field = get_date_field(filters.get("date_field", "event_timing"))
+	date_field = get_date_field(filters.get("date_field", "event_date"))
 
 	company = filters.get("company")
 	metric_label = _("Total Revenue") if based_on == "Revenue" else _("Total Count")
@@ -171,11 +171,10 @@ def get_period_value(based_on, date_field, from_date, to_date, company):
 
 def get_date_field(field_key):
 	mapping = {
-		"event_timing": "event_timing",
-		"booking_date": "booking_date",
 		"event_date": "event_date",
+		"booking_date": "booking_date",
 	}
-	return mapping.get(field_key, "event_timing")
+	return mapping.get(field_key, "event_date")
 
 
 def get_chart_data(filters, columns, data):
