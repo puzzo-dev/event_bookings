@@ -13,7 +13,8 @@
   "booking_status",
   "booking_date",
   "booking_time",
-  "customer",
+  "party_type",
+  "party_name",
   "contact_person",
   "col_type",
   "event_type",
@@ -44,6 +45,7 @@
   "staff_requirements",
   "tab_connections",
   "event_planner_commission_amount",
+  "customer",
   "event_timing",
   "event_end_datetime",
   "company"
@@ -90,11 +92,28 @@
    "label": "Booking Time"
   },
   {
+   "fieldname": "party_type",
+   "fieldtype": "Select",
+   "in_list_view": 1,
+   "label": "Party Type",
+   "options": "Customer\nLead",
+   "reqd": 1
+  },
+  {
+   "fieldname": "party_name",
+   "fieldtype": "Dynamic Link",
+   "in_list_view": 1,
+   "label": "Party Name",
+   "options": "party_type",
+   "reqd": 1
+  },
+  {
    "fieldname": "customer",
    "fieldtype": "Link",
+   "hidden": 1,
    "label": "Customer",
    "options": "Customer",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "contact_person",
