@@ -4,25 +4,42 @@ import frappe
 def _update_linked_event_booking(doc, callback=None, **field_updates):
 	"""Fetch the linked Event Booking and apply field updates.
 
-	If the Event Booking cannot be successfully updated, the error will bubble up
-	and roll back the ERPNext document submission to ensure data consistency.
+	Submitted Event Bookings (docstatus=1) cannot be saved normally; their
+	linked-document tracking fields are updated via frappe.db.set_value to avoid
+	blocking the ERPNext document submission.
+
+	Draft bookings use save() so validate, before_save, and version tracking fire.
 	"""
 	if not getattr(doc, "event_booking", None):
 		return
 
 	eb = frappe.get_doc("Event Booking", doc.event_booking)
+
+	if eb.docstatus == 1:
+		try:
+			for field, value in field_updates.items():
+				frappe.db.set_value(
+					"Event Booking", eb.name, field, value, update_modified=False
+				)
+		except frappe.ValidationError:
+			frappe.log_error(
+				title=f"Failed to update submitted Event Booking {eb.name} "
+				      f"on {doc.doctype} {doc.name}"
+			)
+		return
+
 	for field, value in field_updates.items():
 		setattr(eb, field, value)
 	if callback:
 		callback(eb)
 
-	# Event Booking is not submittable (docstatus always 0); always use save()
-	# so that validate, before_save, and version tracking fire correctly.
 	try:
 		eb.save()
 	except frappe.ValidationError:
-		frappe.log_error(title=f"Failed to update linked Event Booking {eb.name} on submit of {doc.doctype} {doc.name}")
-		# We do not re-raise because we don't want to block the ERPNext document submission
+		frappe.log_error(
+			title=f"Failed to update linked Event Booking {eb.name} "
+			      f"on submit of {doc.doctype} {doc.name}"
+		)
 
 
 def on_quotation_submit(doc, method):

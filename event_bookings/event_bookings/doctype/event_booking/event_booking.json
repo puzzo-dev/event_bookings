@@ -1,6 +1,5 @@
 {
  "actions": [],
- "allow_rename": 1,
  "autoname": "EVT-.YYYY.-.####",
  "creation": "2026-06-12 22:47:36.158952",
  "doctype": "DocType",
@@ -17,8 +16,10 @@
   "party_name",
   "contact_person",
   "col_type",
+  "company",
   "event_type",
   "event_planner",
+  "event_planner_commission_amount",
   "event_cost_center",
   "project",
   "sec_logistics",
@@ -44,11 +45,9 @@
   "sec_staffing",
   "staff_requirements",
   "tab_connections",
-  "event_planner_commission_amount",
   "customer",
   "event_timing",
-  "event_end_datetime",
-  "company"
+  "event_end_datetime"
  ],
  "fields": [
   {
@@ -314,6 +313,7 @@
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
+ "is_submittable": 1,
  "links": [
   {
    "group": "Sales",
@@ -369,6 +369,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "email": 1,
    "export": 1,
@@ -377,6 +379,7 @@
    "report": 1,
    "role": "Event Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -416,6 +419,8 @@
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -425,6 +430,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],
