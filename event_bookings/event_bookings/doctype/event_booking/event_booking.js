@@ -10,27 +10,18 @@ frappe.ui.form.on("Event Booking", {
             // Convert Lead to Customer — only when party is a Lead
             if (frm.doc.party_type === "Lead") {
                 frm.add_custom_button(__('Convert Lead to Customer'), function() {
-                    frappe.confirm(
-                        __('Convert Lead <b>{0}</b> to a Customer and update this booking?',
-                            [frm.doc.party_name]),
-                        function() {
-                            frappe.call({
-                                method: "event_bookings.event_bookings.doctype.event_booking.event_booking.convert_lead_and_update_booking",
-                                args: { booking_name: frm.doc.name },
-                                freeze: true,
-                                freeze_message: __("Converting Lead to Customer..."),
-                                callback(r) {
-                                    if (r.message) {
-                                        const msg = r.message.already_existed
-                                            ? __("Booking linked to existing Customer: {0}", [r.message.customer])
-                                            : __("Lead converted to Customer: {0}", [r.message.customer]);
-                                        frappe.show_alert({ message: msg, indicator: "green" }, 5);
-                                        frm.reload_doc();
-                                    }
-                                }
-                            });
+                    frappe.db.get_value("Customer", { lead_name: frm.doc.party_name }, "name").then(r => {
+                        if (r && r.message && r.message.name) {
+                            // Already a Customer — just link silently
+                            _do_convert(frm, null);
+                        } else {
+                            frappe.confirm(
+                                __('Convert Lead <b>{0}</b> to a Customer and update this booking?',
+                                    [frm.doc.party_name]),
+                                () => _do_convert(frm, null)
+                            );
                         }
-                    );
+                    });
                 }, __('Actions'));
             }
 
@@ -119,6 +110,36 @@ function _sync_event_end_datetime(frm) {
 }
 
 function _prompt_lead_conversion(frm, on_skip) {
+    // Check if this Lead already has a Customer in the system — skip the dialog if so
+    frappe.db.get_value("Customer", { lead_name: frm.doc.party_name }, "name").then(r => {
+        if (r && r.message && r.message.name) {
+            // Lead is already a Customer — silently link and proceed
+            _do_convert(frm, on_skip);
+        } else {
+            _show_conversion_dialog(frm, on_skip);
+        }
+    });
+}
+
+function _do_convert(frm, on_skip) {
+    frappe.call({
+        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.convert_lead_and_update_booking",
+        args: { booking_name: frm.doc.name },
+        freeze: true,
+        freeze_message: __("Linking Customer..."),
+        callback(r) {
+            if (r.message) {
+                const msg = r.message.already_existed
+                    ? __("Booking linked to existing Customer: {0}", [r.message.customer])
+                    : __("Lead converted to Customer: {0}", [r.message.customer]);
+                frappe.show_alert({ message: msg, indicator: "green" }, 5);
+                frm.reload_doc().then(() => on_skip && on_skip());
+            }
+        }
+    });
+}
+
+function _show_conversion_dialog(frm, on_skip) {
     const d = new frappe.ui.Dialog({
         title: __("Lead Detected"),
         fields: [
@@ -133,21 +154,7 @@ function _prompt_lead_conversion(frm, on_skip) {
         primary_action_label: __("Convert to Customer & Proceed"),
         primary_action() {
             d.hide();
-            frappe.call({
-                method: "event_bookings.event_bookings.doctype.event_booking.event_booking.convert_lead_and_update_booking",
-                args: { booking_name: frm.doc.name },
-                freeze: true,
-                freeze_message: __("Converting Lead to Customer..."),
-                callback(r) {
-                    if (r.message) {
-                        const msg = r.message.already_existed
-                            ? __("Booking linked to existing Customer: {0}", [r.message.customer])
-                            : __("Lead converted to Customer: {0}", [r.message.customer]);
-                        frappe.show_alert({ message: msg, indicator: "green" }, 5);
-                        frm.reload_doc().then(() => on_skip && on_skip());
-                    }
-                }
-            });
+            _do_convert(frm, on_skip);
         },
         secondary_action_label: __("Proceed as Lead"),
         secondary_action() {

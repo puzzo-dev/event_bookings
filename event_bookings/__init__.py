@@ -1,4 +1,4 @@
-__version__ = "15.0.33"
+__version__ = "15.0.34"
 
 # ── Monkey-patch: graceful fiscal-year fallback ────────────────────────
 # erpnext.accounts.utils.get_fiscal_years raises FiscalYearError when
