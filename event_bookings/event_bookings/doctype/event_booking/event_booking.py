@@ -25,12 +25,19 @@ _PROTECTED_STATUSES = frozenset({
 	"Confirmed", "In Preparation", "Executed", "Invoiced", "Paid"
 })
 
+# Statuses where party MUST be a Customer (not a Lead)
+_CUSTOMER_REQUIRED_STATUSES = frozenset({
+	"Confirmed", "In Preparation", "Executed", "Invoiced", "Paid"
+})
+
 
 class EventBooking(Document):
 	def validate(self):
 		self._sync_datetime_fields()
 		self.validate_dates()
 		self._validate_status_transition()
+		self._validate_party_for_status()
+		self._sync_customer_field()
 		if self._linked_docs_changed():
 			self.calculate_totals()
 		if self.booking_status == "Invoiced":
@@ -68,6 +75,24 @@ class EventBooking(Document):
 					"Allowed next statuses are: {2}"
 				).format(old_status, new_status, ", ".join(allowed))
 			)
+
+	def _validate_party_for_status(self):
+		"""Enforce that Confirmed and beyond statuses require a Customer, not a Lead."""
+		if self.booking_status in _CUSTOMER_REQUIRED_STATUSES and self.party_type != "Customer":
+			frappe.throw(
+				_(
+					"Party Type must be 'Customer' before moving to '{0}' status. "
+					"Use Actions → Convert Lead to Customer first."
+				).format(self.booking_status)
+			)
+
+	def _sync_customer_field(self):
+		"""Keep the hidden customer field in sync when party_type is Customer.
+		This ensures backward compatibility with linked documents (Project, etc.)."""
+		if self.party_type == "Customer":
+			self.customer = self.party_name
+		else:
+			self.customer = None
 
 	def _linked_docs_changed(self):
 		"""Return True if any linked document field has changed from previous save."""
@@ -213,8 +238,8 @@ class EventBooking(Document):
 		settings = self.get_settings()
 		qt = frappe.get_doc({
 			"doctype": "Quotation",
-			"quotation_to": "Customer",
-			"party_name": self.customer,
+			"quotation_to": self.party_type,
+			"party_name": self.party_name,
 			"event_booking": self.name,
 			"cost_center": self.event_cost_center or settings.default_cost_center,
 		})
@@ -240,7 +265,8 @@ def make_quotation(source_name, target_doc=None):
 		frappe.throw(_("You do not have permission to create a Quotation."))
 
 	def set_missing_values(source, target):
-		target.quotation_to = "Customer"
+		target.quotation_to = source.party_type
+		target.party_name = source.party_name
 		target.event_booking = source.name
 
 	doclist = get_mapped_doc(
@@ -250,7 +276,6 @@ def make_quotation(source_name, target_doc=None):
 			"Event Booking": {
 				"doctype": "Quotation",
 				"field_map": {
-					"customer": "party_name",
 					"contact_person": "contact_person",
 					"event_cost_center": "cost_center",
 				},
@@ -271,7 +296,9 @@ def make_project(source_name, target_doc=None):
 
 	def set_missing_values(source, target):
 		target.project_name = source.event_name or source.name
-		target.customer = source.customer
+		# Project requires a Customer; only link if party is already a Customer
+		if source.party_type == "Customer":
+			target.customer = source.party_name
 		target.expected_start_date = source.booking_date or source.event_date
 		target.expected_end_date = getdate(source.event_date)
 
@@ -291,6 +318,50 @@ def make_project(source_name, target_doc=None):
 	)
 
 	return doclist
+
+
+@frappe.whitelist(allow_guest=False)
+def convert_lead_and_update_booking(booking_name):
+	"""Convert the Lead linked to an Event Booking into a Customer, then update the booking.
+
+	Auto-saves the Customer from Lead data so the user doesn't have to fill another form.
+	Returns {"customer": <new_customer_name>}.
+	"""
+	if not frappe.has_permission("Event Booking", "write", booking_name):
+		frappe.throw(_("You do not have permission to modify this Event Booking."))
+	if not frappe.has_permission("Customer", "create"):
+		frappe.throw(_("You do not have permission to create a Customer."))
+
+	booking = frappe.get_doc("Event Booking", booking_name)
+
+	if booking.party_type != "Lead":
+		frappe.throw(_("This booking is not linked to a Lead."))
+
+	lead_name = booking.party_name
+
+	# If a Customer was already created from this Lead, reuse it — no duplicate
+	existing_customer = frappe.db.get_value("Customer", {"lead_name": lead_name}, "name")
+	if existing_customer:
+		customer_name = existing_customer
+		already_existed = True
+	else:
+		from erpnext.crm.doctype.lead.lead import _make_customer
+		customer_doc = _make_customer(lead_name, ignore_permissions=False)
+		if not customer_doc.customer_group:
+			customer_doc.customer_group = frappe.db.get_default("Customer Group") or "All Customer Groups"
+		if not customer_doc.territory:
+			customer_doc.territory = frappe.db.get_default("Territory") or "All Territories"
+		customer_doc.insert()
+		customer_name = customer_doc.name
+		already_existed = False
+
+	# Update the booking to point to the Customer
+	booking.party_type = "Customer"
+	booking.party_name = customer_name
+	booking.customer = customer_name
+	booking.save()
+
+	return {"customer": customer_name, "already_existed": already_existed}
 
 
 @frappe.whitelist(allow_guest=False)
