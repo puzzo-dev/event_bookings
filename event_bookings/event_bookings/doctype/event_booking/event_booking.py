@@ -45,12 +45,25 @@ class EventBooking(Document):
 	def before_save(self):
 		self._auto_create_event_cost_center()
 
+	def before_submit(self):
+		"""Submission locks the booking. Only allow when at a committed status."""
+		if self.booking_status not in _COMMITTED_STATUSES:
+			frappe.throw(
+				_(
+					"Event Booking can only be submitted when its status is one of: {0}. "
+					"Current status is '{1}'."
+				).format(", ".join(sorted(_COMMITTED_STATUSES)), self.booking_status)
+			)
+
 	def before_delete(self):
-		if self.booking_status in _PROTECTED_STATUSES:
+		"""Extra guard for Draft bookings in committed statuses.
+		Submitted docs (docstatus=1) cannot be deleted by Frappe regardless.
+		"""
+		if self.booking_status in _COMMITTED_STATUSES:
 			frappe.throw(
 				_(
 					"Cannot delete Event Booking {0} — it is in '{1}' status. "
-					"Cancel the booking first or contact a System Manager."
+					"Submit or cancel the booking first."
 				).format(self.name, self.booking_status),
 				frappe.PermissionError,
 			)
