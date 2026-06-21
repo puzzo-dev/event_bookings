@@ -9,9 +9,10 @@ def execute(filters=None):
 	filters = frappe._dict(filters or {})
 	validate_filters(filters)
 
-	columns = get_columns(filters)
-	data = get_data(filters)
-	chart = get_chart_data(filters, columns, data)
+	period_list = get_period_list(filters)
+	columns = get_columns(filters, period_list)
+	data = get_data(filters, period_list)
+	chart = get_chart_data(filters, period_list, data)
 
 	return columns, data, None, chart
 
@@ -90,8 +91,9 @@ def get_period_label(start_date, period):
 	return start_date.strftime("%b %Y")
 
 
-def get_columns(filters):
-	period_list = get_period_list(filters)
+def get_columns(filters, period_list=None):
+	if period_list is None:
+		period_list = get_period_list(filters)
 	based_on = filters.get("based_on", "Revenue")
 
 	columns = [
@@ -121,8 +123,9 @@ def get_columns(filters):
 	return columns
 
 
-def get_data(filters):
-	period_list = get_period_list(filters)
+def get_data(filters, period_list=None):
+	if period_list is None:
+		period_list = get_period_list(filters)
 	based_on = filters.get("based_on", "Revenue")
 	date_field = get_date_field(filters.get("date_field", "booking_date"))
 
@@ -181,19 +184,21 @@ def get_period_value(based_on, date_field, from_date, to_date, company):
 	return (result[0][0] or 0) if result else 0
 
 
+# Explicit allowlist — values are used directly in SQL column positions.
+# frappe.throw ensures no unlisted value ever reaches the query.
+_SAFE_DATE_FIELDS = frozenset({"booking_date", "event_date"})
+
+
 def get_date_field(field_key):
-	mapping = {
-		"booking_date": "booking_date",
-		"event_date": "event_date",
-	}
-	return mapping.get(field_key, "booking_date")
+	if field_key not in _SAFE_DATE_FIELDS:
+		frappe.throw(_("Invalid date field: {0}").format(field_key))
+	return field_key
 
 
-def get_chart_data(filters, columns, data):
+def get_chart_data(filters, period_list, data):
 	if not data:
 		return None
 
-	period_list = get_period_list(filters)
 	labels = [p["label"] for p in period_list]
 
 	datasets = []
