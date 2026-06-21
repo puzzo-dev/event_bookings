@@ -20,15 +20,13 @@ VALID_TRANSITIONS = {
 	"Cancelled": {"New"},      # allow re-opening by manager only
 }
 
-# Statuses that represent committed/financial activity — cannot delete without cancelling first
-_PROTECTED_STATUSES = frozenset({
+# Statuses that represent committed/financial activity.
+# These require a Customer party type AND cannot be deleted without cancelling first.
+_COMMITTED_STATUSES = frozenset({
 	"Confirmed", "In Preparation", "Executed", "Invoiced", "Paid"
 })
-
-# Statuses where party MUST be a Customer (not a Lead)
-_CUSTOMER_REQUIRED_STATUSES = frozenset({
-	"Confirmed", "In Preparation", "Executed", "Invoiced", "Paid"
-})
+_PROTECTED_STATUSES = _COMMITTED_STATUSES       # delete guard alias
+_CUSTOMER_REQUIRED_STATUSES = _COMMITTED_STATUSES  # party-type guard alias
 
 
 class EventBooking(Document):
@@ -185,9 +183,7 @@ class EventBooking(Document):
 				"Default Cost Center is required when Auto-Create Cost Center per Event is enabled. "
 				"Please configure it in Event Booking Settings."
 			))
-		company = frappe.defaults.get_defaults().get("company")
-		if not company:
-			company = frappe.db.get_value("Cost Center", default_cc, "company")
+		company = self.company or frappe.db.get_value("Cost Center", default_cc, "company")
 		cc_name = f"{self.event_name} - {self.name}"
 		try:
 			cc = frappe.get_doc({
@@ -219,35 +215,6 @@ class EventBooking(Document):
 				"A post-event review is required before invoicing. "
 				"Please submit and approve a Booking Review for {0}."
 			).format(self.name))
-
-	# -----------------------------------------------------------------
-	# Document Creation Helpers (called manually via action buttons)
-	# -----------------------------------------------------------------
-
-	def create_quotation(self):
-		if self.quotation:
-			return
-		if not frappe.has_permission("Quotation", "create"):
-			frappe.throw(
-				_(
-					"You do not have permission to create a Quotation. "
-					"Please ask a Sales Manager to create it for you."
-				),
-				frappe.PermissionError,
-			)
-		settings = self.get_settings()
-		qt = frappe.get_doc({
-			"doctype": "Quotation",
-			"quotation_to": self.party_type,
-			"party_name": self.party_name,
-			"event_booking": self.name,
-			"cost_center": self.event_cost_center or settings.default_cost_center,
-		})
-		try:
-			qt.insert()
-		except frappe.exceptions.ValidationError as e:
-			frappe.throw(_("Failed to create Quotation: {0}").format(str(e)))
-		self.quotation = qt.name
 
 	# -----------------------------------------------------------------
 	# Utilities
