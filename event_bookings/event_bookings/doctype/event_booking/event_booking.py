@@ -35,10 +35,11 @@ class EventBooking(Document):
 	def validate(self):
 		self._sync_datetime_fields()
 		self.validate_dates()
-		self._validate_status_transition()
+		_prev = self.get_doc_before_save()
+		self._validate_status_transition(_prev)
 		self._validate_party_for_status()
 		self._sync_customer_field()
-		if self._linked_docs_changed():
+		if self._linked_docs_changed(_prev):
 			self.calculate_totals()
 		if self.booking_status == "Invoiced":
 			self.validate_review_requirement()
@@ -56,7 +57,7 @@ class EventBooking(Document):
 				frappe.PermissionError,
 			)
 
-	def _validate_status_transition(self):
+	def _validate_status_transition(self, _prev=None):
 		"""Enforce allowed status transitions unless user is System Manager."""
 		if self.is_new() or not self.has_value_changed("booking_status"):
 			return
@@ -64,7 +65,7 @@ class EventBooking(Document):
 		if "System Manager" in frappe.get_roles():
 			return
 
-		old_status = self.get_doc_before_save().booking_status
+		old_status = (_prev or self.get_doc_before_save()).booking_status
 		new_status = self.booking_status
 
 		allowed = VALID_TRANSITIONS.get(old_status, set())
@@ -94,9 +95,9 @@ class EventBooking(Document):
 		else:
 			self.customer = None
 
-	def _linked_docs_changed(self):
+	def _linked_docs_changed(self, _prev=None):
 		"""Return True if any linked document field has changed from previous save."""
-		previous = self.get_doc_before_save()
+		previous = _prev or self.get_doc_before_save()
 		if not previous:
 			return True
 		linked_fields = ("quotation", "sales_order", "sales_invoice", "stock_entry", "material_request")
@@ -143,7 +144,6 @@ class EventBooking(Document):
 	def _sync_datetime_fields(self):
 		"""Combine separate Date + Time fields into hidden Datetime fields for backward compatibility."""
 		from datetime import datetime, time as dt_time, timedelta
-		from frappe.utils import getdate
 
 		def _to_time(t):
 			if isinstance(t, str):
@@ -254,7 +254,27 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 
 	def get_settings(self):
-		return frappe.get_cached_doc("Event Booking Settings", "Event Booking Settings")
+		"""Return the Event Booking Settings for this booking's company.
+
+		Falls back to a safe defaults dict when no settings record exists yet,
+		so saves always succeed even on freshly installed or partially configured sites.
+		"""
+		company = self.company or frappe.db.get_default("Company")
+		if company and frappe.db.exists("Event Booking Settings", company):
+			return frappe.get_cached_doc("Event Booking Settings", company)
+		return frappe._dict({
+			"require_review": 0,
+			"auto_create_cost_center_per_event": 0,
+			"pre_event_reminder_days": 3,
+			"enable_whatsapp": 0,
+			"default_cost_center": None,
+			"default_income_account": None,
+			"default_cogs_account": None,
+			"default_damages_account": None,
+			"default_warehouse": None,
+			"events_warehouse": None,
+			"damages_warehouse": None,
+		})
 
 
 @frappe.whitelist(allow_guest=False)

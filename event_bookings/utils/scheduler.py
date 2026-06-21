@@ -4,20 +4,35 @@ from frappe.utils import add_days, today
 
 
 def daily():
-	"""Daily scheduled tasks."""
-	settings = frappe.get_cached_doc("Event Booking Settings", "Event Booking Settings")
-	reminder_days = settings.pre_event_reminder_days or 3
-	tasks = (
+	"""Daily scheduled tasks.
+
+	Company-agnostic tasks run once across all data.
+	Reminders are per-company because each company may have a different reminder_days setting.
+	"""
+	# Company-agnostic tasks
+	for task_name, task in (
 		("sync_invoice_payment_status", sync_invoice_payment_status),
-		("send_pre_event_reminders", lambda: send_pre_event_reminders(days=reminder_days)),
 		("send_unstaffed_alerts", send_unstaffed_alerts),
 		("notify_managers_upcoming_events", notify_managers_upcoming_events),
-	)
-	for name, task in tasks:
+	):
 		try:
 			task()
 		except (frappe.DatabaseError, frappe.ValidationError):
-			frappe.log_error(title=f"Event Bookings daily task failed: {name}")
+			frappe.log_error(title=f"Event Bookings daily task failed: {task_name}")
+
+	# Per-company reminders — reminder_days and WhatsApp flag differ per company
+	for cs in frappe.get_all(
+		"Event Booking Settings",
+		fields=["name", "pre_event_reminder_days", "enable_whatsapp"],
+	):
+		try:
+			send_pre_event_reminders(
+				days=cs.pre_event_reminder_days or 3,
+				company=cs.name,
+				enable_whatsapp=cs.enable_whatsapp,
+			)
+		except (frappe.DatabaseError, frappe.ValidationError):
+			frappe.log_error(title=f"Pre-event reminders failed for company: {cs.name}")
 
 
 def sync_invoice_payment_status():
@@ -44,51 +59,54 @@ def sync_invoice_payment_status():
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
 
 
-def send_pre_event_reminders(days=3):
-	"""Send email reminders to customer T-{days} days before event."""
+def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
+	"""Send email reminders T-{days} days before event, scoped to one company."""
 	target_date = add_days(today(), days)
+	filters = {
+		"event_timing": ("between", [f"{target_date} 00:00:00", f"{target_date} 23:59:59"]),
+		"booking_status": ("in", ["In Preparation", "Confirmed"]),
+	}
+	if company:
+		filters["company"] = company
 	events = frappe.get_all(
 		"Event Booking",
-		filters={
-				"event_timing": ("between", [f"{target_date} 00:00:00", f"{target_date} 23:59:59"]),
-			"booking_status": ("in", ["In Preparation", "Confirmed"]),
-		},
-		fields=["name", "event_name", "event_timing", "customer", "contact_person"],
+		filters=filters,
+		fields=["name", "event_name", "event_timing", "customer", "party_type", "party_name", "contact_person"],
 		limit_page_length=0,
 	)
 	if not events:
 		return
 
-	# --- batch fetch contact / customer emails -----------------------------
+	# --- batch fetch contact emails ----------------------------------------
 	contact_persons = list({ev.contact_person for ev in events if ev.contact_person})
-	customers = list({ev.customer for ev in events if ev.customer})
-
 	contact_emails = {}
 	if contact_persons:
-		contact_emails = frappe._dict(
-			frappe.get_all(
-				"Contact",
-				filters={"name": ("in", contact_persons)},
-				fields=["name", "email_id"],
-				as_list=1,
-			)
-		)
+		contact_emails = {
+			r.name: r.email_id
+			for r in frappe.get_all("Contact", filters={"name": ("in", contact_persons)}, fields=["name", "email_id"])
+		}
 
+	# --- batch fetch Customer emails (for Customer-type parties) -----------
+	customers = list({ev.customer for ev in events if ev.customer})
 	customer_emails = {}
 	if customers:
-		customer_emails = frappe._dict(
-			frappe.get_all(
-				"Customer",
-				filters={"name": ("in", customers)},
-				fields=["name", "email_id"],
-				as_list=1,
-			)
-		)
+		customer_emails = {
+			r.name: r.email_id
+			for r in frappe.get_all("Customer", filters={"name": ("in", customers)}, fields=["name", "email_id"])
+		}
 
-	settings = frappe.get_cached_doc("Event Booking Settings", "Event Booking Settings")
+	# --- batch fetch Lead emails (for Lead-type parties) -------------------
+	leads = list({ev.party_name for ev in events if ev.party_type == "Lead" and ev.party_name})
+	lead_emails = {}
+	if leads:
+		lead_emails = {
+			r.name: r.email_id
+			for r in frappe.get_all("Lead", filters={"name": ("in", leads)}, fields=["name", "email_id"])
+		}
+
 	for ev in events:
 		try:
-			recipients = _build_event_recipients(ev, contact_emails, customer_emails)
+			recipients = _build_event_recipients(ev, contact_emails, customer_emails, lead_emails)
 			if not recipients:
 				continue
 			message = (
@@ -104,21 +122,24 @@ def send_pre_event_reminders(days=3):
 				reference_doctype="Event Booking",
 				reference_name=ev.name,
 			)
-			if settings.enable_whatsapp:
+			if enable_whatsapp:
 				_send_whatsapp_notification(ev, message)
 		except (frappe.DatabaseError, frappe.ValidationError):
 			frappe.log_error(title=_("Pre-event reminder failed for {0}").format(ev.name))
 
 
-def _build_event_recipients(ev, contact_emails, customer_emails):
-	"""Build recipient list from pre-fetched contact/customer email maps."""
+def _build_event_recipients(ev, contact_emails, customer_emails, lead_emails=None):
+	"""Build recipient list from pre-fetched email maps, handling Lead and Customer parties."""
 	recipients = []
 	if ev.contact_person:
 		email = contact_emails.get(ev.contact_person)
 		if email:
 			recipients.append(email)
-	if not recipients and ev.customer:
-		email = customer_emails.get(ev.customer)
+	if not recipients:
+		if ev.party_type == "Lead" and ev.party_name:
+			email = (lead_emails or {}).get(ev.party_name)
+		else:
+			email = customer_emails.get(ev.customer) if ev.customer else None
 		if email:
 			recipients.append(email)
 	return recipients
@@ -268,15 +289,17 @@ def _insert_notification_logs(notifications):
 
 
 def _send_whatsapp_notification(ev, message):
-	"""Send WhatsApp notification if integration is available."""
+	"""Send WhatsApp notification if integration is available.
+
+	Uses ev.customer (already fetched by caller) — no extra DB round-trip.
+	Skips gracefully for Lead-type parties (no Customer link to look up).
+	"""
 	try:
-		from event_bookings.utils.notifications import format_whatsapp_message
-		customer = frappe.db.get_value("Event Booking", ev.name, "customer")
-		if not customer:
+		if ev.party_type != "Customer" or not ev.customer:
 			return
 		contact = frappe.db.get_value(
 			"Dynamic Link",
-			{"parenttype": "Contact", "link_doctype": "Customer", "link_name": customer},
+			{"parenttype": "Contact", "link_doctype": "Customer", "link_name": ev.customer},
 			"parent",
 			order_by="is_primary_contact desc, creation desc",
 		)
@@ -286,21 +309,18 @@ def _send_whatsapp_notification(ev, message):
 		if not phone:
 			return
 		# Placeholder for actual WhatsApp API call
-		logger = frappe.logger("event_bookings")
-		logger.info(f"WhatsApp notification queued for {ev.name} to {phone}")
+		frappe.logger("event_bookings").info(f"WhatsApp notification queued for {ev.name} to {phone}")
 	except (frappe.DatabaseError, frappe.ValidationError):
 		frappe.log_error(title=_("WhatsApp notification failed for {0}").format(ev.name))
 
 
 def _enqueue_email(recipients, subject, message, reference_doctype, reference_name):
-	"""Queue an email in the background to avoid blocking the scheduler."""
-	frappe.enqueue(
-		"frappe.core.doctype.communication.email.make",
+	"""Queue an email in the background using the public frappe.sendmail API."""
+	frappe.sendmail(
 		recipients=recipients,
 		subject=subject,
-		content=message,
-		doctype=reference_doctype,
-		name=reference_name,
-		send_email=True,
-		queue="short",
+		message=message,
+		reference_doctype=reference_doctype,
+		reference_name=reference_name,
+		now=False,
 	)

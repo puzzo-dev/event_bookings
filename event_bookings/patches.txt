@@ -6,3 +6,4 @@ event_bookings.patches.rename_event_settings_doctype
 [post_model_sync]
 # Patches added in this section will be executed after doctypes are migrated
 event_bookings.patches.seed_event_types
+event_bookings.patches.migrate_settings_to_per_company
