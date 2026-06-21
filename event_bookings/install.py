@@ -18,6 +18,7 @@ def after_install():
 	create_email_templates()
 	create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
 	create_custom_fields()         # creates remaining app custom fields
+	create_default_settings()      # one Event Booking Settings record per company
 	migrate_workspace_charts()     # ensure workspace references current charts
 
 
@@ -189,6 +190,20 @@ def _fix_chart_filters_json():
 	frappe.db.commit()
 
 
+def create_default_settings():
+	"""Create one Event Booking Settings record per company (idempotent)."""
+	for company in frappe.get_all("Company", pluck="name", limit_page_length=0):
+		if not frappe.db.exists("Event Booking Settings", company):
+			try:
+				frappe.get_doc({
+					"doctype": "Event Booking Settings",
+					"company": company,
+				}).insert(ignore_permissions=True)
+			except (frappe.DuplicateEntryError, frappe.ValidationError):
+				frappe.log_error(title=f"Failed to create Event Booking Settings for {company}")
+	frappe.db.commit()
+
+
 def create_custom_fields():
 	"""
 	Create Event Booking link fields on doctypes not covered by the
@@ -219,7 +234,9 @@ def create_custom_fields():
 
 		try:
 			create_custom_field(dt, df)
-		except Exception:
+		except (frappe.DuplicateEntryError, frappe.ValidationError, Exception) as e:
+			if not isinstance(e, (frappe.DuplicateEntryError, frappe.ValidationError)):
+				raise  # re-raise unexpected errors (import errors, syntax errors, etc.)
 			frappe.log_error(title=f"Failed to create custom field {fieldname} on {dt}")
 
 
@@ -248,6 +265,7 @@ def create_event_coa_accounts():
 	companies = frappe.get_all("Company", pluck="name", limit_page_length=0)
 	for company in companies:
 		income_root = _get_first_active_root("Income", company)
+
 		expense_root = _get_first_active_root("Expense", company)
 		if not income_root or not expense_root:
 			frappe.log_error(f"Could not find Income/Expense roots for {company}", "Event Bookings Install")
