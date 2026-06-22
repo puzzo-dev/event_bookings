@@ -367,15 +367,39 @@ def _insert_notification_logs(notifications):
 
 
 def _send_whatsapp_notification(ev, message):
-	"""Send WhatsApp notification if integration is available.
+	"""Route a pre-event WhatsApp reminder through the frappe_whatsapp notification system.
 
-	Uses ev.customer (already fetched by caller) — no extra DB round-trip.
-	Skips gracefully for Lead-type parties (no Customer link to look up).
+	Delivery chain:
+	  1. Guard — skips silently when frappe_whatsapp is not installed.
+	  2. Skips Lead-type parties (no Customer → Contact → mobile chain).
+	  3. Resolves the mobile number from the Customer's primary Contact via JOIN
+	     (Event Booking has no direct phone field; ``is_primary_contact`` lives on
+	     ``tabContact``, not ``tabDynamic Link``, so a JOIN is mandatory).
+	  4. Looks for the first *enabled* ``WhatsApp Notification`` configured for
+	     ``Event Booking`` and delegates to its ``send_template_message()`` method,
+	     passing ``phone_no`` explicitly.  This respects any condition/template
+	     the admin has set on that notification record.
+	  5. Falls back to a direct ``send_template()`` call if no notification record
+	     is enabled but an approved ``event_booking_pre_event_reminder`` template
+	     exists in WhatsApp Templates.
+
+	Admins control delivery by creating/configuring a ``WhatsApp Notification``
+	record (frappe_whatsapp → WhatsApp Notification) with:
+	  - Reference DocType: Event Booking
+	  - Template: their approved WhatsApp Business template
+	  - Condition: ``doc.booking_status in ('Confirmed', 'In Preparation')``
+
+	The ``enable_whatsapp`` flag on ``Event Booking Settings`` acts as the
+	per-company on/off gate (checked by the caller before this function runs).
 	"""
 	try:
 		if ev.party_type != "Customer" or not ev.customer:
 			return
-		# is_primary_contact is on tabContact, not tabDynamic Link — requires JOIN
+		if not frappe.db.exists("DocType", "WhatsApp Notification"):
+			return
+
+		# Resolve mobile from primary Contact — ``is_primary_contact`` is on
+		# tabContact, not tabDynamic Link, so a JOIN is required.
 		result = frappe.db.sql(
 			"""
 			SELECT dl.parent
@@ -395,8 +419,36 @@ def _send_whatsapp_notification(ev, message):
 		phone = frappe.db.get_value("Contact", contact, "mobile_no")
 		if not phone:
 			return
-		# Placeholder for actual WhatsApp API call
-		frappe.logger("event_bookings").info(f"WhatsApp notification queued for {ev.name} to {phone}")
+
+		# Primary path — delegate to an admin-configured WhatsApp Notification record.
+		notification_name = frappe.db.get_value(
+			"WhatsApp Notification",
+			{"reference_doctype": "Event Booking", "disabled": 0},
+			"name",
+		)
+		if notification_name:
+			notification = frappe.get_doc("WhatsApp Notification", notification_name)
+			eb_doc = frappe.get_doc("Event Booking", ev.name)
+			notification.send_template_message(eb_doc, phone_no=phone)
+			return
+
+		# Fallback — direct send when a known template exists but no notification
+		# record has been created yet.
+		default_template = frappe.db.get_value(
+			"WhatsApp Templates",
+			{"template_name": "event_booking_pre_event_reminder", "status": "APPROVED"},
+			"name",
+		)
+		if default_template:
+			from frappe_whatsapp.frappe_whatsapp.doctype.whatsapp_message.whatsapp_message import (
+				send_template,
+			)
+			send_template(
+				to=phone,
+				reference_doctype="Event Booking",
+				reference_name=ev.name,
+				template=default_template,
+			)
 	except (frappe.DatabaseError, frappe.ValidationError):
 		frappe.log_error(title=_("WhatsApp notification failed for {0}").format(ev.name))
 
