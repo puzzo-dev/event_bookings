@@ -253,6 +253,24 @@ scheduler_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
+# Custom Hooks (extension points for other apps)
+# -----------------------------------------------
+# WhatsApp reminder delivery hook.
+# Any WhatsApp provider app registers its handler here — event_bookings never
+# imports from frappe_whatsapp or any other WhatsApp app directly.
+#
+# To integrate, add the following to your app's hooks.py:
+#
+#   event_booking_whatsapp_reminder = [
+#       "your_app.module.send_event_booking_reminder"
+#   ]
+#
+# Handler signature:
+#   def send_event_booking_reminder(booking_name: str, phone: str) -> None
+#
+# event_bookings resolves the mobile number and fires this hook.
+# When no handler is registered the notification is silently skipped.
+
 after_install = "event_bookings.install.after_install"
 after_migrate = "event_bookings.install.after_migrate"
 

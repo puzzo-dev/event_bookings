@@ -367,39 +367,42 @@ def _insert_notification_logs(notifications):
 
 
 def _send_whatsapp_notification(ev, message):
-	"""Route a pre-event WhatsApp reminder through the frappe_whatsapp notification system.
+	"""Fire the ``event_booking_whatsapp_reminder`` hook for registered WhatsApp providers.
 
-	Delivery chain:
-	  1. Guard — skips silently when frappe_whatsapp is not installed.
-	  2. Skips Lead-type parties (no Customer → Contact → mobile chain).
-	  3. Resolves the mobile number from the Customer's primary Contact via JOIN
-	     (Event Booking has no direct phone field; ``is_primary_contact`` lives on
-	     ``tabContact``, not ``tabDynamic Link``, so a JOIN is mandatory).
-	  4. Looks for the first *enabled* ``WhatsApp Notification`` configured for
-	     ``Event Booking`` and delegates to its ``send_template_message()`` method,
-	     passing ``phone_no`` explicitly.  This respects any condition/template
-	     the admin has set on that notification record.
-	  5. Falls back to a direct ``send_template()`` call if no notification record
-	     is enabled but an approved ``event_booking_pre_event_reminder`` template
-	     exists in WhatsApp Templates.
+	This function is intentionally provider-agnostic.  It owns only the
+	Frappe-native work (resolving the customer's mobile number from Contact)
+	and then delegates delivery entirely to whatever WhatsApp app is installed
+	on this site via the custom hook ``event_booking_whatsapp_reminder``.
 
-	Admins control delivery by creating/configuring a ``WhatsApp Notification``
-	record (frappe_whatsapp → WhatsApp Notification) with:
-	  - Reference DocType: Event Booking
-	  - Template: their approved WhatsApp Business template
-	  - Condition: ``doc.booking_status in ('Confirmed', 'In Preparation')``
+	Any WhatsApp integration app (frappe_whatsapp, frappe_whatsapp_openwa, or a
+	custom build) registers its handler in its own ``hooks.py``::
 
-	The ``enable_whatsapp`` flag on ``Event Booking Settings`` acts as the
-	per-company on/off gate (checked by the caller before this function runs).
+	    event_booking_whatsapp_reminder = [
+	        "my_whatsapp_app.handlers.send_event_booking_reminder"
+	    ]
+
+	The handler receives ``(booking_name, phone)`` as keyword arguments::
+
+	    def send_event_booking_reminder(booking_name, phone):
+	        ...
+
+	When no handler is registered (no WhatsApp app installed) this function is a
+	complete no-op — event_bookings has zero dependency on any WhatsApp provider.
+
+	The ``enable_whatsapp`` flag on ``Event Booking Settings`` is the per-company
+	on/off gate and is checked by the caller before this function is invoked.
 	"""
 	try:
 		if ev.party_type != "Customer" or not ev.customer:
 			return
-		if not frappe.db.exists("DocType", "WhatsApp Notification"):
+
+		handlers = frappe.get_hooks("event_booking_whatsapp_reminder")
+		if not handlers:
 			return
 
-		# Resolve mobile from primary Contact — ``is_primary_contact`` is on
-		# tabContact, not tabDynamic Link, so a JOIN is required.
+		# Resolve mobile from primary Contact.
+		# ``is_primary_contact`` lives on tabContact, not tabDynamic Link,
+		# so a JOIN is required — cannot use a simple get_value filter.
 		result = frappe.db.sql(
 			"""
 			SELECT dl.parent
@@ -420,35 +423,13 @@ def _send_whatsapp_notification(ev, message):
 		if not phone:
 			return
 
-		# Primary path — delegate to an admin-configured WhatsApp Notification record.
-		notification_name = frappe.db.get_value(
-			"WhatsApp Notification",
-			{"reference_doctype": "Event Booking", "disabled": 0},
-			"name",
-		)
-		if notification_name:
-			notification = frappe.get_doc("WhatsApp Notification", notification_name)
-			eb_doc = frappe.get_doc("Event Booking", ev.name)
-			notification.send_template_message(eb_doc, phone_no=phone)
-			return
-
-		# Fallback — direct send when a known template exists but no notification
-		# record has been created yet.
-		default_template = frappe.db.get_value(
-			"WhatsApp Templates",
-			{"template_name": "event_booking_pre_event_reminder", "status": "APPROVED"},
-			"name",
-		)
-		if default_template:
-			from frappe_whatsapp.frappe_whatsapp.doctype.whatsapp_message.whatsapp_message import (
-				send_template,
-			)
-			send_template(
-				to=phone,
-				reference_doctype="Event Booking",
-				reference_name=ev.name,
-				template=default_template,
-			)
+		for handler in handlers:
+			try:
+				frappe.call(handler, booking_name=ev.name, phone=phone)
+			except Exception:
+				frappe.log_error(
+					title=_("WhatsApp handler failed for {0}: {1}").format(ev.name, handler)
+				)
 	except (frappe.DatabaseError, frappe.ValidationError):
 		frappe.log_error(title=_("WhatsApp notification failed for {0}").format(ev.name))
 
