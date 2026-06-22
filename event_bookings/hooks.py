@@ -8,7 +8,11 @@ app_license = "mit"
 # Apps
 # ------------------
 
-required_apps = ["erpnext", "hrms"]
+# No hard dependencies — the app installs on Frappe alone.
+# ERPNext and HRMS are soft dependencies: their integrations activate
+# automatically when those apps are present on the same site.
+# See event_bookings/utils/erpnext_bridge.py for the integration layer.
+required_apps = []
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -26,7 +30,7 @@ required_apps = ["erpnext", "hrms"]
 
 # include js, css files in header of desk.html
 app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = "/assets/event_bookings/js/workspace_charts.js?v=6"
+app_include_js = "/assets/event_bookings/js/workspace_charts.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"
@@ -116,10 +120,10 @@ app_include_js = "/assets/event_bookings/js/workspace_charts.js?v=6"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
+permission_query_conditions = {
+	"Event Booking": "event_bookings.utils.permissions.get_permission_query_conditions",
+}
+
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }

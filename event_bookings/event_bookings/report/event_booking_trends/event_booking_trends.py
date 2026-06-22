@@ -1,8 +1,8 @@
 import frappe
 from frappe import _
-from frappe.utils import getdate, add_months, add_days, nowdate, get_first_day, get_last_day
+from frappe.utils import getdate, add_months, add_days, add_years, nowdate, get_first_day, get_last_day
 
-from erpnext.accounts.utils import get_fiscal_year
+from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, get_fiscal_year_dates_safe
 
 
 def execute(filters=None):
@@ -27,14 +27,18 @@ def validate_filters(filters):
 	if not filters.get("company"):
 		filters["company"] = frappe.defaults.get_user_default("Company")
 
-	# Derive date range from fiscal year (same pattern as ERPNext trends)
+	# Derive date range from fiscal year
 	if not filters.get("fiscal_year"):
-		filters["fiscal_year"] = get_fiscal_year(nowdate())[0]
+		filters["fiscal_year"] = get_fiscal_year_safe()
 
-	# get_fiscal_year(fiscal_year=...) returns (name, start_date, end_date)
-	fy_info = get_fiscal_year(fiscal_year=filters["fiscal_year"])
-	filters["from_date"] = fy_info[1]
-	filters["to_date"] = fy_info[2]
+	start_date, end_date = get_fiscal_year_dates_safe(filters.get("fiscal_year"))
+	if start_date and end_date:
+		filters["from_date"] = start_date
+		filters["to_date"] = end_date
+	else:
+		# Fallback when no fiscal year is configured (Frappe-only site)
+		filters["from_date"] = frappe.utils.get_first_day(nowdate())
+		filters["to_date"] = nowdate()
 
 
 def get_period_list(filters):
@@ -73,7 +77,6 @@ def get_period_end(start_date, period):
 		end = get_last_day(add_months(start_date, 2))
 		return end
 	elif period == "Yearly":
-		from frappe.utils import add_years
 		return add_days(add_years(get_first_day(start_date), 1), -1)
 	return get_last_day(start_date)
 

@@ -39,7 +39,7 @@ def sync_invoice_payment_status():
 	"""Transition Invoiced → Paid when linked Sales Invoice is paid."""
 	events = frappe.get_all(
 		"Event Booking",
-		filters={"booking_status": "Invoiced", "sales_invoice": ("is", "set")},
+		filters={"booking_status": "Invoiced", "sales_invoice": ("is", "set"), "docstatus": 1},
 		fields=["name", "sales_invoice"],
 		limit_page_length=0,
 	)
@@ -53,7 +53,14 @@ def sync_invoice_payment_status():
 
 	for eb in events:
 		try:
-			if si_statuses.get(eb.sales_invoice) == "Paid":
+			if si_statuses.get(eb.sales_invoice) != "Paid":
+				continue
+			# Re-read current state before writing — the list was fetched earlier
+			# and another process may have already updated or cancelled the booking.
+			current = frappe.db.get_value(
+				"Event Booking", eb.name, ["booking_status", "docstatus"], as_dict=True
+			)
+			if current and current.booking_status == "Invoiced" and current.docstatus == 1:
 				frappe.db.set_value("Event Booking", eb.name, "booking_status", "Paid")
 		except (frappe.DatabaseError, frappe.ValidationError):
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
@@ -243,7 +250,8 @@ def notify_managers_upcoming_events():
 			"type": "Alert",
 			"creation": (">=", f"{from_date} 00:00:00"),
 		},
-		fields=["for_user", "document_name"]
+		fields=["for_user", "document_name"],
+		limit_page_length=0,
 	)
 	existing_set = {(log.for_user, log.document_name) for log in existing_logs}
 
@@ -297,12 +305,21 @@ def _send_whatsapp_notification(ev, message):
 	try:
 		if ev.party_type != "Customer" or not ev.customer:
 			return
-		contact = frappe.db.get_value(
-			"Dynamic Link",
-			{"parenttype": "Contact", "link_doctype": "Customer", "link_name": ev.customer},
-			"parent",
-			order_by="is_primary_contact desc, creation desc",
+		# is_primary_contact is on tabContact, not tabDynamic Link — requires JOIN
+		result = frappe.db.sql(
+			"""
+			SELECT dl.parent
+			FROM `tabDynamic Link` dl
+			INNER JOIN `tabContact` c ON c.name = dl.parent
+			WHERE dl.parenttype = 'Contact'
+			  AND dl.link_doctype = 'Customer'
+			  AND dl.link_name = %s
+			ORDER BY c.is_primary_contact DESC, dl.creation DESC
+			LIMIT 1
+			""",
+			(ev.customer,),
 		)
+		contact = result[0][0] if result else None
 		if not contact:
 			return
 		phone = frappe.db.get_value("Contact", contact, "mobile_no")

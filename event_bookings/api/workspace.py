@@ -14,14 +14,16 @@ def update_chart_filters(chart_name, filters):
 		import json
 		filters = json.loads(filters)
 
-	# Authorisation check
-	if not frappe.has_permission("Dashboard Chart", "write"):
-		user_roles = set(frappe.get_roles())
-		if not user_roles.intersection({"Event Manager", "System Manager"}):
-			frappe.throw(
-				_("You do not have permission to edit chart filters."),
-				frappe.PermissionError,
-			)
+	# Authorisation check — require write permission on Dashboard Chart or
+	# an elevated role. Role membership is checked only to avoid forcing
+	# a full "write" permission grant on a core doctype just for filter edits.
+	has_doc_write = frappe.has_permission("Dashboard Chart", "write")
+	has_role = bool(set(frappe.get_roles()).intersection({"Event Manager", "System Manager"}))
+	if not has_doc_write and not has_role:
+		frappe.throw(
+			_("You do not have permission to edit chart filters."),
+			frappe.PermissionError,
+		)
 
 	# Validate the chart exists and belongs to our module
 	chart = frappe.db.get_value(
@@ -36,8 +38,8 @@ def update_chart_filters(chart_name, filters):
 	if chart.module != "Event Bookings":
 		frappe.throw(_("Only Event Bookings charts can be edited here."))
 
-	# Sanitise and persist
-	allowed_keys = {"period", "based_on", "date_field", "from_date", "to_date", "company"}
+	# Sanitise and persist — only known safe filter keys are accepted
+	allowed_keys = {"period", "based_on", "date_field", "fiscal_year", "company"}
 	clean = {k: v for k, v in filters.items() if k in allowed_keys}
 
 	frappe.db.set_value(

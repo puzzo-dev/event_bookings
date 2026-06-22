@@ -4,32 +4,39 @@ import frappe
 def _update_linked_event_booking(doc, callback=None, **field_updates):
 	"""Fetch the linked Event Booking and apply field updates.
 
-	Submitted Event Bookings (docstatus=1) cannot be saved normally; their
-	linked-document tracking fields are updated via frappe.db.set_value to avoid
-	blocking the ERPNext document submission.
+	Fields are always persisted via frappe.db.set_value first so that the
+	link is recorded even if a subsequent full save() is blocked by validation
+	(e.g. a stale status-transition check on the draft booking).
 
-	Draft bookings use save() so validate, before_save, and version tracking fire.
+	For draft bookings (docstatus=0) a full save() is also attempted so that
+	calculate_totals(), version history, and any callback logic fire.  If that
+	save fails, the field update is already committed — no data loss.
+
+	For submitted bookings (docstatus=1) only set_value is used (save() is
+	not allowed on submitted documents without ignore_permissions).
 	"""
 	if not getattr(doc, "event_booking", None):
 		return
 
-	eb = frappe.get_doc("Event Booking", doc.event_booking)
+	eb_name = doc.event_booking
 
-	if eb.docstatus == 1:
-		try:
-			for field, value in field_updates.items():
-				frappe.db.set_value(
-					"Event Booking", eb.name, field, value, update_modified=False
-				)
-		except frappe.ValidationError:
-			frappe.log_error(
-				title=f"Failed to update submitted Event Booking {eb.name} "
-				      f"on {doc.doctype} {doc.name}"
-			)
+	# Step 1 — always persist the field changes immediately.
+	try:
+		for field, value in field_updates.items():
+			frappe.db.set_value("Event Booking", eb_name, field, value, update_modified=False)
+	except frappe.DatabaseError:
+		frappe.log_error(
+			title=f"Failed to update Event Booking {eb_name} fields "
+			      f"on {doc.doctype} {doc.name}"
+		)
 		return
 
-	for field, value in field_updates.items():
-		setattr(eb, field, value)
+	# Step 2 — for draft bookings, also run a full save so that
+	# calculate_totals, version tracking, and any callback logic fire.
+	eb = frappe.get_doc("Event Booking", eb_name)
+	if eb.docstatus != 0:
+		return
+
 	if callback:
 		callback(eb)
 
@@ -37,8 +44,8 @@ def _update_linked_event_booking(doc, callback=None, **field_updates):
 		eb.save()
 	except frappe.ValidationError:
 		frappe.log_error(
-			title=f"Failed to update linked Event Booking {eb.name} "
-			      f"on submit of {doc.doctype} {doc.name}"
+			title=f"Could not recalculate totals on Event Booking {eb_name} "
+			      f"after {doc.doctype} {doc.name} — field update is already persisted"
 		)
 
 

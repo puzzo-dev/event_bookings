@@ -104,7 +104,8 @@
    "in_list_view": 1,
    "label": "Party Name",
    "options": "party_type",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "customer",
@@ -308,7 +309,8 @@
    "fieldtype": "Link",
    "label": "Company",
    "options": "Company",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   }
  ],
  "grid_page_length": 50,

@@ -1,6 +1,7 @@
 import frappe
 from frappe.utils import cstr
 
+from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, is_erpnext_installed, is_hrms_installed
 from event_bookings.utils.seed import seed_event_types
 
 
@@ -14,11 +15,13 @@ def after_install():
 	- Creates custom fields on native doctypes
 	"""
 	seed_event_types()
-	create_event_coa_accounts()
 	create_email_templates()
-	create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
-	create_custom_fields()         # creates remaining app custom fields
-	create_default_settings()      # one Event Booking Settings record per company
+	if is_erpnext_installed():
+		create_event_coa_accounts()    # requires Account + Company DocTypes
+		create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
+		create_custom_fields()         # creates remaining app custom fields
+		create_default_settings()      # one Event Booking Settings record per company
+	upgrade_designation_for_hrms()  # Link(Designation) when HRMS present, Data otherwise
 	migrate_workspace_charts()     # ensure workspace references current charts
 
 
@@ -26,9 +29,13 @@ def after_migrate():
 	"""
 	Hook executed after every bench migrate.
 	Cleans up any legacy is_standard charts that fixtures cannot delete,
-	and ensures the workspace content block always references the current charts.
+	ensures the workspace content block always references the current charts,
+	and creates missing Event Booking Settings records for companies added after install.
 	"""
 	migrate_workspace_charts()
+	if is_erpnext_installed():
+		create_default_settings()
+	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
 
 
 def migrate_workspace_charts():
@@ -125,13 +132,11 @@ def _fix_chart_filters_json():
 	"""
 	import json
 
-	from erpnext.accounts.utils import get_fiscal_year
-
 	# Charts that aggregate by date and must use booking_date
 	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
 	all_charts = trend_charts + ["Events By Event Type"]
 	legacy_date_fields = {"event_timing", "event_date"}
-	current_fy = get_fiscal_year(frappe.utils.nowdate())[0]
+	current_fy = get_fiscal_year_safe()
 
 	for chart_name in all_charts:
 		if not frappe.db.exists("Dashboard Chart", chart_name):
@@ -163,8 +168,8 @@ def _fix_chart_filters_json():
 				stored.pop(obsolete, None)
 				changed = True
 
-		# Add fiscal_year if missing (same pattern as ERPNext system charts)
-		if "fiscal_year" not in stored:
+		# Add fiscal_year if missing and ERPNext provides one
+		if "fiscal_year" not in stored and current_fy:
 			stored["fiscal_year"] = current_fy
 			changed = True
 
@@ -190,8 +195,46 @@ def _fix_chart_filters_json():
 	frappe.db.commit()
 
 
+def upgrade_designation_for_hrms():
+	"""Upgrade Event Staff Requirement.designation from Data → Link(Designation) when
+	HRMS is installed so users get full autocomplete from the HRMS Designation list.
+
+	The DocType JSON ships the field as Data (Frappe-only baseline). This function
+	promotes it to a proper Link at install/migrate time when HRMS is present.
+	It is called on every after_migrate because bench migrate resets the field to
+	the JSON baseline (Data) before this hook runs. Idempotent.
+	"""
+	if not is_hrms_installed():
+		return
+	if not frappe.db.exists("DocType", "Designation"):
+		return
+
+	current = frappe.db.get_value(
+		"DocField",
+		{"parent": "Event Staff Requirement", "fieldname": "designation"},
+		"fieldtype",
+	)
+	if current == "Link":
+		return  # already upgraded — nothing to do
+
+	frappe.db.set_value(
+		"DocField",
+		{"parent": "Event Staff Requirement", "fieldname": "designation"},
+		{"fieldtype": "Link", "options": "Designation"},
+		update_modified=False,
+	)
+	frappe.db.commit()
+	frappe.clear_cache(doctype="Event Staff Requirement")
+	frappe.logger().info(
+		"event_bookings: upgraded Event Staff Requirement.designation "
+		"to Link(Designation) — HRMS is installed"
+	)
+
+
 def create_default_settings():
-	"""Create one Event Booking Settings record per company (idempotent)."""
+	"""Create one Event Booking Settings record per company (idempotent).
+	Only called when ERPNext is installed — Company DocType must exist.
+	"""
 	for company in frappe.get_all("Company", pluck="name", limit_page_length=0):
 		if not frappe.db.exists("Event Booking Settings", company):
 			try:
@@ -209,19 +252,22 @@ def create_custom_fields():
 	Create Event Booking link fields on doctypes not covered by the
 	Accounting Dimension auto-generation. Uses frappe.custom.doctype helpers
 	so they are idempotent (safe to run multiple times).
+	Skips any DocType that does not exist on this site.
 	"""
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 	fields = [
 		# Doctype, fieldname, insert_after, extra kwargs
-		("Quotation",           "event_booking", "title",              {}),
-		("Journal Entry",       "event_booking", "title",              {}),
-		("Material Request",    "event_booking", "title",              {}),
-		("Stock Reconciliation","event_booking", "title",              {}),
-		("Cost Center",         "is_event_cost_center", "disabled",   {"fieldtype": "Check", "label": "Is Event Cost Center"}),
+		("Quotation",           "event_booking", "title", {}),
+		("Journal Entry",       "event_booking", "title", {}),
+		("Material Request",    "event_booking", "title", {}),
+		("Stock Reconciliation","event_booking", "title", {}),
 	]
 
 	for dt, fieldname, insert_after, extra in fields:
+		if not frappe.db.exists("DocType", dt):
+			continue
+
 		df = {
 			"fieldname": fieldname,
 			"fieldtype": extra.get("fieldtype", "Link"),
@@ -234,14 +280,14 @@ def create_custom_fields():
 
 		try:
 			create_custom_field(dt, df)
-		except (frappe.DuplicateEntryError, frappe.ValidationError, Exception) as e:
-			if not isinstance(e, (frappe.DuplicateEntryError, frappe.ValidationError)):
-				raise  # re-raise unexpected errors (import errors, syntax errors, etc.)
+		except (frappe.DuplicateEntryError, frappe.ValidationError):
 			frappe.log_error(title=f"Failed to create custom field {fieldname} on {dt}")
 
 
 def create_accounting_dimension():
-	"""Register Event Booking as an Accounting Dimension in ERPNext."""
+	"""Register Event Booking as an Accounting Dimension in ERPNext.
+	Only called when ERPNext is installed — guarded by caller.
+	"""
 	try:
 		if not frappe.db.exists("Accounting Dimension", "Event Booking"):
 			doc = frappe.get_doc({
@@ -261,6 +307,7 @@ def create_event_coa_accounts():
 	Creates Event Revenue, Event COGS, and Event Damages Expense accounts
 	under the company's existing Income and Expense root accounts.
 	Does NOT assume hardcoded parent names — walks the COA tree dynamically.
+	Only called when ERPNext is installed — guarded by caller.
 	"""
 	companies = frappe.get_all("Company", pluck="name", limit_page_length=0)
 	for company in companies:

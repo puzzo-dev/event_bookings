@@ -13,8 +13,6 @@
   "col_inventory",
   "damages_warehouse",
   "sec_accounting",
-  "auto_create_cost_center_per_event",
-  "default_cost_center",
   "default_cogs_account",
   "col_accounting",
   "default_income_account",
@@ -67,18 +65,6 @@
    "fieldname": "sec_accounting",
    "fieldtype": "Section Break",
    "label": "Accounting Defaults"
-  },
-  {
-   "default": "0",
-   "fieldname": "auto_create_cost_center_per_event",
-   "fieldtype": "Check",
-   "label": "Auto-Create Cost Center Per Event"
-  },
-  {
-   "fieldname": "default_cost_center",
-   "fieldtype": "Link",
-   "label": "Default Cost Center",
-   "options": "Cost Center"
   },
   {
    "fieldname": "default_cogs_account",

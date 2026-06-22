@@ -14,10 +14,9 @@
  "fields": [
   {
    "fieldname": "designation",
-   "fieldtype": "Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Designation",
-   "options": "Designation",
    "reqd": 1
   },
   {

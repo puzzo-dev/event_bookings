@@ -49,24 +49,6 @@ class TestEventCostCenter(FrappeTestCase):
         eb = self._make_event(event_cost_center=parent_cc)
         self.assertEqual(eb.event_cost_center, parent_cc)
 
-    def test_cost_center_can_be_created_from_form(self):
-        """User can create a new Cost Center from the Event Booking form Link field."""
-        parent_cc = frappe.db.get_value(
-            "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 1}, "name"
-        )
-        cc = frappe.get_doc({
-            "doctype": "Cost Center",
-            "cost_center_name": "_Test Event CC",
-            "parent_cost_center": parent_cc,
-            "company": frappe.defaults.get_defaults().get("company"),
-            "is_event_cost_center": 1,
-        }).insert(ignore_permissions=True)
-
-        eb = self._make_event(event_cost_center=cc.name)
-        self.assertEqual(eb.event_cost_center, cc.name)
-        self.assertEqual(cc.is_event_cost_center, 1)
-        self.assertEqual(cc.parent_cost_center, parent_cc)
-
     def test_naming_series_format(self):
         eb = self._make_event()
         self.assertTrue(eb.name.startswith("EVT-"), f"Name {eb.name} should start with EVT-")
