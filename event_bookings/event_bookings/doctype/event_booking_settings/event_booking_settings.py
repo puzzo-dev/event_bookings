@@ -8,9 +8,9 @@ from frappe.model.document import Document
 
 class EventBookingSettings(Document):
 	def validate(self):
-		if self.enable_whatsapp:
+		if self.enable_whatsapp and self.has_value_changed("enable_whatsapp"):
 			frappe.msgprint(
 				_("WhatsApp integration is currently a placeholder and not yet fully implemented."),
 				title=_("Feature Pending"),
-				indicator="orange"
+				indicator="orange",
 			)

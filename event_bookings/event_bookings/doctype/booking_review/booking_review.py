@@ -189,7 +189,12 @@ def _caller_linked_to_customer(customer):
 	if customer_user == frappe.session.user:
 		return True
 
-	# Check if user has a role that can manage reviews
+	# Staff override — any user with explicit write permission on Booking Review
+	# (e.g., Event Manager) is allowed to submit on behalf of a customer.
+	# This is intentional: internal staff must be able to enter reviews
+	# collected offline (phone, paper feedback form).
+	# If this override should be restricted further, replace with a dedicated
+	# "Booking Review Staff" role check instead of the broad has_permission.
 	if frappe.has_permission("Booking Review", "write"):
 		return True
 

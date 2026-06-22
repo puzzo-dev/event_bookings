@@ -30,8 +30,13 @@ def get_columns():
 
 
 def _get_cogs_map(event_names):
-	"""Return a dict mapping event_name → total COGS from submitted Material Issue Stock Entries."""
+	"""Return a dict mapping event_name → total COGS from submitted Material Issue Stock Entries.
+
+	Returns empty dict when ERPNext is not installed (Stock Entry DocType absent).
+	"""
 	if not event_names:
+		return {}
+	if not frappe.db.exists("DocType", "Stock Entry"):
 		return {}
 	rows = frappe.db.sql(
 		"""
@@ -50,8 +55,13 @@ def _get_cogs_map(event_names):
 
 
 def _get_damages_map(event_names):
-	"""Return a dict mapping event_name → total damages from Stock Reconciliation write-downs."""
+	"""Return a dict mapping event_name → total damages from Stock Reconciliation write-downs.
+
+	Returns empty dict when ERPNext is not installed (Stock Reconciliation DocType absent).
+	"""
 	if not event_names:
+		return {}
+	if not frappe.db.exists("DocType", "Stock Reconciliation"):
 		return {}
 	rows = frappe.db.sql(
 		"""

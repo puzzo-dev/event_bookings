@@ -247,6 +247,8 @@ class EventBooking(Document):
 
 @frappe.whitelist(allow_guest=False)
 def make_quotation(source_name, target_doc=None):
+	if not frappe.db.exists("DocType", "Quotation"):
+		frappe.throw(_("Quotation is not available on this site. ERPNext must be installed."))
 	if not frappe.has_permission("Event Booking", "read", source_name):
 		frappe.throw(_("You do not have permission to read this Event Booking."))
 	if not frappe.has_permission("Quotation", "create"):
@@ -277,6 +279,8 @@ def make_quotation(source_name, target_doc=None):
 
 @frappe.whitelist(allow_guest=False)
 def make_project(source_name, target_doc=None):
+	if not frappe.db.exists("DocType", "Project"):
+		frappe.throw(_("Project is not available on this site. ERPNext must be installed."))
 	if not frappe.has_permission("Event Booking", "read", source_name):
 		frappe.throw(_("You do not have permission to read this Event Booking."))
 	if not frappe.has_permission("Project", "create"):
@@ -361,6 +365,8 @@ def convert_lead_and_update_booking(booking_name):
 def get_items_from_quotation(quotation_name):
 	if not quotation_name:
 		return []
+	if not frappe.db.exists("DocType", "Quotation"):
+		frappe.throw(_("Quotation is not available on this site. ERPNext must be installed."))
 	if not frappe.has_permission("Quotation", "read", quotation_name):
 		frappe.throw(_("You do not have permission to read this Quotation."))
 	qt = frappe.get_doc("Quotation", quotation_name)
@@ -381,6 +387,8 @@ def get_items_from_quotation(quotation_name):
 def get_items_from_sales_order(sales_order_name):
 	if not sales_order_name:
 		return []
+	if not frappe.db.exists("DocType", "Sales Order"):
+		frappe.throw(_("Sales Order is not available on this site. ERPNext must be installed."))
 	if not frappe.has_permission("Sales Order", "read", sales_order_name):
 		frappe.throw(_("You do not have permission to read this Sales Order."))
 	so = frappe.get_doc("Sales Order", sales_order_name)

@@ -1,6 +1,6 @@
 import frappe
 from frappe import _
-from frappe.utils import add_days, today
+from frappe.utils import add_days, add_to_date, now_datetime, today
 
 
 def daily():
@@ -177,7 +177,11 @@ def _get_manager_emails():
 
 
 def send_unstaffed_alerts():
-	"""Alert Event Manager when staff requirements are not met."""
+	"""Alert Event Managers with a single digest email listing all staffing shortfalls.
+
+	Previous design sent one email per understaffed row, causing email storms on busy
+	sites.  All shortfalls are now grouped by booking and delivered as one digest.
+	"""
 	_manager_emails = _get_manager_emails()
 	if not _manager_emails:
 		return
@@ -202,23 +206,46 @@ def send_unstaffed_alerts():
 		{"today": today()},
 		as_dict=True,
 	)
+	if not rows:
+		return
+
+	# Group shortfalls by booking so the digest is readable
+	events = {}
 	for row in rows:
-		try:
-			_enqueue_email(
-				recipients=_manager_emails,
-				subject=_("Staffing Alert: {0}").format(row.event_name),
-				message=(
-					"<p>Staffing shortfall for <strong>{0}</strong>:</p>"
-					"<p><strong>{1}</strong> – required {2}, assigned {3}</p>"
-				).format(
-					row.event_name, row.designation,
-					int(row.qty_required), int(row.qty_assigned)
-				),
-				reference_doctype="Event Booking",
-				reference_name=row.name,
+		if row.name not in events:
+			events[row.name] = {
+				"event_name": row.event_name,
+				"event_timing": row.event_timing,
+				"shortfalls": [],
+			}
+		events[row.name]["shortfalls"].append(
+			_("<li>{0} – required {1}, assigned {2}</li>").format(
+				row.designation, int(row.qty_required), int(row.qty_assigned)
 			)
-		except (frappe.DatabaseError, frappe.ValidationError):
-			frappe.log_error(title=_("Staffing alert failed for {0}").format(row.name))
+		)
+
+	# Build a single digest message
+	lines = [_("<p>The following upcoming events have staffing shortfalls:</p><ul>")]
+	for ev in events.values():
+		lines.append(
+			"<li><strong>{0} – {1}</strong><ul>{2}</ul></li>".format(
+				frappe.utils.formatdate(ev["event_timing"]),
+				ev["event_name"],
+				"".join(ev["shortfalls"]),
+			)
+		)
+	lines.append("</ul>")
+
+	try:
+		_enqueue_email(
+			recipients=_manager_emails,
+			subject=_("Staffing Alert: {0} event(s) with shortfalls").format(len(events)),
+			message="".join(lines),
+			reference_doctype="Event Booking",
+			reference_name=next(iter(events)),
+		)
+	except (frappe.DatabaseError, frappe.ValidationError):
+		frappe.log_error(title=_("Staffing digest alert failed"))
 
 
 def notify_managers_upcoming_events():
@@ -242,13 +269,16 @@ def notify_managers_upcoming_events():
 	if not managers or not events:
 		return
 
+	# Use a 24-hour rolling window — calendar-day "since midnight" causes duplicate
+	# notifications when the scheduler runs near midnight.
+	_dedup_since = add_to_date(now_datetime(), hours=-24)
 	existing_logs = frappe.get_all(
 		"Notification Log",
 		filters={
 			"document_type": "Event Booking",
 			"document_name": ("in", [e.name for e in events]),
 			"type": "Alert",
-			"creation": (">=", f"{from_date} 00:00:00"),
+			"creation": (">=", _dedup_since),
 		},
 		fields=["for_user", "document_name"],
 		limit_page_length=0,
@@ -284,16 +314,56 @@ def notify_managers_upcoming_events():
 
 
 def _insert_notification_logs(notifications):
-	"""Background worker: insert Notification Log documents in batch."""
-	for n in notifications:
-		try:
-			frappe.get_doc({
-				"doctype": "Notification Log",
-				"type": "Alert",
-				**n,
-			}).insert(ignore_permissions=True)
-		except (frappe.DatabaseError, frappe.ValidationError):
-			frappe.log_error(title=_("Manager notification failed"))
+	"""Background worker: insert Notification Log documents in batch.
+
+	Uses ``frappe.db.bulk_insert`` (one SQL statement) instead of N individual
+	``Document.insert()`` calls to avoid hammering the DB under load.
+	Falls back to individual inserts if bulk_insert fails (e.g., schema mismatch).
+	"""
+	if not notifications:
+		return
+
+	now_ts = frappe.utils.now()
+	fields = [
+		"name", "type", "subject", "email_content",
+		"for_user", "document_type", "document_name",
+		"creation", "modified", "modified_by", "owner",
+		"docstatus", "idx", "read",
+	]
+	values = [
+		[
+			frappe.generate_hash("", 10),
+			n.get("type", "Alert"),
+			n.get("subject", ""),
+			n.get("email_content", ""),
+			n.get("for_user", ""),
+			n.get("document_type", ""),
+			n.get("document_name", ""),
+			now_ts, now_ts, "Administrator", "Administrator",
+			0, 0, 0,
+		]
+		for n in notifications
+	]
+
+	try:
+		frappe.db.bulk_insert(
+			"Notification Log",
+			fields=fields,
+			values=values,
+			ignore_duplicates=True,
+		)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error(title="Bulk notification log insert failed — retrying individually")
+		for n in notifications:
+			try:
+				frappe.get_doc({
+					"doctype": "Notification Log",
+					"type": "Alert",
+					**n,
+				}).insert(ignore_permissions=True)
+			except (frappe.DatabaseError, frappe.ValidationError):
+				frappe.log_error(title=_("Manager notification failed"))
 
 
 def _send_whatsapp_notification(ev, message):
