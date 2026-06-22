@@ -166,39 +166,3 @@ class TestValidateReviewRequirement(unittest.TestCase):
 		eb.validate_review_requirement()
 		mock_frappe.throw.assert_not_called()
 
-
-# ── create_quotation ────────────────────────────────────────────────
-
-
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
-class TestCreateQuotation(unittest.TestCase):
-	def test_skips_when_quotation_exists(self, mock_frappe):
-		eb = _new_booking(quotation="QTN-001")
-		eb.create_quotation()
-		mock_frappe.get_doc.assert_not_called()
-
-	def test_builds_blank_quotation(self, mock_frappe):
-		settings = SimpleNamespace(
-			default_cost_center="CC-001",
-			default_income_account="Income - TC",
-		)
-		mock_frappe.get_cached_doc.return_value = settings
-		mock_frappe.db.get_value.side_effect = ["Test Co", "USD"]
-
-		mock_qt = MagicMock()
-		mock_qt.name = "QTN-NEW"
-		mock_frappe.get_doc.return_value = mock_qt
-
-		eb = _new_booking(
-			customer="Acme",
-			event_cost_center="CC-EVT",
-			quotation=None,
-		)
-		eb.create_quotation()
-
-		mock_frappe.get_doc.assert_called_once()
-		call_args = mock_frappe.get_doc.call_args[0][0]
-		self.assertEqual(call_args["party_name"], "Acme")
-		mock_qt.db_insert.assert_called_once()
-		mock_qt.reload.assert_called_once()
-		self.assertEqual(eb.quotation, "QTN-NEW")

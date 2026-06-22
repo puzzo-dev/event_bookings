@@ -1,4 +1,5 @@
 import frappe
+from datetime import datetime, time as dt_time, timedelta
 from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
@@ -42,9 +43,6 @@ class EventBooking(Document):
 		if self.booking_status == "Invoiced":
 			self.validate_review_requirement()
 
-	def before_save(self):
-		self._auto_create_event_cost_center()
-
 	def before_submit(self):
 		"""Submission locks the booking. Only allow when at a committed status."""
 		if self.booking_status not in _COMMITTED_STATUSES:
@@ -53,6 +51,39 @@ class EventBooking(Document):
 					"Event Booking can only be submitted when its status is one of: {0}. "
 					"Current status is '{1}'."
 				).format(", ".join(sorted(_COMMITTED_STATUSES)), self.booking_status)
+			)
+
+	def on_cancel(self):
+		"""Align booking_status with docstatus=2 and warn about linked submitted documents."""
+		frappe.db.set_value(
+			"Event Booking", self.name, "booking_status", "Cancelled", update_modified=False
+		)
+		self.booking_status = "Cancelled"
+
+		linked_submitted = []
+		for fieldname, doctype in [
+			("quotation", "Quotation"),
+			("sales_order", "Sales Order"),
+			("sales_invoice", "Sales Invoice"),
+			("material_request", "Material Request"),
+			("stock_entry", "Stock Entry"),
+		]:
+			linked_name = getattr(self, fieldname, None)
+			if linked_name:
+				docstatus = frappe.db.get_value(doctype, linked_name, "docstatus")
+				if docstatus == 1:
+					linked_submitted.append(f"{doctype}: {linked_name}")
+
+		if linked_submitted:
+			frappe.msgprint(
+				_(
+					"Warning: The following submitted documents remain linked to this booking "
+					"and will <strong>not</strong> be automatically cancelled:<br><ul>{0}</ul>"
+					"Cancel them manually to maintain a clean audit trail."
+				).format("".join(f"<li>{doc}</li>" for doc in linked_submitted)),
+				title=_("Linked Documents Still Active"),
+				indicator="orange",
+				alert=True,
 			)
 
 	def before_delete(self):
@@ -154,8 +185,6 @@ class EventBooking(Document):
 
 	def _sync_datetime_fields(self):
 		"""Combine separate Date + Time fields into hidden Datetime fields for backward compatibility."""
-		from datetime import datetime, time as dt_time, timedelta
-
 		def _to_time(t):
 			if isinstance(t, str):
 				hour, minute, second = map(int, t.split(":"))
@@ -176,45 +205,6 @@ class EventBooking(Document):
 			self.event_end_datetime = datetime.combine(getdate(self.event_end_date), _to_time(self.event_end_time))
 		elif self.event_end_date:
 			self.event_end_datetime = datetime.combine(getdate(self.event_end_date), dt_time(0, 0, 0))
-
-	def _auto_create_event_cost_center(self):
-		"""Auto-create a per-event Cost Center when status moves to Confirmed.
-
-		Non-blocking: Validation or duplicate errors are logged, not thrown,
-		so the Event Booking save always succeeds.
-		"""
-		if not self.has_value_changed("booking_status"):
-			return
-		if self.booking_status != "Confirmed" or self.event_cost_center:
-			return
-		settings = self.get_settings()
-		if not settings.auto_create_cost_center_per_event:
-			return
-		default_cc = settings.default_cost_center
-		if not default_cc:
-			frappe.throw(_(
-				"Default Cost Center is required when Auto-Create Cost Center per Event is enabled. "
-				"Please configure it in Event Booking Settings."
-			))
-		company = self.company or frappe.db.get_value("Cost Center", default_cc, "company")
-		cc_name = f"{self.event_name} - {self.name}"
-		try:
-			cc = frappe.get_doc({
-				"doctype": "Cost Center",
-				"cost_center_name": cc_name,
-				"parent_cost_center": default_cc,
-				"company": company,
-				"is_event_cost_center": 1,
-			})
-			cc.insert(ignore_permissions=True)
-			self.event_cost_center = cc.name
-		except frappe.DuplicateEntryError:
-			# If somehow a Cost Center with this name already exists, try to link it.
-			existing = frappe.db.get_value("Cost Center", {"cost_center_name": cc_name}, "name")
-			if existing:
-				self.event_cost_center = existing
-		except frappe.ValidationError:
-			frappe.log_error(title=f"Failed to auto-create Cost Center for {self.name}")
 
 	def validate_review_requirement(self):
 		settings = self.get_settings()
@@ -244,10 +234,8 @@ class EventBooking(Document):
 			return frappe.get_cached_doc("Event Booking Settings", company)
 		return frappe._dict({
 			"require_review": 0,
-			"auto_create_cost_center_per_event": 0,
 			"pre_event_reminder_days": 3,
 			"enable_whatsapp": 0,
-			"default_cost_center": None,
 			"default_income_account": None,
 			"default_cogs_account": None,
 			"default_damages_account": None,
@@ -324,11 +312,21 @@ def make_project(source_name, target_doc=None):
 def convert_lead_and_update_booking(booking_name):
 	"""Convert the Lead linked to an Event Booking into a Customer, then update the booking.
 
-	Auto-saves the Customer from Lead data so the user doesn't have to fill another form.
-	Returns {"customer": <new_customer_name>}.
+	Delegates ERPNext-specific Lead→Customer logic to erpnext_bridge so this
+	function never imports from erpnext directly and remains callable even on
+	Frappe-only sites (where it will raise a user-friendly error instead).
+
+	Returns {"customer": <new_customer_name>, "already_existed": bool}.
 	"""
+	from event_bookings.utils.erpnext_bridge import make_customer_from_lead
+
 	if not frappe.has_permission("Event Booking", "write", booking_name):
 		frappe.throw(_("You do not have permission to modify this Event Booking."))
+
+	# Guard: Customer DocType must exist (requires ERPNext)
+	if not frappe.db.exists("DocType", "Customer"):
+		frappe.throw(_("Customer management is not available. ERPNext must be installed."))
+
 	if not frappe.has_permission("Customer", "create"):
 		frappe.throw(_("You do not have permission to create a Customer."))
 
@@ -339,23 +337,18 @@ def convert_lead_and_update_booking(booking_name):
 
 	lead_name = booking.party_name
 
-	# If a Customer was already created from this Lead, reuse it — no duplicate
+	# Reuse an existing Customer already created from this Lead — no duplicate
 	existing_customer = frappe.db.get_value("Customer", {"lead_name": lead_name}, "name")
 	if existing_customer:
 		customer_name = existing_customer
 		already_existed = True
 	else:
-		from erpnext.crm.doctype.lead.lead import _make_customer
-		customer_doc = _make_customer(lead_name, ignore_permissions=False)
-		if not customer_doc.customer_group:
-			customer_doc.customer_group = frappe.db.get_default("Customer Group") or "All Customer Groups"
-		if not customer_doc.territory:
-			customer_doc.territory = frappe.db.get_default("Territory") or "All Territories"
+		customer_doc = make_customer_from_lead(lead_name)
 		customer_doc.insert()
 		customer_name = customer_doc.name
 		already_existed = False
 
-	# Update the booking to point to the Customer
+	# Update the booking to point to the new Customer
 	booking.party_type = "Customer"
 	booking.party_name = customer_name
 	booking.customer = customer_name

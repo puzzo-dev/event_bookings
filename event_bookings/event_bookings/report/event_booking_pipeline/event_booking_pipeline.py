@@ -3,122 +3,129 @@ from frappe import _
 
 
 def execute(filters=None):
-    if not filters:
-        filters = {}
+	if not filters:
+		filters = {}
 
-    columns = get_columns()
-    data = get_data(filters)
-    
-    total_est = sum(row.get("total_estimated", 0) for row in data)
-    total_act = sum(row.get("total_actual", 0) for row in data)
-    
-    report_summary = [
-        {"value": len(data), "indicator": "Blue", "label": _("Total Events"), "datatype": "Int"},
-        {"value": total_est, "indicator": "Green", "label": _("Total Estimated Revenue"), "datatype": "Currency"},
-        {"value": total_act, "indicator": "Green", "label": _("Total Actual Revenue"), "datatype": "Currency"},
-    ]
-    
-    return columns, data, None, None, report_summary
+	columns = get_columns()
+	data = get_data(filters)
+	
+	total_est = sum(row.get("total_estimated", 0) for row in data)
+	total_act = sum(row.get("total_actual", 0) for row in data)
+	
+	report_summary = [
+		{"value": len(data), "indicator": "Blue", "label": _("Total Events"), "datatype": "Int"},
+		{"value": total_est, "indicator": "Green", "label": _("Total Estimated Revenue"), "datatype": "Currency"},
+		{"value": total_act, "indicator": "Green", "label": _("Total Actual Revenue"), "datatype": "Currency"},
+	]
+	
+	return columns, data, None, None, report_summary
 
 
 def get_columns():
-    return [
-        {"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
-        {"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 150},
-        {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
-        {"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
-        {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
-        {"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
-        {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
-        {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
-        {"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
-        {"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
-        {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
-        {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
-    ]
+	return [
+		{"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
+		{"fieldname": "party_type", "label": _("Party Type"), "fieldtype": "Data", "width": 100},
+		{"fieldname": "party_name", "label": _("Party"), "fieldtype": "Dynamic Link", "options": "party_type", "width": 160},
+		{"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
+		{"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
+		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
+		{"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
+		{"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
+		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
+		{"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
+		{"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
+		{"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
+		{"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
+	]
 
 
 def get_data(filters):
-    conditions = {}
-    if filters.get("from_date") and filters.get("to_date"):
-        conditions["event_timing"] = ["between", [
-            f"{filters['from_date']} 00:00:00",
-            f"{filters['to_date']} 23:59:59",
-        ]]
-    elif filters.get("from_date"):
-        conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
-    elif filters.get("to_date"):
-        conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
-    if filters.get("customer"):
-        conditions["customer"] = filters["customer"]
-    if filters.get("event_type"):
-        conditions["event_type"] = filters["event_type"]
-    if filters.get("booking_status"):
-        conditions["booking_status"] = filters["booking_status"]
+	conditions = {"docstatus": ["!=", 2]}
+	if filters.get("from_date") and filters.get("to_date"):
+		conditions["event_timing"] = ["between", [
+			f"{filters['from_date']} 00:00:00",
+			f"{filters['to_date']} 23:59:59",
+		]]
+	elif filters.get("from_date"):
+		conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+	elif filters.get("to_date"):
+		conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
+	if filters.get("party_type"):
+		conditions["party_type"] = filters["party_type"]
+	if filters.get("party_name"):
+		conditions["party_name"] = filters["party_name"]
+	if filters.get("company"):
+		conditions["company"] = filters["company"]
+	if filters.get("event_type"):
+		conditions["event_type"] = filters["event_type"]
+	if filters.get("booking_status"):
+		conditions["booking_status"] = filters["booking_status"]
 
-    bookings = frappe.get_all(
-        "Event Booking",
-        filters=conditions,
-        fields=[
-            "name as event_name",
-            "customer",
-            "event_type",
-            "event_timing",
-            "booking_status",
-            "total_estimated",
-            "total_actual",
-            "quotation",
-            "sales_invoice",
-        ],
-        order_by="event_timing asc",
-        limit_page_length=0,
-    )
+	bookings = frappe.get_all(
+		"Event Booking",
+		filters=conditions,
+		fields=[
+			"name as event_name",
+			"party_type",
+			"party_name",
+			"event_type",
+			"event_timing",
+			"booking_status",
+			"total_estimated",
+			"total_actual",
+			"quotation",
+			"sales_invoice",
+		],
+		order_by="event_timing asc",
+		limit_page_length=0,
+	)
 
-    today = frappe.utils.today()
-    event_names = tuple(eb.event_name for eb in bookings)
-    staff_map = _get_staff_counts_map(event_names)
+	today = frappe.utils.today()
+	event_names = tuple(eb.event_name for eb in bookings)
+	staff_map = _get_staff_counts_map(event_names)
 
-    data = []
-    for eb in bookings:
-        days_until = (frappe.utils.getdate(eb.event_timing) - frappe.utils.getdate(today)).days if eb.event_timing else 0
-        staff_required, staff_assigned = staff_map.get(eb.event_name, (0, 0))
+	data = []
+	for eb in bookings:
+		days_until = (frappe.utils.getdate(eb.event_timing) - frappe.utils.getdate(today)).days if eb.event_timing else 0
+		staff_required, staff_assigned = staff_map.get(eb.event_name, (0, 0))
 
-        data.append({
-            "event_name": eb.event_name,
-            "customer": eb.customer,
-            "event_type": eb.event_type,
-            "event_timing": eb.event_timing,
-            "booking_status": eb.booking_status,
-            "days_until_event": days_until,
-            "total_estimated": eb.total_estimated or 0,
-            "total_actual": eb.total_actual or 0,
-            "staff_required": staff_required,
-            "staff_assigned": staff_assigned,
-            "quotation": eb.quotation,
-            "sales_invoice": eb.sales_invoice,
-        })
+		data.append({
+			"event_name": eb.event_name,
+			"party_type": eb.party_type,
+			"party_name": eb.party_name,
+			"event_type": eb.event_type,
+			"event_timing": eb.event_timing,
+			"booking_status": eb.booking_status,
+			"days_until_event": days_until,
+			"total_estimated": eb.total_estimated or 0,
+			"total_actual": eb.total_actual or 0,
+			"staff_required": staff_required,
+			"staff_assigned": staff_assigned,
+			"quotation": eb.quotation,
+			"sales_invoice": eb.sales_invoice,
+		})
 
-    return data
+	return data
 
 
 def _get_staff_counts_map(event_names):
-    """Return a dict mapping event_name → (qty_required, qty_assigned) from staff requirements."""
-    if not event_names:
-        return {}
-    rows = frappe.db.sql(
-        """
-        SELECT
-            parent,
-            SUM(qty_required) AS qty_required,
-            SUM(qty_assigned) AS qty_assigned
-        FROM `tabEvent Staff Requirement`
-        WHERE parent IN %s
-        GROUP BY parent
-        """,
-        (event_names,),
-        as_dict=True,
-    )
-    return {
-        r.parent: (r.qty_required or 0, r.qty_assigned or 0)
-        for r in rows
-    }
+	"""Return a dict mapping event_name → (qty_required, qty_assigned) from staff requirements."""
+	if not event_names:
+		return {}
+	rows = frappe.db.sql(
+		"""
+		SELECT
+			parent,
+			SUM(qty_required) AS qty_required,
+			SUM(qty_assigned) AS qty_assigned
+		FROM `tabEvent Staff Requirement`
+		WHERE parent IN %s
+		GROUP BY parent
+		""",
+		(event_names,),
+		as_dict=True,
+	)
+	return {
+		r.parent: (r.qty_required or 0, r.qty_assigned or 0)
+		for r in rows
+	}

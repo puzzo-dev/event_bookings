@@ -2,12 +2,30 @@
 # For license information, please see license.txt
 
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.utils import sanitize_html, validate_email_address
 
 
 class BookingReview(Document):
-	pass
+	def validate(self):
+		"""Enforce data constraints at the controller level regardless of entry path."""
+		if self.rating is not None and self.rating != "":
+			try:
+				rating_int = int(self.rating)
+				if rating_int not in range(1, 6):
+					frappe.throw(_("Rating must be between 1 and 5."))
+			except (ValueError, TypeError):
+				frappe.throw(_("Rating must be a whole number between 1 and 5."))
+
+		if self.review_text and len(self.review_text) > _MAX_REVIEW_TEXT:
+			frappe.throw(
+				_("Review text must not exceed {0} characters.").format(_MAX_REVIEW_TEXT)
+			)
+
+		allowed_statuses = {"Submitted", "Approved", "Rejected"}
+		if self.review_status and self.review_status not in allowed_statuses:
+			frappe.throw(_("Invalid Review Status '{0}'.").format(self.review_status))
 
 
 _MAX_REVIEW_TEXT = 5000
@@ -93,7 +111,7 @@ def submit_review(event_booking, rating=None, review_text=None):
 		"creation",
 		order_by="creation desc",
 	)
-	if last_review and frappe.utils.time_diff_in_hours(last_review, frappe.utils.now()) < 24:
+	if last_review and frappe.utils.time_diff_in_hours(frappe.utils.now(), last_review) < 24:
 		frappe.throw(_("You have already submitted a review for this event within the last 24 hours."))
 
 	review = frappe.get_doc({
@@ -111,21 +129,38 @@ def submit_review(event_booking, rating=None, review_text=None):
 	return {"message": "Review submitted successfully.", "name": review.name}
 
 
+def _get_primary_contact_for_customer(customer):
+	"""Return the name of the primary Contact for a Customer, joining Contact for is_primary_contact ordering.
+
+	`is_primary_contact` lives on `tabContact`, not `tabDynamic Link`, so a JOIN is required.
+	"""
+	result = frappe.db.sql(
+		"""
+		SELECT dl.parent
+		FROM `tabDynamic Link` dl
+		INNER JOIN `tabContact` c ON c.name = dl.parent
+		WHERE dl.parenttype = 'Contact'
+		  AND dl.link_doctype = 'Customer'
+		  AND dl.link_name = %s
+		ORDER BY c.is_primary_contact DESC, dl.creation DESC
+		LIMIT 1
+		""",
+		(customer,),
+	)
+	return result[0][0] if result else None
+
+
 def _get_customer_contact_info(customer):
 	"""Return (name, email) for the customer's primary contact, falling back to customer defaults."""
 	name = None
 	email = None
 
-	# Try primary contact
-	contact = frappe.db.get_value(
-		"Dynamic Link",
-		{"parenttype": "Contact", "link_doctype": "Customer", "link_name": customer},
-		"parent",
-		order_by="is_primary_contact desc, creation desc",
-	)
+	# Try primary contact (single query via JOIN to respect is_primary_contact ordering)
+	contact = _get_primary_contact_for_customer(customer)
 	if contact:
-		name = frappe.db.get_value("Contact", contact, "first_name")
-		email = frappe.db.get_value("Contact", contact, "email_id")
+		contact_info = frappe.db.get_value("Contact", contact, ["first_name", "email_id"], as_dict=True) or {}
+		name = contact_info.get("first_name")
+		email = contact_info.get("email_id")
 
 	# Fallback: customer email_id
 	if not email:
@@ -143,12 +178,7 @@ def _caller_linked_to_customer(customer):
 		return True
 
 	# Check if user is linked via Contact > Dynamic Link
-	contact = frappe.db.get_value(
-		"Dynamic Link",
-		{"parenttype": "Contact", "link_doctype": "Customer", "link_name": customer},
-		"parent",
-		order_by="is_primary_contact desc, creation desc",
-	)
+	contact = _get_primary_contact_for_customer(customer)
 	if contact:
 		contact_user = frappe.db.get_value("Contact", contact, "user")
 		if contact_user == frappe.session.user:

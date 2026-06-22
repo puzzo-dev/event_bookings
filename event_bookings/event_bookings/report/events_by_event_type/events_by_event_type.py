@@ -5,7 +5,7 @@ import frappe
 from frappe import _
 from frappe.utils import add_months, get_first_day, nowdate
 
-from erpnext.accounts.utils import get_fiscal_year
+from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, get_fiscal_year_dates_safe
 
 
 def execute(filters=None):
@@ -23,14 +23,18 @@ def validate_filters(filters):
 	if not filters.get("based_on"):
 		filters["based_on"] = "Revenue"
 
-	# Derive date range from fiscal year (same pattern as ERPNext trends)
+	# Derive date range from fiscal year
 	if not filters.get("fiscal_year"):
-		filters["fiscal_year"] = get_fiscal_year(nowdate())[0]
+		filters["fiscal_year"] = get_fiscal_year_safe()
 
-	# get_fiscal_year(fiscal_year=...) returns (name, start_date, end_date)
-	fy_info = get_fiscal_year(fiscal_year=filters["fiscal_year"])
-	filters["from_date"] = fy_info[1]
-	filters["to_date"] = fy_info[2]
+	start_date, end_date = get_fiscal_year_dates_safe(filters.get("fiscal_year"))
+	if start_date and end_date:
+		filters["from_date"] = start_date
+		filters["to_date"] = end_date
+	else:
+		# Fallback when no fiscal year is configured (Frappe-only site)
+		filters["from_date"] = frappe.utils.get_first_day(nowdate())
+		filters["to_date"] = nowdate()
 
 
 def get_columns(filters):

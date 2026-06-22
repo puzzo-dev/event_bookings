@@ -28,8 +28,6 @@ def execute():
 		"default_warehouse",
 		"events_warehouse",
 		"damages_warehouse",
-		"auto_create_cost_center_per_event",
-		"default_cost_center",
 		"default_cogs_account",
 		"default_income_account",
 		"default_damages_account",
