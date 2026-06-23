@@ -17,7 +17,10 @@ def _update_linked_event_booking(doc, callback=None, **field_updates):
 			callback(eb)
 		eb.save(ignore_permissions=True)
 	except Exception:
-		frappe.log_error(title=f"Event Booking link failed on {doc.doctype} {doc.name}")
+		frappe.log_error(
+			title=f"Event Booking link failed on {doc.doctype} {doc.name}",
+			message=frappe.get_traceback(),
+		)
 		frappe.msgprint(
 			f"Could not update Event Booking {doc.event_booking}. Check the Error Log.",
 			indicator="orange",
