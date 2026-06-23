@@ -1,7 +1,7 @@
 [project]
 name = "event_bookings"
 authors = [
-    { name = "Avril Beetails", email = "admin@avrilbeetails.com"}
+    { name = "I-Varse Technologies NG", email = "dev@itechnologies.ng"}
 ]
 description = "Event Management"
 requires-python = ">=3.10"

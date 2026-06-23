@@ -1,4 +1,4 @@
-# Copyright (c) 2026, Avril Beetails and Contributors
+# Copyright (c) 2026, I-Varse Technologies NG and Contributors
 # See license.txt
 
 # import frappe
