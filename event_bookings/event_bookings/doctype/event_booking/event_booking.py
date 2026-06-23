@@ -50,18 +50,27 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 
 	def calculate_totals(self):
-		self.total_estimated = self._get_doc_total("Quotation", self.quotation, "grand_total")
-		self.total_actual = self._get_doc_total("Sales Order", self.sales_order, "grand_total")
+		"""Sum line-item amounts from linked documents (not stale grand totals)."""
+		self.total_estimated = self._get_doc_items_total("Quotation", self.quotation)
+		self.total_actual = self._get_doc_items_total("Sales Order", self.sales_order)
 		if not self.total_actual and self.sales_invoice:
-			self.total_actual = self._get_doc_total("Sales Invoice", self.sales_invoice, "grand_total")
+			self.total_actual = self._get_doc_items_total("Sales Invoice", self.sales_invoice)
 
-	def _get_doc_total(self, doctype, name, total_field):
+	def _get_doc_items_total(self, doctype, name):
+		"""Return sum of `amount` on the linked document's child items table."""
 		if not name:
 			return 0.0
 		try:
-			return frappe.db.get_value(doctype, name, total_field) or 0.0
+			doc = frappe.get_doc(doctype, name)
+			items_table = getattr(doc, "items", [])
+			return sum((item.amount or 0.0) for item in items_table)
 		except Exception:
 			return 0.0
+
+	def recalculate_totals(self):
+		"""Recalculate and persist totals from linked documents."""
+		self.calculate_totals()
+		self.save(ignore_permissions=True)
 
 	def validate_dates(self):
 		if self.event_date and getdate(self.event_date) < getdate(today()):
@@ -154,6 +163,53 @@ class EventBooking(Document):
 
 		elif status == "In Preparation":
 			self.create_shift_assignments()
+
+		elif status == "Cancelled":
+			self.cancel_linked_documents()
+
+	def cancel_linked_documents(self):
+		"""Cancel linked submitted documents when the Event Booking is cancelled."""
+		linked = [
+			("quotation", "Quotation"),
+			("sales_order", "Sales Order"),
+			("sales_invoice", "Sales Invoice"),
+			("stock_entry", "Stock Entry"),
+		]
+		for field, doctype in linked:
+			name = self.get(field)
+			if not name:
+				continue
+			try:
+				doc = frappe.get_doc(doctype, name)
+				if doc.docstatus == 1:
+					if not frappe.has_permission(doctype, "cancel", doc):
+						frappe.throw(f"You do not have permission to cancel {doctype} {name}")
+					doc.cancel()
+			except Exception:
+				frappe.log_error(
+					title=f"Failed to cancel {doctype} {name} for Event Booking {self.name}",
+					message=frappe.get_traceback(),
+				)
+				frappe.msgprint(
+					f"Could not cancel {doctype} {name}. Check the Error Log.",
+					indicator="orange",
+					alert=True,
+				)
+
+		# Cancel linked Shift Assignments (child table, not a Link field)
+		for shift in frappe.get_all(
+			"Shift Assignment", filters={"event_booking": self.name, "docstatus": 1}
+		):
+			try:
+				doc = frappe.get_doc("Shift Assignment", shift.name)
+				if not frappe.has_permission("Shift Assignment", "cancel", doc):
+					frappe.throw(f"You do not have permission to cancel Shift Assignment {shift.name}")
+				doc.cancel()
+			except Exception:
+				frappe.log_error(
+					title=f"Failed to cancel Shift Assignment {shift.name} for Event Booking {self.name}",
+					message=frappe.get_traceback(),
+				)
 
 	# -----------------------------------------------------------------
 	# Document Creation Helpers

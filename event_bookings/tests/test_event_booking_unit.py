@@ -46,35 +46,51 @@ def _new_booking(**overrides):
 # ── calculate_totals ────────────────────────────────────────────────
 
 
+def _make_doc(items):
+	"""Return a minimal fake document with an items child table."""
+	doc = MagicMock()
+	doc.items = [SimpleNamespace(amount=amt) for amt in items]
+	return doc
+
+
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestCalculateTotals(unittest.TestCase):
 	def test_no_linked_docs(self, mock_frappe):
-		mock_frappe.db.get_value.return_value = None
 		eb = _new_booking()
 		eb.calculate_totals()
 		self.assertEqual(eb.total_estimated, 0.0)
 		self.assertEqual(eb.total_actual, 0.0)
 
 	def test_from_quotation(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [2500.0, None, None]
+		mock_frappe.get_doc.return_value = _make_doc([1200.0, 1300.0])
 		eb = _new_booking(quotation="QTN-001")
 		eb.calculate_totals()
 		self.assertEqual(eb.total_estimated, 2500.0)
 		self.assertEqual(eb.total_actual, 0.0)
 
 	def test_from_sales_order(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [2500.0, 3000.0, None]
+		mock_frappe.get_doc.side_effect = [
+			_make_doc([1200.0, 1300.0]),  # quotation
+			_make_doc([1500.0, 1500.0]),  # sales order
+		]
 		eb = _new_booking(quotation="QTN-001", sales_order="SO-001")
 		eb.calculate_totals()
 		self.assertEqual(eb.total_estimated, 2500.0)
 		self.assertEqual(eb.total_actual, 3000.0)
 
 	def test_from_sales_invoice_when_no_so(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [None, None, 4500.0]
+		mock_frappe.get_doc.return_value = _make_doc([2000.0, 2500.0])
 		eb = _new_booking(sales_invoice="SI-001")
 		eb.calculate_totals()
 		self.assertEqual(eb.total_estimated, 0.0)
 		self.assertEqual(eb.total_actual, 4500.0)
+
+	def test_missing_linked_doc_returns_zero(self, mock_frappe):
+		mock_frappe.get_doc.side_effect = Exception("Not found")
+		eb = _new_booking(quotation="QTN-001")
+		eb.calculate_totals()
+		self.assertEqual(eb.total_estimated, 0.0)
+		self.assertEqual(eb.total_actual, 0.0)
 
 
 # ── validate_dates ──────────────────────────────────────────────────
