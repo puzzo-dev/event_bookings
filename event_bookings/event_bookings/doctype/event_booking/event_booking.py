@@ -205,7 +205,10 @@ class EventBooking(Document):
 					shift.insert(ignore_permissions=True)
 				except Exception:
 					failed.append(req.get("designation"))
-					frappe.log_error(title=f"Shift Assignment failed for {self.name} / {req.get('designation')}")
+					frappe.log_error(
+						title=f"Shift Assignment failed for {self.name} / {req.get('designation')}",
+						message=frappe.get_traceback(),
+					)
 
 		self.update_staff_assignment_counts()
 
