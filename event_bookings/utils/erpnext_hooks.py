@@ -29,15 +29,15 @@ def _update_linked_event_booking(doc, callback=None, **field_updates):
 
 
 def on_quotation_submit(doc, method):
-	_update_linked_event_booking(doc, quotation=doc.name)
+	_update_linked_event_booking(doc, quotation=doc.name, callback=lambda eb: eb.calculate_totals())
 
 
 def on_sales_order_submit(doc, method):
-	_update_linked_event_booking(doc, sales_order=doc.name)
+	_update_linked_event_booking(doc, sales_order=doc.name, callback=lambda eb: eb.calculate_totals())
 
 
 def on_sales_invoice_submit(doc, method):
-	_update_linked_event_booking(doc, sales_invoice=doc.name)
+	_update_linked_event_booking(doc, sales_invoice=doc.name, callback=lambda eb: eb.calculate_totals())
 
 
 def on_stock_entry_submit(doc, method):
@@ -45,15 +45,37 @@ def on_stock_entry_submit(doc, method):
 		_update_linked_event_booking(doc)
 
 
+def on_quotation_update(doc, method):
+	if doc.docstatus == 1:
+		_update_linked_event_booking(doc, callback=lambda eb: eb.calculate_totals())
+
+
+def on_sales_order_update(doc, method):
+	if doc.docstatus == 1:
+		_update_linked_event_booking(doc, callback=lambda eb: eb.calculate_totals())
+
+
+def on_sales_invoice_update(doc, method):
+	if doc.docstatus == 1:
+		_update_linked_event_booking(doc, callback=lambda eb: eb.calculate_totals())
+
+
 def on_shift_assignment_update(doc, method):
 	_update_linked_event_booking(doc, callback=lambda eb: eb.update_staff_assignment_counts())
 
 
-# def on_quotation_cancel(doc, method):
-# 	_update_linked_event_booking(doc, quotation=None)
-#
-# def on_sales_order_cancel(doc, method):
-# 	_update_linked_event_booking(doc, sales_order=None)
-#
-# def on_sales_invoice_cancel(doc, method):
-# 	_update_linked_event_booking(doc, sales_invoice=None)
+def on_quotation_cancel(doc, method):
+	_update_linked_event_booking(doc, quotation=None)
+
+
+def on_sales_order_cancel(doc, method):
+	_update_linked_event_booking(doc, sales_order=None)
+
+
+def on_sales_invoice_cancel(doc, method):
+	_update_linked_event_booking(doc, sales_invoice=None)
+
+
+def on_stock_entry_cancel(doc, method):
+	if doc.stock_entry_type == "Material Issue":
+		_update_linked_event_booking(doc)

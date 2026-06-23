@@ -140,15 +140,22 @@ required_apps = ["erpnext", "hrms"]
 doc_events = {
 	"Quotation": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_quotation_update",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_quotation_cancel",
 	},
 	"Sales Order": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_order_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_order_update",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_order_cancel",
 	},
 	"Sales Invoice": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_invoice_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_invoice_update",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
 	"Stock Entry": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_stock_entry_cancel",
 	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
