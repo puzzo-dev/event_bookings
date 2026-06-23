@@ -1,8 +1,8 @@
 app_name = "event_bookings"
 app_title = "Event Bookings"
-app_publisher = "Avril Beetails"
+app_publisher = "I-Varse Technologies NG"
 app_description = "Event Management"
-app_email = "admin@avrilbeetails.com"
+app_email = "dev@itechnologies.ng"
 app_license = "mit"
 
 # Apps
