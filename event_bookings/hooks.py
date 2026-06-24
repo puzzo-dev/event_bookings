@@ -138,6 +138,11 @@ required_apps = ["erpnext", "hrms"]
 # Hook on document methods and events
 
 doc_events = {
+	"Event Booking": {
+		"after_insert": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
+		"on_update": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
+		"on_trash": "event_bookings.utils.google_calendar_sync.delete_from_google_calendar",
+	},
 	"Quotation": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
 		"on_update": "event_bookings.utils.erpnext_hooks.on_quotation_update",

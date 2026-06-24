@@ -6,12 +6,7 @@
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "default_warehouse",
-  "damages_warehouse",
   "default_cost_center",
-  "default_income_account",
-  "default_cogs_account",
-  "default_damages_account",
   "default_rental_item",
   "default_shift_type",
   "default_service_item",
@@ -23,40 +18,10 @@
  ],
  "fields": [
   {
-   "fieldname": "default_warehouse",
-   "fieldtype": "Link",
-   "label": "Default Warehouse",
-   "options": "Warehouse"
-  },
-  {
-   "fieldname": "damages_warehouse",
-   "fieldtype": "Link",
-   "label": "Damages Warehouse",
-   "options": "Warehouse"
-  },
-  {
    "fieldname": "default_cost_center",
    "fieldtype": "Link",
    "label": "Default Cost Center",
    "options": "Cost Center"
-  },
-  {
-   "fieldname": "default_income_account",
-   "fieldtype": "Link",
-   "label": "Default Income Account",
-   "options": "Account"
-  },
-  {
-   "fieldname": "default_cogs_account",
-   "fieldtype": "Link",
-   "label": "Default COGS Account",
-   "options": "Account"
-  },
-  {
-   "fieldname": "default_damages_account",
-   "fieldtype": "Link",
-   "label": "Default Damages Expense Account",
-   "options": "Account"
   },
   {
    "fieldname": "default_shift_type",

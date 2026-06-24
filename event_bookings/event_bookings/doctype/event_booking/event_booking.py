@@ -319,7 +319,6 @@ def make_quotation(source_name, target_doc=None):
 				"doctype": "Quotation",
 				"field_map": {
 					"customer": "party_name",
-					"contact_person": "contact_person",
 					"event_cost_center": "cost_center",
 				},
 			}
@@ -393,3 +392,46 @@ def get_items_from_sales_order(sales_order_name):
 		}
 		for item in so.items
 	]
+
+
+@frappe.whitelist(allow_guest=False)
+def get_calendar_events(start, end, filters=None):
+	import json
+	conditions = {"event_date": ("between", [start, end])}
+	if filters:
+		if isinstance(filters, str):
+			filters = json.loads(filters)
+		conditions.update(filters)
+	events = frappe.get_all(
+		"Event Booking",
+		filters=conditions,
+		fields=["name", "event_name", "event_date", "event_time",
+				"event_end_time", "booking_status", "customer"],
+	)
+	out = []
+	for ev in events:
+		start_dt = f"{ev.event_date} {ev.event_time or '00:00:00'}"
+		end_dt = f"{ev.event_date} {ev.event_end_time or ev.event_time or '23:59:00'}"
+		out.append({
+			"name": ev.name,
+			"title": f"{ev.event_name} ({ev.customer})",
+			"start": start_dt,
+			"end": end_dt,
+			"booking_status": ev.booking_status,
+			"color": _calendar_color(ev.booking_status),
+		})
+	return out
+
+
+def _calendar_color(status):
+	return {
+		"New": "#5e64ff",
+		"Quoted": "#5e64ff",
+		"Negotiating": "#f4a835",
+		"Confirmed": "#2490ef",
+		"In Preparation": "#2490ef",
+		"Executed": "#adb5bd",
+		"Invoiced": "#28a745",
+		"Paid": "#28a745",
+		"Cancelled": "#e24c4c",
+	}.get(status, "#adb5bd")
