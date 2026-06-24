@@ -279,7 +279,8 @@ fixtures = [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
     ]]]},
     {"dt": "Dashboard Chart", "filters": [["name", "in", [
-        "Monthly Events", "Event Revenue Trend"
+        "Monthly Events", "Event Revenue Trend",
+        "Event Deals Completed", "Event Deals Lost",
     ]]]},
     {"dt": "Report", "filters": [["name", "in", ["Event Summary", "Event Revenue Trend"]]]},
 ]

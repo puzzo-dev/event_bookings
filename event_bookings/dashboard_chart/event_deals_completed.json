@@ -1,0 +1,21 @@
+{
+ "chart_name": "Event Deals Completed",
+ "chart_type": "Custom",
+ "creation": "2026-06-24 00:00:00.000000",
+ "custom_options": "{\"path\": \"event_bookings.utils.dashboard_charts.get_deals_completed_chart\"}",
+ "docstatus": 0,
+ "doctype": "Dashboard Chart",
+ "filters_json": "[]",
+ "is_public": 1,
+ "is_standard": 1,
+ "modified": "2026-06-24 00:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Deals Completed",
+ "number_of_groups": 0,
+ "owner": "Administrator",
+ "time_interval": "Monthly",
+ "timeseries": 1,
+ "type": "Bar",
+ "use_report_chart": 0
+}
