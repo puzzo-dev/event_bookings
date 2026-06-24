@@ -20,7 +20,7 @@ def execute():
 		return
 
 	if not frappe.db.exists("DocType", new_name):
-		frappe.rename_doc("DocType", old_name, new_name, force=True, ignore_permissions=True)
+		frappe.rename_doc("DocType", old_name, new_name, force=True)
 		frappe.db.commit()
 		return
 
@@ -40,5 +40,5 @@ def execute():
 
 	# Delete old Singles rows and old DocType record
 	frappe.db.delete("Singles", {"doctype": old_name})
-	frappe.delete_doc("DocType", old_name, force=True, ignore_permissions=True)
+	frappe.delete_doc("DocType", old_name, force=True)
 	frappe.db.commit()
