@@ -116,5 +116,7 @@ class TestDaily(unittest.TestCase):
 	def test_calls_all_subtasks(self, mock_sync, mock_remind, mock_alert):
 		daily()
 		mock_sync.assert_called_once()
-		mock_remind.assert_called_once_with(days=3)
+		self.assertEqual(mock_remind.call_count, 2)
+		mock_remind.assert_any_call(days=3)
+		mock_remind.assert_any_call(days=1)
 		mock_alert.assert_called_once()

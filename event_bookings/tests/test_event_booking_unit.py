@@ -295,7 +295,6 @@ class TestCreateQuotation(unittest.TestCase):
 	def test_builds_blank_quotation(self, mock_frappe):
 		settings = SimpleNamespace(
 			default_cost_center="CC-001",
-			default_income_account="Income - TC",
 		)
 		mock_frappe.get_cached_doc.return_value = settings
 
