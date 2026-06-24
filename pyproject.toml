@@ -19,11 +19,51 @@ build-backend = "flit_core.buildapi"
 
 # These dependencies are only installed when developer mode is enabled
 [tool.bench.dev-dependencies]
-# package_name = "~=1.1.0"
+python-semantic-release = "~=9.0"
 
 # These apt dependencies will be installed from Ubuntu repositories when you host your app on Frappe Cloud
 [deploy.dependencies.apt]
 packages = []
+
+# ---------------------------------------------------------------------------
+# Semantic Release
+# ---------------------------------------------------------------------------
+# Run:  semantic-release version   (bumps version + tags)
+#       semantic-release publish   (also pushes tag to remote)
+#
+# Commit convention (Angular / Conventional Commits):
+#   feat:     → minor bump  (new feature)
+#   fix:      → patch bump  (bug fix)
+#   refactor: → patch bump  (code change with no visible behaviour change)
+#   perf:     → patch bump  (performance improvement)
+#   BREAKING CHANGE footer or feat!: → major bump
+#   chore / docs / style / test → no bump
+# ---------------------------------------------------------------------------
+[tool.semantic_release]
+version_variables = ["event_bookings/__init__.py:__version__"]
+branch = "version-15"
+commit_parser = "conventional"
+tag_format = "v{version}"
+changelog_file = "CHANGELOG.md"
+upload_to_pypi = false
+upload_to_release = false
+
+[tool.semantic_release.remote]
+# No push to remote by default — CI/CD can override this
+push = false
+type = "github"
+ignore_token_for_push = true
+
+[tool.semantic_release.branches.version-15]
+match = "version-15"
+prerelease = false
+
+[tool.semantic_release.commit_parser_options]
+# Commits that trigger a MINOR version bump
+minor_tags = ["feat"]
+# Commits that trigger a PATCH version bump
+# "refactor" added here so code clean-ups count as a fix/patch
+patch_tags = ["fix", "perf", "refactor"]
 
 [tool.ruff]
 line-length = 110
