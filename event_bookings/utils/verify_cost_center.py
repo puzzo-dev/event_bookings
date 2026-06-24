@@ -49,15 +49,22 @@ def run():
 
 def test_create_event():
     """Create a test event booking and confirm it to verify per-event cost center creation."""
-    cg = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
-    customer = "_Test CC Verify Customer"
-    if not frappe.db.exists("Customer", customer):
-        frappe.get_doc({
-            "doctype": "Customer",
-            "customer_name": customer,
-            "customer_type": "Individual",
-            "customer_group": cg,
-        }).insert(ignore_permissions=True)
+    if "erpnext" not in frappe.get_installed_apps():
+        print("Skipping Customer creation — ERPNext not installed. Using standalone party fields.")
+        party_type = "Individual"
+        party_name = "_Test CC Verify Individual"
+    else:
+        cg = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+        customer = "_Test CC Verify Customer"
+        if not frappe.db.exists("Customer", customer):
+            frappe.get_doc({
+                "doctype": "Customer",
+                "customer_name": customer,
+                "customer_type": "Individual",
+                "customer_group": cg,
+            }).insert(ignore_permissions=True)
+        party_type = "Customer"
+        party_name = customer
 
     event_type = "_Test Verify"
     if not frappe.db.exists("Event Type", event_type):
@@ -68,7 +75,8 @@ def test_create_event():
     eb = frappe.get_doc({
         "doctype": "Event Booking",
         "event_name": "Per-Event CC Verification",
-        "customer": customer,
+        "party_type": party_type,
+        "party_name": party_name,
         "event_type": event_type,
         "event_date": frappe.utils.add_days(frappe.utils.today(), 21),
         "event_time": "18:00:00",

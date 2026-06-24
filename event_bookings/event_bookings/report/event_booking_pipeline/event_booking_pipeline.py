@@ -11,21 +11,29 @@ def execute(filters=None):
     return columns, data
 
 
+def _erpnext_installed():
+    return "erpnext" in frappe.get_installed_apps()
+
+
 def get_columns():
-    return [
+    cols = [
         {"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
-        {"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 150},
+        {"fieldname": "party_name", "label": _("Party"), "fieldtype": "Data", "width": 150},
         {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
         {"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 120},
         {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
         {"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
-        {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
-        {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
         {"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
         {"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
-        {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
-        {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
     ]
+    if _erpnext_installed():
+        cols += [
+            {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
+            {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
+            {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
+            {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
+        ]
+    return cols
 
 
 def get_data(filters):
@@ -34,27 +42,33 @@ def get_data(filters):
         conditions["event_date"] = [">=", filters["from_date"]]
     if filters.get("to_date"):
         conditions["event_date"] = ["<=", filters["to_date"]]
-    if filters.get("customer"):
-        conditions["customer"] = filters["customer"]
+    if filters.get("party_name"):
+        conditions["party_name"] = ["like", f"%{filters['party_name']}%"]
     if filters.get("event_type"):
         conditions["event_type"] = filters["event_type"]
     if filters.get("booking_status"):
         conditions["booking_status"] = filters["booking_status"]
 
+    base_fields = [
+        "name as event_name",
+        "party_name",
+        "event_type",
+        "event_date",
+        "booking_status",
+    ]
+    erpnext_fields = [
+        "total_estimated",
+        "total_actual",
+        "quotation",
+        "sales_invoice",
+    ]
+
+    fields = base_fields + (erpnext_fields if _erpnext_installed() else [])
+
     bookings = frappe.get_all(
         "Event Booking",
         filters=conditions,
-        fields=[
-            "name as event_name",
-            "customer",
-            "event_type",
-            "event_date",
-            "booking_status",
-            "total_estimated",
-            "total_actual",
-            "quotation",
-            "sales_invoice",
-        ],
+        fields=fields,
         order_by="event_date asc",
     )
 
@@ -64,20 +78,24 @@ def get_data(filters):
         days_until = (frappe.utils.getdate(eb.event_date) - frappe.utils.getdate(today)).days if eb.event_date else 0
         staff_required, staff_assigned = _get_staff_counts(eb.event_name)
 
-        data.append({
+        row = {
             "event_name": eb.event_name,
-            "customer": eb.customer,
+            "party_name": eb.party_name,
             "event_type": eb.event_type,
             "event_date": eb.event_date,
             "booking_status": eb.booking_status,
             "days_until_event": days_until,
-            "total_estimated": eb.total_estimated or 0,
-            "total_actual": eb.total_actual or 0,
             "staff_required": staff_required,
             "staff_assigned": staff_assigned,
-            "quotation": eb.quotation,
-            "sales_invoice": eb.sales_invoice,
-        })
+        }
+        if _erpnext_installed():
+            row.update({
+                "total_estimated": eb.total_estimated or 0,
+                "total_actual": eb.total_actual or 0,
+                "quotation": eb.quotation,
+                "sales_invoice": eb.sales_invoice,
+            })
+        data.append(row)
 
     return data
 

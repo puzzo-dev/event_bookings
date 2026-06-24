@@ -10,7 +10,7 @@ def format_whatsapp_message(template, doc):
 	try:
 		return template.format(
 			event_name=doc.event_name,
-			customer=doc.customer,
+			party_name=doc.party_name,
 			event_date=formatdate(doc.event_date),
 			event_location=doc.event_location,
 		)

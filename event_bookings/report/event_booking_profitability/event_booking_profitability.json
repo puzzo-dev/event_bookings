@@ -9,10 +9,9 @@
    "width": 180
   },
   {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer",
-   "options": "Customer",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party",
    "width": 150
   },
   {
@@ -85,10 +84,9 @@
    "wildcard_filter": 0
   },
   {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer",
-   "options": "Customer",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party Name",
    "mandatory": 0,
    "wildcard_filter": 0
   },

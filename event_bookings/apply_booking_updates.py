@@ -15,13 +15,7 @@ def update_event_booking_doctype():
     # 2. Add booking_date field
     # Check if it already exists
     if not any(f.fieldname == "booking_date" for f in doc.fields):
-        # Find where to insert it. Let's insert it after event_name or customer
         insert_after = "event_name"
-        for f in doc.fields:
-            if f.fieldname == "customer":
-                insert_after = "customer"
-                break
-                
         doc.append("fields", {
             "fieldname": "booking_date",
             "label": "Booking Date",

@@ -14,10 +14,9 @@ frappe.query_reports["Event Booking Profitability"] = {
 			fieldtype: "Date",
 		},
 		{
-			fieldname: "customer",
-			label: __("Customer"),
-			fieldtype: "Link",
-			options: "Customer",
+			fieldname: "party_name",
+			label: __("Party Name"),
+			fieldtype: "Data",
 		},
 		{
 			fieldname: "event_type",

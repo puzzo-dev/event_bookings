@@ -2,7 +2,7 @@ import frappe
 from frappe.tests.utils import FrappeTestCase
 
 from event_bookings.tests.fixtures import (
-	get_or_create_test_customer,
+	get_or_create_test_party,
 	get_or_create_test_event_type,
 	get_or_create_test_item,
 )
@@ -10,7 +10,9 @@ from event_bookings.tests.fixtures import (
 
 class TestQuotationBuilder(FrappeTestCase):
 	def setUp(self):
-		self.test_customer = get_or_create_test_customer()
+		if "erpnext" not in frappe.get_installed_apps():
+			self.skipTest("Quotation tests require ERPNext")
+		self.test_party_type, self.test_party_name = get_or_create_test_party()
 		self.test_event_type = get_or_create_test_event_type()
 
 	def tearDown(self):
@@ -21,7 +23,8 @@ class TestQuotationBuilder(FrappeTestCase):
 			{
 				"doctype": "Event Booking",
 				"event_name": "Test Quotation Event",
-				"customer": self.test_customer,
+				"party_type": self.test_party_type,
+				"party_name": self.test_party_name,
 				"event_type": self.test_event_type,
 				"event_date": frappe.utils.add_days(frappe.utils.today(), 7),
 				"event_time": "18:00:00",
@@ -37,5 +40,5 @@ class TestQuotationBuilder(FrappeTestCase):
 
 		self.assertTrue(doc.quotation)
 		qt = frappe.get_doc("Quotation", doc.quotation)
-		self.assertEqual(qt.party_name, self.test_customer)
+		self.assertEqual(qt.party_name, self.test_party_name)
 		self.assertEqual(len(qt.items), 0)

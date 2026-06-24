@@ -1,12 +1,12 @@
 import frappe
 from frappe.tests.utils import FrappeTestCase
 
-from event_bookings.tests.fixtures import get_or_create_test_customer, get_or_create_test_event_type
+from event_bookings.tests.fixtures import get_or_create_test_party, get_or_create_test_event_type
 
 
 class TestEventBookingWorkflow(FrappeTestCase):
 	def setUp(self):
-		self.test_customer = get_or_create_test_customer()
+		self.test_party_type, self.test_party_name = get_or_create_test_party()
 		self.test_event_type = get_or_create_test_event_type()
 
 	def tearDown(self):
@@ -17,7 +17,8 @@ class TestEventBookingWorkflow(FrappeTestCase):
 			{
 				"doctype": "Event Booking",
 				"event_name": "Test Workflow Event",
-				"customer": self.test_customer,
+				"party_type": self.test_party_type,
+				"party_name": self.test_party_name,
 				"event_type": self.test_event_type,
 				"event_date": frappe.utils.add_days(frappe.utils.today(), 7),
 				"event_time": "18:00:00",

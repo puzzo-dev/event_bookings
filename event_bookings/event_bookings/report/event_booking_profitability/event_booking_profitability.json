@@ -10,10 +10,9 @@
    "width": 180
   },
   {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer",
-   "options": "Customer",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party",
    "width": 150
   },
   {
@@ -85,11 +84,10 @@
    "wildcard_filter": 0
   },
   {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "label": "Customer",
+   "fieldname": "party_name",
+   "fieldtype": "Data",
+   "label": "Party Name",
    "mandatory": 0,
-   "options": "Customer",
    "wildcard_filter": 0
   },
   {
@@ -112,7 +110,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-06-14 08:16:24.607817",
+ "modified": "2026-06-24 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Booking Profitability",

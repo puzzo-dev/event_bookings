@@ -23,13 +23,13 @@ def get_columns():
         {"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 120},
         {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
         {"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
-        {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
-        {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
         {"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
         {"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
     ]
     if _erpnext_installed():
         cols += [
+            {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
+            {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
             {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
             {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
         ]
@@ -55,11 +55,9 @@ def get_data(filters):
         "event_type",
         "event_date",
         "booking_status",
-        "total_estimated",
-        "total_actual",
     ]
     if _erpnext_installed():
-        fields += ["quotation", "sales_invoice"]
+        fields += ["total_estimated", "total_actual", "quotation", "sales_invoice"]
 
     bookings = frappe.get_all(
         "Event Booking",
@@ -81,12 +79,12 @@ def get_data(filters):
             "event_date": eb.event_date,
             "booking_status": eb.booking_status,
             "days_until_event": days_until,
-            "total_estimated": eb.total_estimated or 0,
-            "total_actual": eb.total_actual or 0,
             "staff_required": staff_required,
             "staff_assigned": staff_assigned,
         }
         if _erpnext_installed():
+            row["total_estimated"] = eb.get("total_estimated") or 0
+            row["total_actual"] = eb.get("total_actual") or 0
             row["quotation"] = eb.get("quotation")
             row["sales_invoice"] = eb.get("sales_invoice")
         data.append(row)
