@@ -9,7 +9,7 @@
    "label": "Revenue Trend"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Bookings\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":6}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
  "creation": "2026-06-13 03:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -21,6 +21,67 @@
  "is_editable": 1,
  "label": "Event Bookings",
  "links": [
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Bookings",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Booking",
+   "link_to": "Event Booking",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Type",
+   "link_to": "Event Type",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Event Settings",
+   "link_to": "Event Settings",
+   "link_type": "DocType",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Reports",
+   "link_count": 0,
+   "onboard": 0,
+   "type": "Card Break"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Event Summary",
+   "link_to": "Event Summary",
+   "link_type": "Report",
+   "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 1,
+   "label": "Event Revenue Trend",
+   "link_to": "Event Revenue Trend",
+   "link_type": "Report",
+   "onboard": 1,
+   "type": "Link"
+  },
   {
    "hidden": 0,
    "is_query_report": 0,
@@ -93,17 +154,9 @@
   },
   {
    "hidden": 0,
-   "is_query_report": 0,
-   "label": "Reports",
-   "link_count": 0,
-   "onboard": 0,
-   "type": "Card Break"
-  },
-  {
-   "hidden": 0,
    "is_query_report": 1,
-   "label": "Profitability Report",
-   "link_to": "Event Booking Profitability",
+   "label": "Event Booking Pipeline",
+   "link_to": "Event Booking Pipeline",
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
@@ -111,14 +164,14 @@
   {
    "hidden": 0,
    "is_query_report": 1,
-   "label": "Pipeline Report",
-   "link_to": "Event Booking Pipeline",
+   "label": "Event Booking Profitability",
+   "link_to": "Event Booking Profitability",
    "link_type": "Report",
    "onboard": 0,
    "type": "Link"
   }
  ],
- "modified": "2026-06-13 03:00:00.000000",
+ "modified": "2026-06-24 00:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings",
@@ -158,7 +211,7 @@
    "color": "Orange",
    "doc_view": "List",
    "format": "",
-   "icon": "settings",
+   "icon": "tag",
    "label": "Event Types",
    "link_to": "Event Type",
    "stats_filter": "",
