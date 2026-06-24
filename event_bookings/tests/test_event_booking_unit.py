@@ -178,26 +178,22 @@ class TestValidateDates(unittest.TestCase):
 class TestValidateReviewRequirement(unittest.TestCase):
 	def test_review_required_blocks_invoicing(self, mock_frappe, _):
 		settings = SimpleNamespace(require_review=True)
-		# get_settings() calls: db.get_default then db.exists("Event Booking Settings") → True
-		# then get_cached_doc("Event Booking Settings", company)
-		mock_frappe.db.get_default.return_value = "Test Company"
-		mock_frappe.db.exists.return_value = True
+		# get_settings() calls get_cached_doc("Event Booking Settings", "Event Booking Settings")
 		mock_frappe.get_cached_doc.return_value = settings
+		# validate_review_requirement checks frappe.db.exists("Booking Review", ...) → False
+		mock_frappe.db.exists.return_value = False
+		mock_frappe.throw.side_effect = Exception("review required")
 
-		eb = _new_booking(company="Test Company")
-		# validate_review_requirement calls frappe.db.exists("Booking Review", ...) → False
-		mock_frappe.db.exists.side_effect = lambda dt, *a, **kw: False if dt == "Booking Review" else True
-
-		eb.validate_review_requirement()
+		eb = _new_booking()
+		with self.assertRaises(Exception):
+			eb.validate_review_requirement()
 		mock_frappe.throw.assert_called_once()
 
 	def test_review_not_required_allows(self, mock_frappe, _):
 		settings = SimpleNamespace(require_review=False)
-		mock_frappe.db.get_default.return_value = "Test Company"
-		mock_frappe.db.exists.return_value = True
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(company="Test Company")
+		eb = _new_booking()
 		eb.validate_review_requirement()
 		mock_frappe.throw.assert_not_called()
 

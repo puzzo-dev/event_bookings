@@ -139,12 +139,12 @@ class TestSendUnstaffedAlerts(unittest.TestCase):
 @patch("event_bookings.utils.scheduler.frappe")
 class TestDaily(unittest.TestCase):
 	def test_calls_all_subtasks(self, mock_frappe, mock_sync, mock_remind, mock_alert, mock_notify):
-		company_settings = SimpleNamespace(name="Test Company", pre_event_reminder_days=3, enable_whatsapp=False)
-		mock_frappe.get_all.return_value = [company_settings]
+		settings = SimpleNamespace(pre_event_reminder_days=3, enable_whatsapp=False)
+		mock_frappe.get_single.return_value = settings
 
 		daily()
 
 		mock_sync.assert_called_once()
-		mock_remind.assert_called_once_with(days=3, company="Test Company", enable_whatsapp=False)
+		mock_remind.assert_called_once_with(days=3, enable_whatsapp=False)
 		mock_alert.assert_called_once()
 		mock_notify.assert_called_once()

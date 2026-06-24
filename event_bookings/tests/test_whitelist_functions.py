@@ -49,8 +49,10 @@ class TestGetItemsFromQuotation(unittest.TestCase):
 
 	def test_throws_when_no_read_permission(self, mock_frappe, _):
 		mock_frappe.has_permission.return_value = False
+		mock_frappe.throw.side_effect = Exception("permission denied")
 
-		get_items_from_quotation("QTN-001")
+		with self.assertRaises(Exception):
+			get_items_from_quotation("QTN-001")
 
 		mock_frappe.has_permission.assert_called_once_with("Quotation", "read", "QTN-001")
 		mock_frappe.throw.assert_called_once()
@@ -120,8 +122,10 @@ class TestGetItemsFromSalesOrder(unittest.TestCase):
 
 	def test_throws_when_no_read_permission(self, mock_frappe, _):
 		mock_frappe.has_permission.return_value = False
+		mock_frappe.throw.side_effect = Exception("permission denied")
 
-		get_items_from_sales_order("SO-001")
+		with self.assertRaises(Exception):
+			get_items_from_sales_order("SO-001")
 
 		mock_frappe.has_permission.assert_called_once_with("Sales Order", "read", "SO-001")
 		mock_frappe.throw.assert_called_once()
