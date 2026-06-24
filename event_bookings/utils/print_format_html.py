@@ -13,7 +13,7 @@ EVENT_BOOKING_CONFIRMATION_HTML = """
             </td>
             <td style="width: 50%; text-align: right;">
                 <strong>Status:</strong> {{ doc.booking_status }}<br>
-                <strong>Customer:</strong> {{ doc.customer }}<br>
+                <strong>Party:</strong> {{ doc.party_name }}<br>
                 <strong>Location:</strong> {{ doc.event_location }}
             </td>
         </tr>

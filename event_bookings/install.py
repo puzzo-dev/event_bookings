@@ -16,6 +16,82 @@ def after_install():
         create_event_coa_accounts()
 
 
+def after_app_install(app):
+    """
+    Hook called after *any* app is installed on this site.
+    Used to react when ERPNext or HRMS is added to an existing standalone install.
+
+    Scenario: site starts with Frappe + Event Bookings, then user later
+    installs ERPNext+HRMS to unlock financial/staffing features.
+    """
+    if app not in ("erpnext", "hrms"):
+        return
+
+    installed = frappe.get_installed_apps()
+
+    # Only act once both ERPNext and HRMS are present.
+    if "erpnext" not in installed or "hrms" not in installed:
+        return
+
+    # Create CoA accounts for all existing companies now that ERPNext is live.
+    create_event_coa_accounts()
+
+
+def before_app_uninstall(app):
+    """
+    Hook called just before *any* app is uninstalled from this site.
+    Used to protect Event Booking data when ERPNext or HRMS is removed.
+
+    Scenario: user removes ERPNext/HRMS — the linked doctypes (Quotation,
+    Sales Order, etc.) will be dropped.  Null out those references in Event
+    Booking rows so existing records don't break on next open.
+    """
+    if app == "erpnext":
+        _clear_erpnext_links()
+
+    if app == "hrms":
+        _clear_hrms_links()
+
+
+def _clear_erpnext_links():
+    """
+    Null out ERPNext-owned Link field values stored on Event Booking rows.
+    Called just before ERPNext is uninstalled so no dangling references remain.
+    """
+    erpnext_fields = [
+        "quotation",
+        "sales_order",
+        "sales_invoice",
+        "material_request",
+    ]
+    for field in erpnext_fields:
+        frappe.db.sql(
+            f"UPDATE `tabEvent Booking` SET `{field}` = NULL WHERE `{field}` IS NOT NULL"
+        )
+
+    frappe.db.commit()
+    frappe.logger().info(
+        "Event Bookings: cleared ERPNext link fields from Event Booking records "
+        "before ERPNext uninstall."
+    )
+
+
+def _clear_hrms_links():
+    """
+    Null out HRMS-owned values stored in Event Assigned Staff child rows.
+    Called just before HRMS is uninstalled.
+    """
+    frappe.db.sql(
+        "UPDATE `tabEvent Assigned Staff` SET employee = NULL, designation = NULL, shift_assignment = NULL"
+        " WHERE employee IS NOT NULL OR designation IS NOT NULL OR shift_assignment IS NOT NULL"
+    )
+    frappe.db.commit()
+    frappe.logger().info(
+        "Event Bookings: cleared HRMS link fields from Event Assigned Staff records "
+        "before HRMS uninstall."
+    )
+
+
 def _validate_dependency_coupling():
     """
     ERPNext and HRMS must be installed together with this app.

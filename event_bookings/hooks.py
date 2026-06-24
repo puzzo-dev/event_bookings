@@ -93,6 +93,11 @@ app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
 # before_uninstall = "event_bookings.uninstall.before_uninstall"
 # after_uninstall = "event_bookings.uninstall.after_uninstall"
 
+# Integration Setup — react when sibling apps are installed or removed
+# ------------------
+after_app_install = "event_bookings.install.after_app_install"
+before_app_uninstall = "event_bookings.install.before_app_uninstall"
+
 # Integration Setup
 # ------------------
 # To set up dependencies/integrations with other apps

@@ -11,7 +11,7 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 	def _make_doc(self, **kwargs):
 		defaults = {
 			"event_name": "Annual Gala",
-			"customer": "Acme Corp",
+			"party_name": "Acme Corp",
 			"event_date": "2026-07-15",
 			"event_location": "Grand Ballroom",
 		}
@@ -20,7 +20,7 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 
 	@patch("frappe.utils.formatdate", side_effect=lambda d: d)
 	def test_basic_substitution(self, _fmt):
-		tpl = "Event: {event_name} for {customer} on {event_date} at {event_location}"
+		tpl = "Event: {event_name} for {party_name} on {event_date} at {event_location}"
 		result = format_whatsapp_message(tpl, self._make_doc())
 		self.assertEqual(
 			result,
@@ -43,8 +43,8 @@ class TestFormatWhatsAppMessage(unittest.TestCase):
 
 	@patch("frappe.utils.formatdate", side_effect=lambda d: d)
 	def test_empty_fields(self, _fmt):
-		tpl = "{event_name} | {customer} | {event_location}"
-		doc = self._make_doc(event_name="", customer="", event_location="")
+		tpl = "{event_name} | {party_name} | {event_location}"
+		doc = self._make_doc(event_name="", party_name="", event_location="")
 		result = format_whatsapp_message(tpl, doc)
 		self.assertEqual(result, " |  | ")
 

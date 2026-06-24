@@ -4,14 +4,7 @@
 frappe.ui.form.on("Event Booking", {
     refresh(frm) {
         if (!frm.is_new()) {
-            if (!frm.doc.quotation && !frm.doc.sales_order) {
-                frm.add_custom_button(__('Create Quotation'), function() {
-                    frappe.model.open_mapped_doc({
-                        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_quotation",
-                        frm: frm
-                    });
-                }, __('Actions'));
-            }
+            const has_erpnext = (frappe.boot.installed_apps || []).includes('erpnext');
 
             if (!frm.doc.project) {
                 frm.add_custom_button(__('Create Project'), function() {
@@ -22,39 +15,50 @@ frappe.ui.form.on("Event Booking", {
                 }, __('Actions'));
             }
 
-            frm.add_custom_button(__('Fetch Items from Quotation'), function() {
-                if (!frm.doc.quotation) {
-                    frappe.show_alert({
-                        message: __('Create a Quotation against this booking first.'),
-                        indicator: 'orange'
-                    });
-                    return;
+            if (has_erpnext) {
+                if (!frm.doc.quotation && !frm.doc.sales_order) {
+                    frm.add_custom_button(__('Create Quotation'), function() {
+                        frappe.model.open_mapped_doc({
+                            method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_quotation",
+                            frm: frm
+                        });
+                    }, __('Actions'));
                 }
-                frappe.call({
-                    method: "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_quotation",
-                    args: { quotation_name: frm.doc.quotation },
-                    callback: function(r) {
-                        render_items_table(frm, r.message, __('Quotation Items'));
-                    }
-                });
-            }, __('Actions'));
 
-            frm.add_custom_button(__('Fetch Items from Sales Order'), function() {
-                if (!frm.doc.sales_order) {
-                    frappe.show_alert({
-                        message: __('Create a Sales Order against this booking first.'),
-                        indicator: 'orange'
-                    });
-                    return;
-                }
-                frappe.call({
-                    method: "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_sales_order",
-                    args: { sales_order_name: frm.doc.sales_order },
-                    callback: function(r) {
-                        render_items_table(frm, r.message, __('Sales Order Items'));
+                frm.add_custom_button(__('Fetch Items from Quotation'), function() {
+                    if (!frm.doc.quotation) {
+                        frappe.show_alert({
+                            message: __('Create a Quotation against this booking first.'),
+                            indicator: 'orange'
+                        });
+                        return;
                     }
-                });
-            }, __('Actions'));
+                    frappe.call({
+                        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_quotation",
+                        args: { quotation_name: frm.doc.quotation },
+                        callback: function(r) {
+                            render_items_table(frm, r.message, __('Quotation Items'));
+                        }
+                    });
+                }, __('Actions'));
+
+                frm.add_custom_button(__('Fetch Items from Sales Order'), function() {
+                    if (!frm.doc.sales_order) {
+                        frappe.show_alert({
+                            message: __('Create a Sales Order against this booking first.'),
+                            indicator: 'orange'
+                        });
+                        return;
+                    }
+                    frappe.call({
+                        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_sales_order",
+                        args: { sales_order_name: frm.doc.sales_order },
+                        callback: function(r) {
+                            render_items_table(frm, r.message, __('Sales Order Items'));
+                        }
+                    });
+                }, __('Actions'));
+            }
         }
 
         render_items_table(frm, [], '');
