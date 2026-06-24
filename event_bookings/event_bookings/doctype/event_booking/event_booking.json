@@ -16,7 +16,7 @@
   "event_type",
   "event_planner",
   "company",
-  "event_cost_center",
+  "cost_center",
   "project",
   "sec_logistics",
   "event_date",
@@ -122,7 +122,7 @@
    "search_index": 1
   },
   {
-   "fieldname": "event_cost_center",
+   "fieldname": "cost_center",
    "fieldtype": "Link",
    "label": "Cost Center",
    "options": "Cost Center"
