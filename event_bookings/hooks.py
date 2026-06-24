@@ -281,6 +281,7 @@ fixtures = [
     {"dt": "Dashboard Chart", "filters": [["name", "in", [
         "Monthly Events", "Event Revenue Trend",
         "Event Deals Completed", "Event Deals Lost",
+        "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
     ]]]},
     {"dt": "Report", "filters": [["name", "in", ["Event Summary", "Event Revenue Trend"]]]},
 ]

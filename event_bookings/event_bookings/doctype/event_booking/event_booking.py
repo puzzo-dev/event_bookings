@@ -220,6 +220,12 @@ class EventBooking(Document):
 			return
 		if not _erpnext_installed():
 			return
+		# Quotation.quotation_to only accepts "Customer" or "Lead" (ERPNext values)
+		if self.party_type not in ("Customer", "Lead"):
+			frappe.throw(
+				f"Cannot create a Quotation for party type '{self.party_type}'. "
+				"Set Party Type to Customer or Lead first."
+			)
 		settings = self.get_settings()
 		qt = frappe.get_doc({
 			"doctype": "Quotation",
@@ -349,7 +355,7 @@ def make_project(source_name, target_doc=None):
 
 	def set_missing_values(source, target):
 		target.project_name = source.event_name or source.name
-		# Project.customer only makes sense when the party is already a Customer
+		# Project.customer links to ERPNext Customer doctype — only set when applicable
 		target.customer = source.party_name if source.party_type == "Customer" else ""
 		target.expected_start_date = source.booking_date or source.event_date
 		target.expected_end_date = source.event_date

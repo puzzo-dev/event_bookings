@@ -75,20 +75,19 @@
    "reqd": 1
   },
   {
-   "default": "Customer",
+   "default": "Individual",
    "fieldname": "party_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Party Type",
-   "options": "Customer\nLead",
+   "options": "Individual\nOrganization\nCustomer\nLead",
    "reqd": 1
   },
   {
    "fieldname": "party_name",
-   "fieldtype": "Dynamic Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
-   "label": "Party",
-   "options": "party_type",
+   "label": "Party Name",
    "reqd": 1
   },
   {
