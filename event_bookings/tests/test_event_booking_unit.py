@@ -32,12 +32,20 @@ def _new_booking(**overrides):
 	eb.material_request = None
 	eb.booking_status = "New"
 	eb.customer = "Test Customer"
+	eb.party_type = "Customer"
+	eb.party_name = "Test Customer"
+	eb.event_planner = None
+	eb.event_planner_commission_amount = 0
 	eb.event_name = "Test Event"
 	eb.event_date = "2026-08-01"
 	eb.event_time = "18:00:00"
 	eb.event_timing = "2026-08-01 18:00:00"
 	eb.event_location = "Venue"
 	eb.name = "EVT-001"
+	eb.event_end_datetime = None
+	eb.event_end_date = None
+	eb.event_end_time = None
+	eb.company = None
 	eb.flags = SimpleNamespace(ignore_permissions=False)
 	for k, v in overrides.items():
 		setattr(eb, k, v)
@@ -87,7 +95,8 @@ class TestCalculateTotals(unittest.TestCase):
 		self.assertEqual(eb.event_planner_commission_amount, 1000.0)
 
 	def test_planner_commission_from_estimated(self, mock_frappe):
-		mock_frappe.db.get_value.side_effect = [5000.0, 0.0, 5.0]
+		# quotation total → 5000, commission_rate → 5.0; SO is None so no SO call
+		mock_frappe.db.get_value.side_effect = [5000.0, 5.0]
 		eb = _new_booking(
 			quotation="QTN-001",
 			event_planner="Planner-1",
@@ -99,47 +108,64 @@ class TestCalculateTotals(unittest.TestCase):
 # ── validate_dates ──────────────────────────────────────────────────
 
 
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.today")
+_MODULE = "event_bookings.event_bookings.doctype.event_booking.event_booking"
+
+_PAST = "2026-07-09 18:00:00"
+_FUTURE = "2026-07-15 18:00:00"
+_NOW = "2026-07-10 12:00:00"
+
+
+@patch(f"{_MODULE}._", side_effect=lambda x: x)
+@patch(f"{_MODULE}.frappe")
+@patch(f"{_MODULE}.now_datetime")
 class TestValidateDates(unittest.TestCase):
-	def test_past_date_new_booking_throws(self, mock_today, mock_frappe):
-		mock_today.return_value = "2026-07-10"
-		eb = _new_booking(event_timing="2026-07-09 18:00:00")
+	def test_past_date_new_booking_throws(self, mock_now, mock_frappe, _):
+		from datetime import datetime
+		mock_now.return_value = datetime(2026, 7, 10, 12, 0, 0)
+		eb = _new_booking(event_timing=_PAST)
 		eb.is_new = lambda: True
 
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 
-	def test_past_date_existing_booking_no_throw(self, mock_today, mock_frappe):
-		mock_today.return_value = "2026-07-10"
-		eb = _new_booking(event_timing="2026-07-09 18:00:00")
+	def test_past_date_existing_booking_no_throw(self, mock_now, mock_frappe, _):
+		from datetime import datetime
+		mock_now.return_value = datetime(2026, 7, 10, 12, 0, 0)
+		eb = _new_booking(event_timing=_PAST)
 		eb.is_new = lambda: False
 
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
-	def test_future_date_no_throw(self, mock_today, mock_frappe):
-		mock_today.return_value = "2026-07-10"
-		eb = _new_booking(event_timing="2026-07-15 18:00:00")
+	def test_future_date_no_throw(self, mock_now, mock_frappe, _):
+		from datetime import datetime
+		mock_now.return_value = datetime(2026, 7, 10, 12, 0, 0)
+		eb = _new_booking(event_timing=_FUTURE)
 		eb.is_new = lambda: True
 
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
-	def test_none_date_no_throw(self, mock_today, mock_frappe):
+	def test_none_date_no_throw(self, mock_now, mock_frappe, _):
 		eb = _new_booking(event_timing=None)
 		eb.is_new = lambda: True
 
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
-	def test_end_time_before_timing_throws(self, mock_today, mock_frappe):
+	def test_end_time_before_timing_throws(self, mock_now, mock_frappe, _):
+		from datetime import datetime
+		mock_now.return_value = datetime(2026, 7, 1, 12, 0, 0)
 		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_datetime="2026-08-01 12:00:00")
+		eb.is_new = lambda: False
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 
-	def test_end_time_equal_timing_throws(self, mock_today, mock_frappe):
+	def test_end_time_equal_timing_throws(self, mock_now, mock_frappe, _):
+		from datetime import datetime
+		mock_now.return_value = datetime(2026, 7, 1, 12, 0, 0)
 		eb = _new_booking(event_timing="2026-08-01 18:00:00", event_end_datetime="2026-08-01 18:00:00")
+		eb.is_new = lambda: False
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 
@@ -147,22 +173,31 @@ class TestValidateDates(unittest.TestCase):
 # ── validate_review_requirement ─────────────────────────────────────
 
 
-@patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
+@patch(f"{_MODULE}._", side_effect=lambda x: x)
+@patch(f"{_MODULE}.frappe")
 class TestValidateReviewRequirement(unittest.TestCase):
-	def test_review_required_blocks_invoicing(self, mock_frappe):
+	def test_review_required_blocks_invoicing(self, mock_frappe, _):
 		settings = SimpleNamespace(require_review=True)
+		# get_settings() calls: db.get_default then db.exists("Event Booking Settings") → True
+		# then get_cached_doc("Event Booking Settings", company)
+		mock_frappe.db.get_default.return_value = "Test Company"
+		mock_frappe.db.exists.return_value = True
 		mock_frappe.get_cached_doc.return_value = settings
-		mock_frappe.db.exists.return_value = False
 
-		eb = _new_booking()
+		eb = _new_booking(company="Test Company")
+		# validate_review_requirement calls frappe.db.exists("Booking Review", ...) → False
+		mock_frappe.db.exists.side_effect = lambda dt, *a, **kw: False if dt == "Booking Review" else True
+
 		eb.validate_review_requirement()
 		mock_frappe.throw.assert_called_once()
 
-	def test_review_not_required_allows(self, mock_frappe):
+	def test_review_not_required_allows(self, mock_frappe, _):
 		settings = SimpleNamespace(require_review=False)
+		mock_frappe.db.get_default.return_value = "Test Company"
+		mock_frappe.db.exists.return_value = True
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking()
+		eb = _new_booking(company="Test Company")
 		eb.validate_review_requirement()
 		mock_frappe.throw.assert_not_called()
 

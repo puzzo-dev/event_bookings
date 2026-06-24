@@ -16,10 +16,9 @@ def execute():
 	# Read legacy values from tabSingles (present when the doctype was issingle)
 	old_values = {
 		row.field: row.value
-		for row in frappe.db.get_all(
-			"Singles",
-			filters={"doctype": "Event Booking Settings"},
-			fields=["field", "value"],
+		for row in frappe.db.sql(
+			"SELECT `field`, `value` FROM `tabSingles` WHERE `doctype` = 'Event Booking Settings'",
+			as_dict=True,
 		)
 	}
 
@@ -58,6 +57,6 @@ def execute():
 
 	# Clean up the now-redundant Singles rows so there's no stale data
 	if old_values:
-		frappe.db.delete("Singles", {"doctype": "Event Booking Settings"})
+		frappe.db.sql("DELETE FROM `tabSingles` WHERE `doctype` = 'Event Booking Settings'")
 
 	frappe.db.commit()
