@@ -132,7 +132,7 @@ class TestValidateDates(unittest.TestCase):
 		mock_frappe.throw.assert_not_called()
 
 
-# ── set_defaults_from_settings / set_cost_center ────────────────────
+# ── set_defaults_from_settings ──────────────────────────────────────
 
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
@@ -153,12 +153,12 @@ class TestSetDefaults(unittest.TestCase):
 		eb.set_defaults_from_settings()
 		self.assertEqual(eb.event_cost_center, "CC-CUSTOM")
 
-	def test_set_cost_center_no_default(self, mock_frappe):
-		settings = SimpleNamespace(default_cost_center=None)
+	def test_set_defaults_no_cost_center_when_none_configured(self, mock_frappe):
+		settings = SimpleNamespace(default_cost_center=None, auto_create_cost_center_per_event=False)
 		mock_frappe.get_cached_doc.return_value = settings
 
 		eb = _new_booking(event_cost_center=None)
-		eb.set_cost_center()
+		eb.set_defaults_from_settings()
 		self.assertIsNone(eb.event_cost_center)
 
 
@@ -167,7 +167,7 @@ class TestSetDefaults(unittest.TestCase):
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestEnsureEventCostCenter(unittest.TestCase):
-	def test_delegates_to_set_cost_center_when_auto_disabled(self, mock_frappe):
+	def test_sets_cost_center_when_auto_create_disabled(self, mock_frappe):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=False, default_cost_center="CC-001")
 		mock_frappe.get_cached_doc.return_value = settings
 
