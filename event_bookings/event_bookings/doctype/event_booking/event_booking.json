@@ -15,6 +15,7 @@
   "col_type",
   "event_type",
   "event_planner",
+  "company",
   "event_cost_center",
   "project",
   "sec_logistics",
@@ -111,6 +112,14 @@
    "fieldtype": "Link",
    "label": "Event Planner",
    "options": "Sales Partner"
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "search_index": 1
   },
   {
    "fieldname": "event_cost_center",
