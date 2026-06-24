@@ -92,32 +92,32 @@ class EventBooking(Document):
 
     def set_cost_center(self):
         settings = self.get_settings()
-        if not self.event_cost_center and settings.default_cost_center:
-            self.event_cost_center = settings.default_cost_center
+        if not self.cost_center and settings.default_cost_center:
+            self.cost_center = settings.default_cost_center
 
     def set_defaults_from_settings(self):
         settings = self.get_settings()
         if (
-            not self.event_cost_center
+            not self.cost_center
             and settings.default_cost_center
             and not settings.auto_create_cost_center_per_event
         ):
-            self.event_cost_center = settings.default_cost_center
+            self.cost_center = settings.default_cost_center
 
     def get_cost_center(self):
         """Return the event's cost center, falling back to the default from Event Settings."""
-        if self.event_cost_center:
-            return self.event_cost_center
+        if self.cost_center:
+            return self.cost_center
         return self.get_settings().default_cost_center
 
     def ensure_event_cost_center(self):
         settings = self.get_settings()
         if not settings.auto_create_cost_center_per_event:
-            if not self.event_cost_center and settings.default_cost_center:
-                self.event_cost_center = settings.default_cost_center
+            if not self.cost_center and settings.default_cost_center:
+                self.cost_center = settings.default_cost_center
             return
 
-        if self.event_cost_center:
+        if self.cost_center:
             return
 
         parent_cc = settings.default_cost_center
@@ -146,7 +146,7 @@ class EventBooking(Document):
             cc.insert(ignore_permissions=True)
             full_cc_name = cc.name
 
-        self.event_cost_center = full_cc_name
+        self.cost_center = full_cc_name
 
     def get_company_from_cost_center(self, cost_center):
         return frappe.db.get_value(
@@ -240,7 +240,7 @@ class EventBooking(Document):
             "quotation_to": self.party_type,
             "party_name": self.party_name,
             "event_booking": self.name,
-            "cost_center": self.event_cost_center or settings.default_cost_center,
+            "cost_center": self.cost_center or settings.default_cost_center,
         })
         if not frappe.has_permission("Quotation", "create"):
             frappe.throw("You do not have permission to create a Quotation.")
@@ -395,7 +395,7 @@ def make_quotation(source_name, target_doc=None):
                 "doctype": "Quotation",
                 "field_map": {
                     "party_name": "party_name",
-                    "event_cost_center": "cost_center",
+                    "cost_center": "cost_center",
                 },
             }
         },
@@ -423,7 +423,7 @@ def make_project(source_name, target_doc=None):
             "Event Booking": {
                 "doctype": "Project",
                 "field_map": {
-                    "event_cost_center": "cost_center",
+                    "cost_center": "cost_center",
                 },
             }
         },

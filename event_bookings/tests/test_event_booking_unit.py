@@ -24,7 +24,7 @@ def _new_booking(**overrides):
 	"""Create a bare EventBooking instance without calling __init__."""
 	eb = object.__new__(EventBooking)
 	eb.staff_requirements = []
-	eb.event_cost_center = None
+	eb.cost_center = None
 	eb.total_estimated = 0
 	eb.total_actual = 0
 	eb.quotation = None
@@ -141,28 +141,28 @@ class TestSetDefaults(unittest.TestCase):
 		settings = SimpleNamespace(default_cost_center="CC-001", auto_create_cost_center_per_event=False)
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center=None)
+		eb = _new_booking(cost_center=None)
 		eb.set_defaults_from_settings()
-		self.assertEqual(eb.event_cost_center, "CC-001")
+		self.assertEqual(eb.cost_center, "CC-001")
 
 	def test_preserves_existing_cost_center(self, mock_frappe):
 		settings = SimpleNamespace(default_cost_center="CC-001", auto_create_cost_center_per_event=False)
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center="CC-CUSTOM")
+		eb = _new_booking(cost_center="CC-CUSTOM")
 		eb.set_defaults_from_settings()
-		self.assertEqual(eb.event_cost_center, "CC-CUSTOM")
+		self.assertEqual(eb.cost_center, "CC-CUSTOM")
 
 	def test_set_cost_center_no_default(self, mock_frappe):
 		settings = SimpleNamespace(default_cost_center=None)
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center=None)
+		eb = _new_booking(cost_center=None)
 		eb.set_cost_center()
-		self.assertIsNone(eb.event_cost_center)
+		self.assertIsNone(eb.cost_center)
 
 
-# ── ensure_event_cost_center ────────────────────────────────────────
+# ── ensure_cost_center ────────────────────────────────────────
 
 
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
@@ -171,24 +171,24 @@ class TestEnsureEventCostCenter(unittest.TestCase):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=False, default_cost_center="CC-001")
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center=None)
-		eb.ensure_event_cost_center()
-		self.assertEqual(eb.event_cost_center, "CC-001")
+		eb = _new_booking(cost_center=None)
+		eb.ensure_cost_center()
+		self.assertEqual(eb.cost_center, "CC-001")
 
 	def test_skips_when_already_set(self, mock_frappe):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=True, default_cost_center="CC-001")
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center="CC-EXISTING")
-		eb.ensure_event_cost_center()
-		self.assertEqual(eb.event_cost_center, "CC-EXISTING")
+		eb = _new_booking(cost_center="CC-EXISTING")
+		eb.ensure_cost_center()
+		self.assertEqual(eb.cost_center, "CC-EXISTING")
 
 	def test_throws_when_no_parent_cc(self, mock_frappe):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=True, default_cost_center=None)
 		mock_frappe.get_cached_doc.return_value = settings
 
-		eb = _new_booking(event_cost_center=None)
-		eb.ensure_event_cost_center()
+		eb = _new_booking(cost_center=None)
+		eb.ensure_cost_center()
 		mock_frappe.throw.assert_called_once()
 
 	def test_creates_new_cost_center(self, mock_frappe):
@@ -201,15 +201,15 @@ class TestEnsureEventCostCenter(unittest.TestCase):
 		mock_cc.name = "EVT-001 - Test Event - TC"
 		mock_frappe.get_doc.return_value = mock_cc
 
-		eb = _new_booking(event_cost_center=None, name="EVT-001", event_name="Test Event")
-		eb.ensure_event_cost_center()
+		eb = _new_booking(cost_center=None, name="EVT-001", event_name="Test Event")
+		eb.ensure_cost_center()
 
 		mock_frappe.get_doc.assert_called_once()
 		call_args = mock_frappe.get_doc.call_args[0][0]
 		self.assertEqual(call_args["doctype"], "Cost Center")
 		self.assertEqual(call_args["parent_cost_center"], "Parent CC")
 		mock_cc.insert.assert_called_once_with(ignore_permissions=True)
-		self.assertEqual(eb.event_cost_center, "EVT-001 - Test Event - TC")
+		self.assertEqual(eb.cost_center, "EVT-001 - Test Event - TC")
 
 	def test_reuses_existing_cost_center(self, mock_frappe):
 		settings = SimpleNamespace(auto_create_cost_center_per_event=True, default_cost_center="Parent CC")
@@ -217,11 +217,11 @@ class TestEnsureEventCostCenter(unittest.TestCase):
 		mock_frappe.db.exists.return_value = True
 		mock_frappe.db.get_value.side_effect = ["Test Co", "TC"]
 
-		eb = _new_booking(event_cost_center=None, name="EVT-001", event_name="Test Event")
-		eb.ensure_event_cost_center()
+		eb = _new_booking(cost_center=None, name="EVT-001", event_name="Test Event")
+		eb.ensure_cost_center()
 
 		mock_frappe.get_doc.assert_not_called()
-		self.assertEqual(eb.event_cost_center, "EVT-001 - Test Event - TC")
+		self.assertEqual(eb.cost_center, "EVT-001 - Test Event - TC")
 
 
 # ── has_status_changed ──────────────────────────────────────────────
@@ -260,9 +260,9 @@ class TestHandleStatusTransition(unittest.TestCase):
 
 	def test_confirmed_ensures_cost_center(self, mock_frappe):
 		eb = _new_booking(booking_status="Confirmed")
-		eb.ensure_event_cost_center = MagicMock()
+		eb.ensure_cost_center = MagicMock()
 		eb.handle_status_transition()
-		eb.ensure_event_cost_center.assert_called_once()
+		eb.ensure_cost_center.assert_called_once()
 
 	def test_in_preparation_creates_shifts(self, mock_frappe):
 		eb = _new_booking(booking_status="In Preparation")
@@ -307,7 +307,7 @@ class TestCreateQuotation(unittest.TestCase):
 		eb = _new_booking(
 			party_type="Customer",
 			party_name="Acme",
-			event_cost_center="CC-EVT",
+			cost_center="CC-EVT",
 			quotation=None,
 		)
 		eb.create_quotation()

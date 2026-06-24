@@ -57,7 +57,7 @@ class TestEventCostCenter(FrappeTestCase):
         settings.save(ignore_permissions=True)
 
         eb = self._make_event()
-        self.assertEqual(eb.event_cost_center, parent_cc)
+        self.assertEqual(eb.cost_center, parent_cc)
 
     def test_auto_cost_center_creates_child_on_confirm(self):
         settings = frappe.get_single("Event Settings")
@@ -69,18 +69,18 @@ class TestEventCostCenter(FrappeTestCase):
         settings.save(ignore_permissions=True)
 
         eb = self._make_event()
-        self.assertFalse(eb.event_cost_center)
+        self.assertFalse(eb.cost_center)
 
         # Step through valid workflow transitions to reach Confirmed
         for status in ("Quoted", "Negotiating", "Confirmed"):
             eb.booking_status = status
             eb.save(ignore_permissions=True)
 
-        self.assertTrue(eb.event_cost_center)
-        self.assertIn(eb.name, eb.event_cost_center)
+        self.assertTrue(eb.cost_center)
+        self.assertIn(eb.name, eb.cost_center)
 
-        cc = frappe.get_doc("Cost Center", eb.event_cost_center)
-        self.assertEqual(cc.is_event_cost_center, 1)
+        cc = frappe.get_doc("Cost Center", eb.cost_center)
+        self.assertEqual(cc.is_cost_center, 1)
         self.assertEqual(cc.parent_cost_center, parent_cc)
 
     def test_naming_series_format(self):
