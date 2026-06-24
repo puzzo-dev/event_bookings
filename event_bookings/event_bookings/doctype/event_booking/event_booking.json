@@ -72,7 +72,8 @@
    "in_list_view": 1,
    "label": "Booking Status",
    "options": "New\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "default": "Individual",
@@ -129,7 +130,8 @@
    "fieldtype": "Date",
    "in_list_view": 1,
    "label": "Event Date",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "event_time",
@@ -207,7 +209,8 @@
    "fieldtype": "Link",
    "label": "Sales Invoice",
    "options": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "material_request",
@@ -284,8 +287,7 @@
   {
    "fieldname": "damages_cost",
    "fieldtype": "Currency",
-   "label": "Damages / Losses",
-   "read_only": 1
+   "label": "Damages / Losses"
   },
   {
    "fieldname": "col_rev",

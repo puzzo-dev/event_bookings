@@ -1,5 +1,6 @@
 import frappe
 from frappe import _
+from event_bookings.utils.helpers import erpnext_installed
 
 
 def execute(filters=None):
@@ -9,10 +10,6 @@ def execute(filters=None):
     columns = get_columns()
     data = get_data(filters)
     return columns, data
-
-
-def _erpnext_installed():
-    return "erpnext" in frappe.get_installed_apps()
 
 
 def get_columns():
@@ -26,7 +23,7 @@ def get_columns():
         {"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
         {"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
     ]
-    if _erpnext_installed():
+    if erpnext_installed():
         cols += [
             {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
             {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
@@ -63,20 +60,27 @@ def get_data(filters):
         "sales_invoice",
     ]
 
-    fields = base_fields + (erpnext_fields if _erpnext_installed() else [])
+    fields = base_fields + (erpnext_fields if erpnext_installed() else [])
 
-    bookings = frappe.get_all(
+    # frappe.get_list respects user permissions; frappe.get_all would bypass them.
+    bookings = frappe.get_list(
         "Event Booking",
         filters=conditions,
         fields=fields,
         order_by="event_date asc",
     )
 
+    if not bookings:
+        return []
+
     today = frappe.utils.today()
+    event_names = [eb.event_name for eb in bookings]
+    staff_counts = _get_staff_counts_batch(event_names)
+
     data = []
     for eb in bookings:
         days_until = (frappe.utils.getdate(eb.event_date) - frappe.utils.getdate(today)).days if eb.event_date else 0
-        staff_required, staff_assigned = _get_staff_counts(eb.event_name)
+        counts = staff_counts.get(eb.event_name, (0, 0))
 
         row = {
             "event_name": eb.event_name,
@@ -85,10 +89,10 @@ def get_data(filters):
             "event_date": eb.event_date,
             "booking_status": eb.booking_status,
             "days_until_event": days_until,
-            "staff_required": staff_required,
-            "staff_assigned": staff_assigned,
+            "staff_required": counts[0],
+            "staff_assigned": counts[1],
         }
-        if _erpnext_installed():
+        if erpnext_installed():
             row.update({
                 "total_estimated": eb.total_estimated or 0,
                 "total_actual": eb.total_actual or 0,
@@ -100,16 +104,21 @@ def get_data(filters):
     return data
 
 
-def _get_staff_counts(event_name):
-    """Return (qty_required, qty_assigned) for an event from staff requirements."""
+def _get_staff_counts_batch(event_names):
+    """
+    Return {event_name: (qty_required, qty_assigned)} for all events in one query.
+    Replaces the previous N+1 pattern (_get_staff_counts called per-event in loop).
+    """
+    if not event_names:
+        return {}
     rows = frappe.db.sql(
         """
-        SELECT SUM(qty_required), SUM(qty_assigned)
+        SELECT parent, SUM(qty_required) AS req, SUM(qty_assigned) AS asgn
         FROM `tabEvent Staff Requirement`
-        WHERE parent = %s
+        WHERE parent IN %s
+        GROUP BY parent
         """,
-        event_name,
+        [event_names],
+        as_dict=True,
     )
-    if rows and rows[0]:
-        return rows[0][0] or 0, rows[0][1] or 0
-    return 0, 0
+    return {r.parent: (r.req or 0, r.asgn or 0) for r in rows}

@@ -3,7 +3,20 @@ from frappe import _
 
 
 def push_to_google_calendar(doc, method=None):
-	"""Push an Event Booking to Google Calendar on insert/update."""
+	"""Enqueue Google Calendar sync so HTTP never blocks the save request."""
+	if not doc.sync_with_google_calendar or not doc.google_calendar:
+		return
+	frappe.enqueue(
+		"event_bookings.utils.google_calendar_sync._sync_to_google_calendar",
+		booking_name=doc.name,
+		queue="default",
+		now=frappe.flags.in_test,
+	)
+
+
+def _sync_to_google_calendar(booking_name):
+	"""Background worker: push a single Event Booking to Google Calendar."""
+	doc = frappe.get_doc("Event Booking", booking_name)
 	if not doc.sync_with_google_calendar or not doc.google_calendar:
 		return
 
@@ -12,7 +25,9 @@ def push_to_google_calendar(doc, method=None):
 		if not account.enable:
 			return
 
-		google_calendar, calendar_id = get_google_calendar_object(account)
+		google_calendar, calendar_id = _get_google_calendar_object(account)
+		if google_calendar is None:
+			return
 
 		if doc.google_calendar_event_id:
 			_update_event(google_calendar, calendar_id, doc)
@@ -33,7 +48,9 @@ def delete_from_google_calendar(doc, method=None):
 
 	try:
 		account = frappe.get_doc("Google Calendar", doc.google_calendar)
-		google_calendar, calendar_id = get_google_calendar_object(account)
+		google_calendar, calendar_id = _get_google_calendar_object(account)
+		if google_calendar is None:
+			return
 		google_calendar.events().delete(
 			calendarId=calendar_id,
 			eventId=doc.google_calendar_event_id,
@@ -66,16 +83,13 @@ def _build_event_body(doc):
 	end_date = doc.event_date
 
 	if doc.event_time:
+		fmt = _format_date_according_to_google_calendar
 		body["start"] = {
-			"dateTime": format_date_according_to_google_calendar(
-				False, f"{start_date} {doc.event_time}"
-			),
+			"dateTime": fmt(False, f"{start_date} {doc.event_time}"),
 		}
 		end_time = doc.event_end_time or doc.event_time
 		body["end"] = {
-			"dateTime": format_date_according_to_google_calendar(
-				False, f"{end_date} {end_time}"
-			),
+			"dateTime": fmt(False, f"{end_date} {end_time}"),
 		}
 	else:
 		body["start"] = {"date": str(start_date)}
@@ -106,16 +120,26 @@ def _update_event(google_calendar, calendar_id, doc):
 	).execute()
 
 
-def get_google_calendar_object(account):
-	"""Wrapper — delegates to Frappe's built-in Google Calendar helpers."""
-	from frappe.integrations.doctype.google_calendar.google_calendar import (
-		get_google_calendar_object as _get,
-	)
-	return _get(account)
+def _get_google_calendar_object(account):
+	"""Delegate to Frappe's built-in Google Calendar helper; return None if unavailable."""
+	try:
+		from frappe.integrations.doctype.google_calendar.google_calendar import (
+			get_google_calendar_object as _get,
+		)
+		return _get(account)
+	except ImportError:
+		frappe.log_error(
+			title="Google Calendar integration unavailable",
+			message="frappe.integrations.doctype.google_calendar not found.",
+		)
+		return None, None
 
 
-def format_date_according_to_google_calendar(all_day, date_time_str):
-	from frappe.integrations.doctype.google_calendar.google_calendar import (
-		format_date_according_to_google_calendar as _fmt,
-	)
-	return _fmt(all_day, date_time_str)
+def _format_date_according_to_google_calendar(all_day, date_time_str):
+	try:
+		from frappe.integrations.doctype.google_calendar.google_calendar import (
+			format_date_according_to_google_calendar as _fmt,
+		)
+		return _fmt(all_day, date_time_str)
+	except ImportError:
+		return date_time_str

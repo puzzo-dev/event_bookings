@@ -85,7 +85,7 @@ app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
 # ------------
 
 # before_install = "event_bookings.install.before_install"
-# after_install = "event_bookings.install.after_install"
+after_install = "event_bookings.install.after_install"
 
 # Uninstallation
 # ------------
@@ -124,10 +124,10 @@ before_app_uninstall = "event_bookings.install.before_app_uninstall"
 # -----------
 # Permissions evaluated in scripted ways
 
-# permission_query_conditions = {
-# 	"Event": "frappe.desk.doctype.event.event.get_permission_query_conditions",
-# }
-#
+permission_query_conditions = {
+	"Event Booking": "event_bookings.permissions.get_event_booking_query",
+}
+
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
@@ -146,7 +146,6 @@ before_app_uninstall = "event_bookings.install.before_app_uninstall"
 
 doc_events = {
 	"Event Booking": {
-		"after_insert": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		"on_update": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		"on_trash": "event_bookings.utils.google_calendar_sync.delete_from_google_calendar",
 	},
@@ -227,26 +226,14 @@ scheduler_events = {
 # User Data Protection
 # --------------------
 
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
+user_data_fields = [
+	{
+		"doctype": "Event Booking",
+		"filter_by": "party_name",
+		"redact_fields": ["party_name", "client_feedback", "special_requirements"],
+		"partial": 1,
+	},
+]
 
 # Authentication and authorization
 # --------------------------------
@@ -267,15 +254,12 @@ scheduler_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-after_install = "event_bookings.install.after_install"
-
 # Fixtures
 # --------
 fixtures = [
     {"dt": "Custom Field", "filters": [["dt", "in", [
         "Quotation", "Sales Order", "Sales Invoice",
-        "Purchase Invoice", "Journal Entry",
-        "Material Request", "Stock Entry", "Expense Claim",
+        "Material Request", "Stock Entry",
         "Shift Assignment", "Cost Center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
