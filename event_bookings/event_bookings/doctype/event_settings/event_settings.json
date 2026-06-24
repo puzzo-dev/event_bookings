@@ -7,9 +7,6 @@
  "engine": "InnoDB",
  "field_order": [
   "default_cost_center",
-  "default_rental_item",
-  "default_shift_type",
-  "default_service_item",
   "auto_create_cost_center_per_event",
   "auto_create_project",
   "require_review",
@@ -22,12 +19,6 @@
    "fieldtype": "Link",
    "label": "Default Cost Center",
    "options": "Cost Center"
-  },
-  {
-   "fieldname": "default_shift_type",
-   "fieldtype": "Link",
-   "label": "Default Shift Type",
-   "options": "Shift Type"
   },
   {
    "default": "0",
@@ -57,18 +48,6 @@
    "fieldname": "enable_whatsapp",
    "fieldtype": "Check",
    "label": "Enable WhatsApp"
-  },
-  {
-   "fieldname": "default_rental_item",
-   "fieldtype": "Link",
-   "label": "Default Rental Item",
-   "options": "Item"
-  },
-  {
-   "fieldname": "default_service_item",
-   "fieldtype": "Link",
-   "label": "Default Service Item",
-   "options": "Item"
   }
  ],
  "grid_page_length": 50,

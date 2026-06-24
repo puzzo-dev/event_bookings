@@ -11,9 +11,17 @@ from frappe import _
 from frappe.utils import add_months, today, getdate
 
 
+_CHART_ROLES = ["Event Manager", "Sales Manager", "Accounts User", "System Manager"]
+
+
 def _require_erpnext():
     if "erpnext" not in frappe.get_installed_apps():
         frappe.throw(_("This chart requires ERPNext to be installed."))
+
+
+def _require_chart_role():
+    """Restrict chart data APIs to authorised roles."""
+    frappe.only_for(_CHART_ROLES)
 
 
 def _month_labels(start_date, end_date):
@@ -34,16 +42,14 @@ def get_deals_completed_chart(
     filters=None, chart_name=None, start_date=None, end_date=None, **kwargs
 ):
     """
-    Deals Completed — submitted Sales Invoices linked to Event Bookings.
-
-    A deal is considered complete when a Sales Invoice is submitted against
-    a Sales Order that originated from a Quotation linked to an Event Booking.
-    The Sales Invoice carries the final billed amount.
+    Deals Completed — amount billed via submitted Sales Invoices linked to Event Bookings.
+    Default: last 6 months.  Editable via chart filter popup (start_date / end_date).
     """
+    _require_chart_role()
     _require_erpnext()
 
     if not start_date:
-        start_date = add_months(today(), -11)
+        start_date = add_months(today(), -5)
     if not end_date:
         end_date = today()
 
@@ -88,16 +94,14 @@ def get_deals_lost_chart(
     filters=None, chart_name=None, start_date=None, end_date=None, **kwargs
 ):
     """
-    Deals Lost — Event Bookings cancelled after a Quotation was issued.
-
-    A deal is lost when a booking is cancelled having reached at least the
-    Quoted stage.  The amount represents the pipeline value that walked away
-    (Quotation grand_total).
+    Deals Lost — pipeline value lost when bookings are cancelled post-quotation.
+    Default: last 6 months.  Editable via chart filter popup.
     """
+    _require_chart_role()
     _require_erpnext()
 
     if not start_date:
-        start_date = add_months(today(), -11)
+        start_date = add_months(today(), -5)
     if not end_date:
         end_date = today()
 
@@ -152,8 +156,9 @@ def get_inquiry_conversion_chart(
 
     Works on plain Frappe because it only queries Event Booking.
     """
+    _require_chart_role()
     if not start_date:
-        start_date = add_months(today(), -11)
+        start_date = add_months(today(), -5)
     if not end_date:
         end_date = today()
 
@@ -221,10 +226,11 @@ def get_lead_conversion_funnel_chart(
 
     Requires ERPNext because Lead, Quotation, Sales Order are ERPNext doctypes.
     """
+    _require_chart_role()
     _require_erpnext()
 
     if not start_date:
-        start_date = add_months(today(), -11)
+        start_date = add_months(today(), -5)
     if not end_date:
         end_date = today()
 

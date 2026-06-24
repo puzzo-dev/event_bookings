@@ -83,8 +83,8 @@ class EventBooking(Document):
 
     def validate_dates(self):
         if self.event_date and getdate(self.event_date) < getdate(today()):
-            if self.is_new():
-                frappe.throw("Event Date cannot be in the past for new bookings.")
+            if not self.is_new():
+                frappe.throw("Event Date cannot be moved to a past date on an existing booking.")
 
     # -----------------------------------------------------------------
     # Defaults
@@ -210,53 +210,14 @@ class EventBooking(Document):
             )
 
     def cancel_linked_documents(self):
-        """Cancel linked submitted documents when the Event Booking is cancelled."""
-        linked = [
-            ("quotation", "Quotation"),
-            ("sales_order", "Sales Order"),
-            ("sales_invoice", "Sales Invoice"),
-            ("stock_entry", "Stock Entry"),
-        ]
-        for field, doctype in linked:
-            name = self.get(field)
-            if not name:
-                continue
-            try:
-                doc = frappe.get_doc(doctype, name)
-                if doc.docstatus == 1:
-                    if not frappe.has_permission(doctype, "cancel", doc):
-                        frappe.throw(
-                            f"You do not have permission to cancel {doctype} {name}"
-                        )
-                    doc.cancel()
-            except Exception:
-                frappe.log_error(
-                    title=f"Failed to cancel {doctype} {name} for Event Booking {self.name}",
-                    message=frappe.get_traceback(),
-                )
-                frappe.msgprint(
-                    f"Could not cancel {doctype} {name}. Check the Error Log.",
-                    indicator="orange",
-                    alert=True,
-                )
-
-        # Cancel linked Shift Assignments (not a Link field — queried by custom field)
-        for shift in frappe.get_all(
-            "Shift Assignment", filters={"event_booking": self.name, "docstatus": 1}
-        ):
-            try:
-                doc = frappe.get_doc("Shift Assignment", shift.name)
-                if not frappe.has_permission("Shift Assignment", "cancel", doc):
-                    frappe.throw(
-                        f"You do not have permission to cancel Shift Assignment {shift.name}"
-                    )
-                doc.cancel()
-            except Exception:
-                frappe.log_error(
-                    title=f"Failed to cancel Shift Assignment {shift.name} "
-                          f"for Event Booking {self.name}",
-                    message=frappe.get_traceback(),
-                )
+        """Enqueue cancellation of linked documents so saves never block on HTTP."""
+        frappe.enqueue(
+            "event_bookings.event_bookings.doctype.event_booking.event_booking"
+            "._cancel_linked_documents_background",
+            booking_name=self.name,
+            queue="default",
+            now=frappe.flags.in_test,
+        )
 
     # -----------------------------------------------------------------
     # Document Creation Helpers
@@ -293,17 +254,19 @@ class EventBooking(Document):
     def update_staff_assignment_counts(self):
         rows = frappe.db.sql(
             """
-            SELECT designation, COUNT(*) as cnt
+            SELECT LOWER(TRIM(designation)) as designation, COUNT(*) as cnt
             FROM `tabShift Assignment`
             WHERE event_booking = %s AND docstatus < 2
-            GROUP BY designation
+            GROUP BY LOWER(TRIM(designation))
             """,
             self.name,
             as_dict=True,
         )
-        counts = {r.get("designation"): r.get("cnt") for r in rows}
+        # Normalise keys so "DJ" == "dj" == " DJ " all resolve correctly.
+        counts = {(r.get("designation") or "").lower().strip(): r.get("cnt") for r in rows}
         for req in self.get("staff_requirements") or []:
-            count = counts.get(req.get("designation"), 0)
+            key = (req.get("designation") or "").lower().strip()
+            count = counts.get(key, 0)
             if isinstance(req, dict):
                 req["qty_assigned"] = count
             else:
@@ -315,6 +278,73 @@ class EventBooking(Document):
 
     def get_settings(self):
         return frappe.get_cached_doc("Event Settings", "Event Settings")
+
+
+# ---------------------------------------------------------------------------
+# Background worker — cancellation (runs via frappe.enqueue)
+# ---------------------------------------------------------------------------
+
+def _cancel_linked_documents_background(booking_name):
+    """
+    Cancel submitted documents linked to an Event Booking.
+
+    Runs in a background worker (enqueued by cancel_linked_documents) so that
+    HTTP requests to external services (doc.cancel() may trigger ERPNext ledger
+    entries) never block the user-facing save request.
+    """
+    linked = [
+        ("quotation",        "Quotation"),
+        ("sales_order",      "Sales Order"),
+        ("sales_invoice",    "Sales Invoice"),
+        ("stock_entry",      "Stock Entry"),
+    ]
+    booking = frappe.db.get_value(
+        "Event Booking",
+        booking_name,
+        ["quotation", "sales_order", "sales_invoice", "stock_entry"],
+        as_dict=True,
+    ) or {}
+
+    for field, doctype in linked:
+        name = booking.get(field)
+        if not name:
+            continue
+        try:
+            doc = frappe.get_doc(doctype, name)
+            if doc.docstatus == 1:
+                if not frappe.has_permission(doctype, "cancel", doc):
+                    frappe.log_error(
+                        title=f"No cancel permission for {doctype} {name} "
+                              f"(Event Booking {booking_name})",
+                        message=f"User does not have cancel permission for {doctype} {name}",
+                    )
+                    continue
+                doc.cancel()
+        except Exception:
+            frappe.log_error(
+                title=f"Failed to cancel {doctype} {name} for Event Booking {booking_name}",
+                message=frappe.get_traceback(),
+            )
+
+    # Cancel linked Shift Assignments (queried by custom field, not a Link field)
+    for shift in frappe.get_all(
+        "Shift Assignment", filters={"event_booking": booking_name, "docstatus": 1}
+    ):
+        try:
+            doc = frappe.get_doc("Shift Assignment", shift.name)
+            if not frappe.has_permission("Shift Assignment", "cancel", doc):
+                frappe.log_error(
+                    title=f"No cancel permission for Shift Assignment {shift.name}",
+                    message=f"Event Booking: {booking_name}",
+                )
+                continue
+            doc.cancel()
+        except Exception:
+            frappe.log_error(
+                title=f"Failed to cancel Shift Assignment {shift.name} "
+                      f"for Event Booking {booking_name}",
+                message=frappe.get_traceback(),
+            )
 
 
 # ---------------------------------------------------------------------------
@@ -451,11 +481,20 @@ def get_items_from_sales_order(sales_order_name):
 @frappe.whitelist(allow_guest=False)
 def get_calendar_events(start, end, filters=None):
     import json
+    from frappe.utils import add_days
+
+    # Silently fall back to a safe 30-day window on malformed input rather than
+    # raising a 500.  The Frappe calendar widget always sends valid ISO dates, so
+    # a bad value here means a client bug — returning an empty-but-valid response
+    # is preferable to surfacing a traceback.
     try:
         start = getdate(start)
+    except Exception:
+        start = getdate(today())
+    try:
         end = getdate(end)
     except Exception:
-        frappe.throw("Invalid date range.")
+        end = getdate(add_days(today(), 30))
 
     conditions = {"event_date": ("between", [start, end])}
     if filters:
@@ -476,16 +515,31 @@ def get_calendar_events(start, end, filters=None):
     )
     out = []
     for ev in events:
-        start_dt = f"{ev.event_date} {ev.event_time or '00:00:00'}"
-        end_dt = f"{ev.event_date} {ev.event_end_time or ev.event_time or '23:59:00'}"
-        out.append({
-            "name": ev.name,
-            "title": f"{ev.event_name} ({ev.party_name})",
-            "start": start_dt,
-            "end": end_dt,
-            "booking_status": ev.booking_status,
-            "color": _calendar_color(ev.booking_status),
-        })
+        date_str = str(ev.event_date)
+        if ev.event_time:
+            # Timed event — FullCalendar uses dateTime strings.
+            entry = {
+                "name": ev.name,
+                "title": f"{ev.event_name} ({ev.party_name})",
+                "start": f"{date_str} {ev.event_time}",
+                "end": f"{date_str} {ev.event_end_time or ev.event_time}",
+                "booking_status": ev.booking_status,
+                "color": _calendar_color(ev.booking_status),
+            }
+        else:
+            # No time recorded — treat as all-day.  FullCalendar renders
+            # all-day events correctly when allDay is True and start/end are
+            # plain date strings (no time component).
+            entry = {
+                "name": ev.name,
+                "title": f"{ev.event_name} ({ev.party_name})",
+                "start": date_str,
+                "end": date_str,
+                "allDay": True,
+                "booking_status": ev.booking_status,
+                "color": _calendar_color(ev.booking_status),
+            }
+        out.append(entry)
     return out
 
 

@@ -90,7 +90,7 @@ function render_items_table(frm, items, title) {
                     ${items.map(item => `
                         <tr>
                             <td>${frappe.utils.escape_html(item.item_name || item.item_code)}</td>
-                            <td style="text-align: right;">${item.qty} ${item.uom || ''}</td>
+                            <td style="text-align: right;">${item.qty} ${frappe.utils.escape_html(item.uom || '')}</td>
                             <td style="text-align: right;">${format_currency(item.rate)}</td>
                             <td style="text-align: right;">${format_currency(item.amount)}</td>
                         </tr>

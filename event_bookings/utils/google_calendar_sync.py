@@ -42,22 +42,35 @@ def _sync_to_google_calendar(booking_name):
 
 
 def delete_from_google_calendar(doc, method=None):
-	"""Remove the event from Google Calendar when the booking is deleted."""
+	"""Enqueue Google Calendar event deletion so on_trash never blocks on HTTP."""
 	if not doc.google_calendar_event_id or not doc.google_calendar:
 		return
+	frappe.enqueue(
+		"event_bookings.utils.google_calendar_sync._delete_from_google_calendar_background",
+		booking_name=doc.name,
+		google_calendar=doc.google_calendar,
+		google_calendar_event_id=doc.google_calendar_event_id,
+		queue="default",
+		now=frappe.flags.in_test,
+	)
 
+
+def _delete_from_google_calendar_background(
+	booking_name, google_calendar, google_calendar_event_id
+):
+	"""Background worker: delete a single Google Calendar event."""
 	try:
-		account = frappe.get_doc("Google Calendar", doc.google_calendar)
-		google_calendar, calendar_id = _get_google_calendar_object(account)
-		if google_calendar is None:
+		account = frappe.get_doc("Google Calendar", google_calendar)
+		gc, calendar_id = _get_google_calendar_object(account)
+		if gc is None:
 			return
-		google_calendar.events().delete(
+		gc.events().delete(
 			calendarId=calendar_id,
-			eventId=doc.google_calendar_event_id,
+			eventId=google_calendar_event_id,
 		).execute()
 	except Exception:
 		frappe.log_error(
-			title=_("Google Calendar delete failed for {0}").format(doc.name),
+			title=_("Google Calendar delete failed for {0}").format(booking_name),
 			message=frappe.get_traceback(),
 		)
 

@@ -68,6 +68,7 @@ def get_data(filters):
         filters=conditions,
         fields=fields,
         order_by="event_date asc",
+        limit_page_length=500,
     )
 
     if not bookings:
