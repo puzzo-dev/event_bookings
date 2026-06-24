@@ -25,20 +25,24 @@ def execute():
 		return
 
 	# Both exist — migrate Singles data from old to new, then delete the old DocType record
-	old_values = frappe.db.get_all(
-		"Singles",
-		filters={"doctype": old_name},
-		fields=["field", "value"],
+	old_values = frappe.db.sql(
+		"SELECT `field`, `value` FROM `tabSingles` WHERE `doctype` = %s",
+		old_name,
+		as_dict=True,
 	)
 
 	for row in old_values:
-		existing = frappe.db.get_value(
-			"Singles", {"doctype": new_name, "field": row.field}, "value"
+		existing = frappe.db.sql(
+			"SELECT `value` FROM `tabSingles` WHERE `doctype` = %s AND `field` = %s",
+			(new_name, row.field),
 		)
 		if not existing:
-			frappe.db.set_value("Singles", {"doctype": new_name, "field": row.field}, "value", row.value)
+			frappe.db.sql(
+				"INSERT INTO `tabSingles` (`doctype`, `field`, `value`) VALUES (%s, %s, %s)",
+				(new_name, row.field, row.value),
+			)
 
 	# Delete old Singles rows and old DocType record
-	frappe.db.delete("Singles", {"doctype": old_name})
+	frappe.db.sql("DELETE FROM `tabSingles` WHERE `doctype` = %s", old_name)
 	frappe.delete_doc("DocType", old_name, force=True)
 	frappe.db.commit()
