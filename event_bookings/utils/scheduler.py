@@ -4,12 +4,7 @@ from frappe.utils import add_days, add_to_date, now_datetime, today
 
 
 def daily():
-	"""Daily scheduled tasks.
-
-	Company-agnostic tasks run once across all data.
-	Reminders are per-company because each company may have a different reminder_days setting.
-	"""
-	# Company-agnostic tasks
+	"""Daily scheduled tasks."""
 	for task_name, task in (
 		("sync_invoice_payment_status", sync_invoice_payment_status),
 		("send_unstaffed_alerts", send_unstaffed_alerts),
@@ -20,19 +15,15 @@ def daily():
 		except (frappe.DatabaseError, frappe.ValidationError):
 			frappe.log_error(title=f"Event Bookings daily task failed: {task_name}")
 
-	# Per-company reminders — reminder_days and WhatsApp flag differ per company
-	for cs in frappe.get_all(
-		"Event Booking Settings",
-		fields=["name", "pre_event_reminder_days", "enable_whatsapp"],
-	):
-		try:
-			send_pre_event_reminders(
-				days=cs.pre_event_reminder_days or 3,
-				company=cs.name,
-				enable_whatsapp=cs.enable_whatsapp,
-			)
-		except (frappe.DatabaseError, frappe.ValidationError):
-			frappe.log_error(title=f"Pre-event reminders failed for company: {cs.name}")
+	# Send pre-event reminders using global settings
+	try:
+		cs = frappe.get_single("Event Booking Settings")
+		send_pre_event_reminders(
+			days=cs.pre_event_reminder_days or 3,
+			enable_whatsapp=cs.enable_whatsapp,
+		)
+	except (frappe.DatabaseError, frappe.ValidationError):
+		frappe.log_error(title="Pre-event reminders failed")
 
 
 def sync_invoice_payment_status():

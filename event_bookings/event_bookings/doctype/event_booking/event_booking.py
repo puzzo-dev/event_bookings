@@ -224,25 +224,25 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 
 	def get_settings(self):
-		"""Return the Event Booking Settings for this booking's company.
+		"""Return the global Event Booking Settings (Single DocType).
 
 		Falls back to a safe defaults dict when no settings record exists yet,
 		so saves always succeed even on freshly installed or partially configured sites.
 		"""
-		company = self.company or frappe.db.get_default("Company")
-		if company and frappe.db.exists("Event Booking Settings", company):
-			return frappe.get_cached_doc("Event Booking Settings", company)
-		return frappe._dict({
-			"require_review": 0,
-			"pre_event_reminder_days": 3,
-			"enable_whatsapp": 0,
-			"default_income_account": None,
-			"default_cogs_account": None,
-			"default_damages_account": None,
-			"default_warehouse": None,
-			"events_warehouse": None,
-			"damages_warehouse": None,
-		})
+		try:
+			return frappe.get_cached_doc("Event Booking Settings", "Event Booking Settings")
+		except Exception:
+			return frappe._dict({
+				"require_review": 0,
+				"pre_event_reminder_days": 3,
+				"enable_whatsapp": 0,
+				"default_income_account": None,
+				"default_cogs_account": None,
+				"default_damages_account": None,
+				"default_warehouse": None,
+				"events_warehouse": None,
+				"damages_warehouse": None,
+			})
 
 
 @frappe.whitelist(allow_guest=False)
