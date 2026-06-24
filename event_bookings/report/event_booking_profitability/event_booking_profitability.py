@@ -25,19 +25,27 @@ def get_columns():
     ]
 
 
-def _get_cogs(event_name):
-    """Return total COGS from submitted Material Issue Stock Entries linked to the event."""
-    return frappe.db.sql(
+def _get_cogs_batch(event_names):
+    """
+    Return a dict {event_booking_name: cogs_total} for all given events in one query.
+    Replaces the previous N+1 pattern (_get_cogs called per row inside the loop).
+    """
+    if not event_names:
+        return {}
+    rows = frappe.db.sql(
         """
-        SELECT SUM(sed.basic_amount)
+        SELECT se.event_booking, SUM(sed.basic_amount) AS cogs_total
         FROM `tabStock Entry Detail` sed
         INNER JOIN `tabStock Entry` se ON se.name = sed.parent
-        WHERE se.event_booking = %s
+        WHERE se.event_booking IN %(names)s
           AND se.stock_entry_type = 'Material Issue'
           AND se.docstatus = 1
+        GROUP BY se.event_booking
         """,
-        event_name,
-    )[0][0] or 0
+        {"names": event_names},
+        as_dict=True,
+    )
+    return {r.event_booking: (r.cogs_total or 0) for r in rows}
 
 
 def get_data(filters):
@@ -63,12 +71,18 @@ def get_data(filters):
         order_by="event_date desc"
     )
 
+    if not bookings:
+        return []
+
+    # Single batch query for all COGS — no N+1
+    cogs_map = _get_cogs_batch([eb.event_name for eb in bookings])
+
     data = []
     for eb in bookings:
         revenue = eb.total_actual if eb.total_actual else eb.total_estimated
         damages = eb.damages_cost or 0
         revenue = revenue or 0
-        cogs = _get_cogs(eb.event_name)
+        cogs = cogs_map.get(eb.event_name, 0)
 
         net_profit = revenue - cogs - damages
         margin_pct = (net_profit / revenue * 100) if revenue > 0 else 0

@@ -54,11 +54,14 @@ frappe.provide("event_bookings.workspace");
 		});
 	}
 
-	$(document).on("page-change", function () {
+	// frappe.router fires "change" after the page element is in the DOM,
+	// which is more reliable than the page-change + setTimeout(300) pattern.
+	frappe.router.on("change", function () {
 		var route = frappe.get_route ? frappe.get_route() : [];
 		if (route[0] === "Workspaces") {
-			// Delay slightly to let workspace finish rendering
-			setTimeout(apply_conditions, 300);
+			// requestAnimationFrame defers until the browser has painted the
+			// workspace — avoids querying elements before they exist.
+			requestAnimationFrame(apply_conditions);
 		}
 	});
 })();

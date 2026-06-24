@@ -61,7 +61,12 @@ frappe.ui.form.on("Event Booking", {
             }
         }
 
-        render_items_table(frm, [], '');
+        // Only show the placeholder when the field is empty — don't wipe items
+        // that were just fetched via the Actions menu (refresh fires after every save).
+        const wrapper = frm.fields_dict.items_html && frm.fields_dict.items_html.wrapper;
+        if (wrapper && !$(wrapper).find('table').length) {
+            render_items_table(frm, [], '');
+        }
     },
 });
 
@@ -84,7 +89,7 @@ function render_items_table(frm, items, title) {
                 <tbody>
                     ${items.map(item => `
                         <tr>
-                            <td>${item.item_name || item.item_code}</td>
+                            <td>${frappe.utils.escape_html(item.item_name || item.item_code)}</td>
                             <td style="text-align: right;">${item.qty} ${item.uom || ''}</td>
                             <td style="text-align: right;">${format_currency(item.rate)}</td>
                             <td style="text-align: right;">${format_currency(item.amount)}</td>
