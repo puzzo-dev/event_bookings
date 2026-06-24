@@ -2,6 +2,7 @@ import frappe
 from frappe.utils import cstr
 
 from event_bookings.utils.seed import seed_event_types
+from event_bookings.utils.helpers import erpnext_installed
 
 # Private backup tables — plain MySQL, not Frappe DocTypes.
 # Prefixed __eb_ so they are clearly internal and survive any app uninstall/reinstall.
@@ -26,7 +27,7 @@ def after_install():
     """
     _validate_dependency_coupling()
     seed_event_types()
-    if _erpnext_installed():
+    if erpnext_installed():
         create_event_coa_accounts()
 
 
@@ -354,10 +355,6 @@ def _validate_dependency_coupling():
             "HRMS is required when using Event Bookings with ERPNext. "
             "Please install HRMS alongside ERPNext before installing this app."
         )
-
-
-def _erpnext_installed():
-    return "erpnext" in frappe.get_installed_apps()
 
 
 # ---------------------------------------------------------------------------

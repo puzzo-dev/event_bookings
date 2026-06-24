@@ -61,14 +61,16 @@ def get_data(filters):
     if filters.get("booking_status"):
         conditions["booking_status"] = filters["booking_status"]
 
-    bookings = frappe.get_all(
+    # frappe.get_list respects user permissions; frappe.get_all would bypass them.
+    bookings = frappe.get_list(
         "Event Booking",
         filters=conditions,
         fields=[
             "name as event_name", "party_name", "event_date", "booking_status",
             "total_estimated", "total_actual", "damages_cost"
         ],
-        order_by="event_date desc"
+        order_by="event_date desc",
+        limit_page_length=500,
     )
 
     if not bookings:

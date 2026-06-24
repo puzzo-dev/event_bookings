@@ -265,7 +265,8 @@ fixtures = [
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
     {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
     {"dt": "Number Card", "filters": [["name", "in", [
-        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
+        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",
+        "Deals Completed", "Deals Lost", "New Inquiries", "Leads Booked",
     ]]]},
     {"dt": "Dashboard Chart", "filters": [["name", "in", [
         "Monthly Events", "Event Revenue Trend",

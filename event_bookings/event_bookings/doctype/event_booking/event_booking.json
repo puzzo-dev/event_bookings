@@ -50,6 +50,8 @@
   "client_feedback",
   "review_requested",
   "review_received",
+  "reminder_sent_3d",
+  "reminder_sent_1d",
   "booking_date"
  ],
  "fields": [
@@ -70,6 +72,7 @@
    "fieldname": "booking_status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Booking Status",
    "options": "New\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
    "reqd": 1,
@@ -89,7 +92,8 @@
    "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Party Name",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "col_type",
@@ -129,6 +133,7 @@
    "fieldname": "event_date",
    "fieldtype": "Date",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Event Date",
    "reqd": 1,
    "search_index": 1
@@ -309,6 +314,22 @@
    "fieldname": "review_received",
    "fieldtype": "Check",
    "label": "Review Received"
+  },
+  {
+   "default": "0",
+   "fieldname": "reminder_sent_3d",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "3-Day Reminder Sent",
+   "read_only": 1
+  },
+  {
+   "default": "0",
+   "fieldname": "reminder_sent_1d",
+   "fieldtype": "Check",
+   "hidden": 1,
+   "label": "1-Day Reminder Sent",
+   "read_only": 1
   },
   {
    "default": "Today",

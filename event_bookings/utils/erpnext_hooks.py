@@ -133,22 +133,30 @@ def on_stock_entry_cancel(doc, method):
 def on_shift_assignment_update(doc, method):
     """
     Sync qty_assigned counts on Event Staff Requirement rows after a
-    Shift Assignment changes state — without triggering a full EB save.
+    Shift Assignment changes state.
+
+    Single UPDATE JOIN replaces the previous N+1 pattern (frappe.db.set_value
+    per child row).  Uses a derived-table subquery so all rows are updated in
+    one round-trip without loading the Event Booking document at all.
     """
     if not doc.event_booking:
         return
     try:
-        eb = frappe.get_doc("Event Booking", doc.event_booking)
-        eb.update_staff_assignment_counts()
-        # Persist only the qty_assigned column on each child row.
-        for req in eb.staff_requirements:
-            frappe.db.set_value(
-                "Event Staff Requirement",
-                req.name,
-                "qty_assigned",
-                req.qty_assigned,
-                update_modified=False,
-            )
+        frappe.db.sql(
+            """
+            UPDATE `tabEvent Staff Requirement` esr
+            LEFT JOIN (
+                SELECT LOWER(TRIM(designation)) AS desig, COUNT(*) AS cnt
+                FROM `tabShift Assignment`
+                WHERE event_booking = %(booking)s AND docstatus < 2
+                GROUP BY LOWER(TRIM(designation))
+            ) counts ON counts.desig = LOWER(TRIM(esr.designation))
+            SET esr.qty_assigned = COALESCE(counts.cnt, 0)
+            WHERE esr.parent = %(booking)s
+            """,
+            {"booking": doc.event_booking},
+        )
+        frappe.db.commit()
     except Exception:
         frappe.log_error(
             title=f"Staff count sync failed for Event Booking {doc.event_booking}",

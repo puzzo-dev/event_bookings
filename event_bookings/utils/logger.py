@@ -10,14 +10,20 @@ import traceback
 import frappe
 
 
-_sentry_client = None
-
-
 def _get_sentry_client():
-	global _sentry_client
-	if _sentry_client is not None:
-		return _sentry_client
+	"""
+	Return the sentry_sdk module if Sentry is configured, or None.
 
+	Deliberately avoids a module-level cache: Gunicorn prefork workers share
+	module state across requests, so a cached client from a previous request
+	may hold a stale DSN (e.g. after a site config change) or a connection
+	that was forked before the worker was fully initialised.
+
+	sentry_sdk.init() is safe to call repeatedly — it reinitialises only when
+	the DSN actually changes.  The call is cheap (no network I/O) so calling
+	it on every event is negligible compared to the HTTP cost of the Sentry
+	envelope itself.
+	"""
 	dsn = frappe.get_conf().get("sentry_dsn")
 	if not dsn:
 		return None
@@ -31,9 +37,13 @@ def _get_sentry_client():
 		)
 		return None
 
-	sentry_sdk.init(dsn=dsn, environment=frappe.get_conf().get("sentry_environment", "production"))
-	_sentry_client = sentry_sdk
-	return _sentry_client
+	# Re-init only when needed; sentry_sdk tracks its own Hub state.
+	if not sentry_sdk.Hub.current.client:
+		sentry_sdk.init(
+			dsn=dsn,
+			environment=frappe.get_conf().get("sentry_environment", "production"),
+		)
+	return sentry_sdk
 
 
 def capture_event(event: str, context: dict | None = None, level: str = "info"):

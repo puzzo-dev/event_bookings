@@ -49,13 +49,21 @@ def sync_invoice_payment_status():
 
 
 def send_pre_event_reminders(days=3):
-    """Send reminder emails to Event Managers T-3 and T-1 days before the event."""
+    """
+    Send reminder emails to Event Managers T-3 and T-1 days before the event.
+
+    Idempotent: uses reminder_sent_3d / reminder_sent_1d flag fields to ensure
+    each reminder is sent at most once per booking, even if the scheduler runs
+    multiple times (e.g. after a worker restart or a cron backfill).
+    """
+    sent_flag = "reminder_sent_3d" if days == 3 else "reminder_sent_1d"
     target_date = add_days(today(), days)
     events = frappe.get_all(
         "Event Booking",
         filters={
             "event_date": target_date,
             "booking_status": ("in", ["In Preparation", "Confirmed"]),
+            sent_flag: 0,
         },
         fields=["name", "event_name", "event_date"],
     )
@@ -70,6 +78,10 @@ def send_pre_event_reminders(days=3):
                     f"<b>{ev.event_date}</b>.</p>"
                     "<p>Please ensure all preparations are on track.</p>"
                 ),
+            )
+            # Mark as sent so repeated scheduler runs skip this booking.
+            frappe.db.set_value(
+                "Event Booking", ev.name, sent_flag, 1, update_modified=False
             )
         except Exception:
             frappe.log_error(
