@@ -16,7 +16,7 @@
     "parenttype": "Workspace"
    }
   ],
-  "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>ShortCuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
+  "content": "[{\"type\":\"onboarding\",\"data\":{\"onboarding_name\":\"Event Bookings Onboarding\",\"col\":12}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Overview</b></span>\",\"col\":12}},{\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Upcoming Events\",\"col\":4}},{\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Total Revenue\",\"col\":4}},{\"type\":\"number_card\",\"data\":{\"number_card_name\":\"Deals Completed\",\"col\":4}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Revenue Trend\",\"col\":6}},{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\",\"col\":12}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":4}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":4}}]",
   "custom_blocks": [],
   "docstatus": 0,
   "doctype": "Workspace",
@@ -127,7 +127,29 @@
   "modified": "2026-06-13 15:50:04.418055",
   "module": "Event Bookings",
   "name": "Event Bookings",
-  "number_cards": [],
+  "number_cards": [
+   {
+    "number_card_name": "Upcoming Events",
+    "label": "Upcoming Events",
+    "parent": "Event Bookings",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "number_card_name": "Total Revenue",
+    "label": "Total Revenue",
+    "parent": "Event Bookings",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   },
+   {
+    "number_card_name": "Deals Completed",
+    "label": "Deals Completed",
+    "parent": "Event Bookings",
+    "parentfield": "number_cards",
+    "parenttype": "Workspace"
+   }
+  ],
   "parent_page": "",
   "public": 1,
   "quick_lists": [],
