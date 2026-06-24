@@ -4,7 +4,12 @@ frappe.provide("event_bookings.workspace");
 
 (function () {
 	const ERPNEXT_SECTIONS = ["Sales / Selling", "Buying / Purchase"];
-	const ERPNEXT_REPORTS = ["Event Booking Profitability", "Event Booking Pipeline"];
+	// These reports require ERPNext (revenue figures come from Quotation/SO/SI)
+	const ERPNEXT_REPORTS = [
+		"Event Booking Profitability",
+		"Event Booking Pipeline",
+		"Event Revenue Trend",
+	];
 
 	function apply_conditions() {
 		var installed = (frappe.boot && frappe.boot.installed_apps) || [];
