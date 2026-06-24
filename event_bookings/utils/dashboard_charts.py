@@ -137,3 +137,162 @@ def get_deals_lost_chart(
             },
         ],
     }
+
+
+@frappe.whitelist()
+def get_inquiry_conversion_chart(
+    filters=None, chart_name=None, start_date=None, end_date=None, **kwargs
+):
+    """
+    Inquiry vs Conversion — standalone chart, no ERPNext required.
+
+    Inquiry   = any new Event Booking created in the period (someone contacted us).
+    Converted = bookings that reached Confirmed or beyond in the period
+                (they committed to the event).
+
+    Works on plain Frappe because it only queries Event Booking.
+    """
+    if not start_date:
+        start_date = add_months(today(), -11)
+    if not end_date:
+        end_date = today()
+
+    # New inquiries: bookings created in the period
+    inquiry_rows = frappe.db.sql(
+        """
+        SELECT
+            DATE_FORMAT(booking_date, '%%Y-%%m') AS period,
+            COUNT(*) AS inquiry_count
+        FROM `tabEvent Booking`
+        WHERE booking_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period
+        ORDER BY period ASC
+        """,
+        {"start_date": start_date, "end_date": end_date},
+        as_dict=True,
+    )
+
+    # Converted: bookings that moved to Confirmed or beyond in the period
+    converted_rows = frappe.db.sql(
+        """
+        SELECT
+            DATE_FORMAT(modified, '%%Y-%%m') AS period,
+            COUNT(*) AS converted_count
+        FROM `tabEvent Booking`
+        WHERE booking_status IN (
+            'Confirmed', 'In Preparation', 'Executed', 'Invoiced', 'Paid'
+        )
+        AND modified BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period
+        ORDER BY period ASC
+        """,
+        {"start_date": start_date, "end_date": end_date},
+        as_dict=True,
+    )
+
+    labels = _month_labels(start_date, end_date)
+    inquiry_map = {r.period: r.inquiry_count for r in inquiry_rows}
+    converted_map = {r.period: r.converted_count for r in converted_rows}
+
+    return {
+        "labels": labels,
+        "datasets": [
+            {
+                "name": _("Inquiries"),
+                "values": [inquiry_map.get(l, 0) for l in labels],
+            },
+            {
+                "name": _("Converted"),
+                "values": [converted_map.get(l, 0) for l in labels],
+            },
+        ],
+    }
+
+
+@frappe.whitelist()
+def get_lead_conversion_funnel_chart(
+    filters=None, chart_name=None, start_date=None, end_date=None, **kwargs
+):
+    """
+    Lead Conversion Funnel — ERPNext + HRMS only.
+
+    Shows the pipeline stages month-by-month:
+      Leads booked → Quotations issued → Sales Orders confirmed → Invoiced
+
+    Requires ERPNext because Lead, Quotation, Sales Order are ERPNext doctypes.
+    """
+    _require_erpnext()
+
+    if not start_date:
+        start_date = add_months(today(), -11)
+    if not end_date:
+        end_date = today()
+
+    params = {"start_date": start_date, "end_date": end_date}
+
+    # Leads that had an Event Booking created for them
+    lead_rows = frappe.db.sql(
+        """
+        SELECT DATE_FORMAT(booking_date, '%%Y-%%m') AS period, COUNT(*) AS cnt
+        FROM `tabEvent Booking`
+        WHERE party_type = 'Lead'
+          AND booking_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period ORDER BY period
+        """,
+        params, as_dict=True,
+    )
+
+    # Quotations submitted against event bookings
+    qt_rows = frappe.db.sql(
+        """
+        SELECT DATE_FORMAT(q.transaction_date, '%%Y-%%m') AS period, COUNT(*) AS cnt
+        FROM `tabQuotation` q
+        WHERE q.docstatus = 1
+          AND q.event_booking IS NOT NULL AND q.event_booking != ''
+          AND q.transaction_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period ORDER BY period
+        """,
+        params, as_dict=True,
+    )
+
+    # Sales Orders submitted against event bookings
+    so_rows = frappe.db.sql(
+        """
+        SELECT DATE_FORMAT(so.transaction_date, '%%Y-%%m') AS period, COUNT(*) AS cnt
+        FROM `tabSales Order` so
+        WHERE so.docstatus = 1
+          AND so.event_booking IS NOT NULL AND so.event_booking != ''
+          AND so.transaction_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period ORDER BY period
+        """,
+        params, as_dict=True,
+    )
+
+    # Submitted Sales Invoices against event bookings (deal closed)
+    si_rows = frappe.db.sql(
+        """
+        SELECT DATE_FORMAT(si.posting_date, '%%Y-%%m') AS period, COUNT(*) AS cnt
+        FROM `tabSales Invoice` si
+        WHERE si.docstatus = 1
+          AND si.event_booking IS NOT NULL AND si.event_booking != ''
+          AND si.posting_date BETWEEN %(start_date)s AND %(end_date)s
+        GROUP BY period ORDER BY period
+        """,
+        params, as_dict=True,
+    )
+
+    labels = _month_labels(start_date, end_date)
+
+    def _vals(rows):
+        m = {r.period: r.cnt for r in rows}
+        return [m.get(l, 0) for l in labels]
+
+    return {
+        "labels": labels,
+        "datasets": [
+            {"name": _("Leads Booked"),      "values": _vals(lead_rows)},
+            {"name": _("Quotations Issued"),  "values": _vals(qt_rows)},
+            {"name": _("Orders Confirmed"),   "values": _vals(so_rows)},
+            {"name": _("Invoiced"),           "values": _vals(si_rows)},
+        ],
+    }

@@ -13,12 +13,14 @@ frappe.provide("event_bookings.workspace");
 		"Event Revenue Trend",
 	];
 
-	// Charts that require ERPNext (count + amount from SI/Quotation data)
+	// Charts that require ERPNext (revenue/funnel data from SI/SO/Quotation)
 	const ERPNEXT_CHARTS = [
-		"Deals Completed",        // workspace label
-		"Deals Lost",             // workspace label
-		"Event Deals Completed",  // chart_name fallback
-		"Event Deals Lost",       // chart_name fallback
+		"Deals Completed",              // workspace label
+		"Deals Lost",                   // workspace label
+		"Lead Conversion Funnel",       // workspace label
+		"Event Deals Completed",        // chart_name fallback
+		"Event Deals Lost",             // chart_name fallback
+		"Event Lead Conversion Funnel", // chart_name fallback
 	];
 
 	function apply_conditions() {
