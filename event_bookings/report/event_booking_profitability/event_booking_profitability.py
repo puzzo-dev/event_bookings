@@ -13,7 +13,7 @@ def execute(filters=None):
 def get_columns():
     return [
         {"fieldname": "event_name", "label": "Event Booking", "fieldtype": "Link", "options": "Event Booking", "width": 180},
-        {"fieldname": "customer", "label": "Customer", "fieldtype": "Link", "options": "Customer", "width": 150},
+        {"fieldname": "party_name", "label": "Party", "fieldtype": "Data", "width": 150},
         {"fieldname": "event_date", "label": "Event Date", "fieldtype": "Date", "width": 120},
         {"fieldname": "booking_status", "label": "Status", "fieldtype": "Data", "width": 120},
         {"fieldname": "total_estimated", "label": "Estimated Revenue", "fieldtype": "Currency", "width": 140},
@@ -46,8 +46,8 @@ def get_data(filters):
         conditions["event_date"] = [">=", filters["from_date"]]
     if filters.get("to_date"):
         conditions["event_date"] = ["<=", filters["to_date"]]
-    if filters.get("customer"):
-        conditions["customer"] = filters["customer"]
+    if filters.get("party_name"):
+        conditions["party_name"] = filters["party_name"]
     if filters.get("event_type"):
         conditions["event_type"] = filters["event_type"]
     if filters.get("booking_status"):
@@ -57,7 +57,7 @@ def get_data(filters):
         "Event Booking",
         filters=conditions,
         fields=[
-            "name as event_name", "customer", "event_date", "booking_status",
+            "name as event_name", "party_name", "event_date", "booking_status",
             "total_estimated", "total_actual", "damages_cost"
         ],
         order_by="event_date desc"
