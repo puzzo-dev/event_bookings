@@ -3,11 +3,20 @@ from frappe import _
 
 
 def execute(filters=None):
+    _require_erpnext_and_hrms()
     if not filters:
         filters = {}
     columns = get_columns()
     data = get_data(filters)
     return columns, data
+
+
+def _require_erpnext_and_hrms():
+    installed = frappe.get_installed_apps()
+    if "erpnext" not in installed or "hrms" not in installed:
+        frappe.throw(
+            _("Event Revenue Trend requires ERPNext and HRMS to be installed.")
+        )
 
 
 def get_columns():
@@ -55,8 +64,6 @@ def get_data(filters):
     )
 
     for row in rows:
-        estimated = row.total_estimated or 0
-        actual = row.total_actual or 0
-        row["delta"] = actual - estimated
+        row["delta"] = (row.total_actual or 0) - (row.total_estimated or 0)
 
     return rows

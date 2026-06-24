@@ -12,11 +12,9 @@ def execute(filters=None):
 
 def get_columns():
     return [
-        {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 160},
-        {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 130},
-        {"fieldname": "event_count", "label": _("Events"), "fieldtype": "Int", "width": 100},
-        {"fieldname": "total_estimated", "label": _("Total Estimated"), "fieldtype": "Currency", "width": 150},
-        {"fieldname": "total_actual", "label": _("Total Actual"), "fieldtype": "Currency", "width": 150},
+        {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 200},
+        {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 150},
+        {"fieldname": "event_count", "label": _("Event Count"), "fieldtype": "Int", "width": 120},
     ]
 
 
@@ -39,14 +37,12 @@ def get_data(filters):
 
     where = ("WHERE " + " AND ".join(conditions)) if conditions else ""
 
-    rows = frappe.db.sql(
+    return frappe.db.sql(
         f"""
         SELECT
             COALESCE(event_type, '(No Type)') AS event_type,
             booking_status,
-            COUNT(*) AS event_count,
-            SUM(total_estimated) AS total_estimated,
-            SUM(total_actual) AS total_actual
+            COUNT(*) AS event_count
         FROM `tabEvent Booking`
         {where}
         GROUP BY event_type, booking_status
@@ -55,4 +51,3 @@ def get_data(filters):
         values,
         as_dict=True,
     )
-    return rows
