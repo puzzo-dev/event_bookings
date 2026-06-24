@@ -1,0 +1,104 @@
+[
+ {
+  "cards": [
+   {
+    "card": "Upcoming Events",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Events This Month",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Pending Invoices",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Total Revenue",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Deals Completed",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Deals Lost",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "New Inquiries",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
+    "card": "Leads Booked",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   }
+  ],
+  "charts": [
+   {
+    "chart": "Event Revenue Trend",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Full"
+   },
+   {
+    "chart": "Monthly Events",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Half"
+   },
+   {
+    "chart": "Event Deals Completed",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Half"
+   },
+   {
+    "chart": "Event Deals Lost",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Half"
+   },
+   {
+    "chart": "Event Inquiry vs Conversion",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Half"
+   },
+   {
+    "chart": "Event Lead Conversion Funnel",
+    "parent": "Event Bookings",
+    "parentfield": "charts",
+    "parenttype": "Dashboard",
+    "width": "Full"
+   }
+  ],
+  "dashboard_name": "Event Bookings",
+  "docstatus": 0,
+  "doctype": "Dashboard",
+  "is_standard": 1,
+  "module": "Event Bookings",
+  "name": "Event Bookings"
+ }
+]
