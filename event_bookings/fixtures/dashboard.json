@@ -32,6 +32,12 @@
     "parenttype": "Dashboard"
    },
    {
+    "card": "Deals Pending",
+    "parent": "Event Bookings",
+    "parentfield": "cards",
+    "parenttype": "Dashboard"
+   },
+   {
     "card": "Deals Lost",
     "parent": "Event Bookings",
     "parentfield": "cards",

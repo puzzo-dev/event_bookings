@@ -1,0 +1,50 @@
+[
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Monthly Events",
+  "source_name": "Monthly Events",
+  "timeseries": 0
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Event Revenue Trend",
+  "source_name": "Event Revenue Trend",
+  "timeseries": 0
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Event Deals Completed",
+  "source_name": "Event Deals Completed",
+  "timeseries": 0
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Event Deals Lost",
+  "source_name": "Event Deals Lost",
+  "timeseries": 0
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Event Inquiry vs Conversion",
+  "source_name": "Event Inquiry vs Conversion",
+  "timeseries": 0
+ },
+ {
+  "docstatus": 0,
+  "doctype": "Dashboard Chart Source",
+  "module": "Event Bookings",
+  "name": "Event Lead Conversion Funnel",
+  "source_name": "Event Lead Conversion Funnel",
+  "timeseries": 0
+ }
+]
