@@ -218,11 +218,13 @@ class EventBooking(Document):
 	def create_quotation(self):
 		if self.quotation:
 			return
+		if not _erpnext_installed():
+			return
 		settings = self.get_settings()
 		qt = frappe.get_doc({
 			"doctype": "Quotation",
-			"quotation_to": "Customer",
-			"party_name": self.customer,
+			"quotation_to": self.party_type,
+			"party_name": self.party_name,
 			"event_booking": self.name,
 			"cost_center": self.event_cost_center or settings.default_cost_center,
 		})
@@ -236,6 +238,8 @@ class EventBooking(Document):
 	# -----------------------------------------------------------------
 
 	def create_shift_assignments(self):
+		if not _hrms_installed():
+			return
 		settings = self.get_settings()
 		if not settings.default_shift_type:
 			frappe.throw("Set a Default Shift Type in Event Settings before creating Shift Assignments.")
@@ -302,13 +306,22 @@ class EventBooking(Document):
 		return frappe.get_cached_doc("Event Settings", "Event Settings")
 
 
+def _erpnext_installed():
+	return "erpnext" in frappe.get_installed_apps()
+
+
+def _hrms_installed():
+	return "hrms" in frappe.get_installed_apps()
+
+
 @frappe.whitelist()
 def make_quotation(source_name, target_doc=None):
 	if not frappe.has_permission("Event Booking", "read", source_name):
 		frappe.throw("You do not have permission to read this Event Booking.")
 
 	def set_missing_values(source, target):
-		target.quotation_to = "Customer"
+		# Quotation uses quotation_to (Customer/Lead) + party_name — mirror the booking
+		target.quotation_to = source.party_type
 		target.event_booking = source.name
 
 	doclist = get_mapped_doc(
@@ -318,7 +331,7 @@ def make_quotation(source_name, target_doc=None):
 			"Event Booking": {
 				"doctype": "Quotation",
 				"field_map": {
-					"customer": "party_name",
+					"party_name": "party_name",
 					"event_cost_center": "cost_center",
 				},
 			}
@@ -336,7 +349,8 @@ def make_project(source_name, target_doc=None):
 
 	def set_missing_values(source, target):
 		target.project_name = source.event_name or source.name
-		target.customer = source.customer
+		# Project.customer only makes sense when the party is already a Customer
+		target.customer = source.party_name if source.party_type == "Customer" else ""
 		target.expected_start_date = source.booking_date or source.event_date
 		target.expected_end_date = source.event_date
 
@@ -406,7 +420,7 @@ def get_calendar_events(start, end, filters=None):
 		"Event Booking",
 		filters=conditions,
 		fields=["name", "event_name", "event_date", "event_time",
-				"event_end_time", "booking_status", "customer"],
+				"event_end_time", "booking_status", "party_name"],
 	)
 	out = []
 	for ev in events:
@@ -414,7 +428,7 @@ def get_calendar_events(start, end, filters=None):
 		end_dt = f"{ev.event_date} {ev.event_end_time or ev.event_time or '23:59:00'}"
 		out.append({
 			"name": ev.name,
-			"title": f"{ev.event_name} ({ev.customer})",
+			"title": f"{ev.event_name} ({ev.party_name})",
 			"start": start_dt,
 			"end": end_dt,
 			"booking_status": ev.booking_status,

@@ -32,7 +32,8 @@ def _new_booking(**overrides):
 	eb.sales_invoice = None
 	eb.material_request = None
 	eb.booking_status = "New"
-	eb.customer = "Test Customer"
+	eb.party_type = "Customer"
+	eb.party_name = "Test Customer"
 	eb.event_name = "Test Event"
 	eb.event_date = "2026-08-01"
 	eb.event_location = "Venue"
@@ -302,8 +303,10 @@ class TestCreateQuotation(unittest.TestCase):
 		mock_qt.name = "QTN-NEW"
 		mock_frappe.get_doc.return_value = mock_qt
 
+		mock_frappe.get_installed_apps.return_value = ["frappe", "erpnext"]
 		eb = _new_booking(
-			customer="Acme",
+			party_type="Customer",
+			party_name="Acme",
 			event_cost_center="CC-EVT",
 			quotation=None,
 		)
@@ -311,6 +314,7 @@ class TestCreateQuotation(unittest.TestCase):
 
 		mock_frappe.get_doc.assert_called_once()
 		call_args = mock_frappe.get_doc.call_args[0][0]
+		self.assertEqual(call_args["quotation_to"], "Customer")
 		self.assertEqual(call_args["party_name"], "Acme")
 		mock_qt.insert.assert_called_once_with(ignore_permissions=True)
 		self.assertEqual(eb.quotation, "QTN-NEW")
@@ -322,6 +326,7 @@ class TestCreateQuotation(unittest.TestCase):
 @patch("event_bookings.event_bookings.doctype.event_booking.event_booking.frappe")
 class TestCreateShiftAssignments(unittest.TestCase):
 	def test_creates_shift_per_unassigned_slot(self, mock_frappe):
+		mock_frappe.get_installed_apps.return_value = ["frappe", "hrms"]
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 0
@@ -337,6 +342,7 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		self.assertEqual(mock_shift.insert.call_count, 3)
 
 	def test_creates_only_needed_shifts(self, mock_frappe):
+		mock_frappe.get_installed_apps.return_value = ["frappe", "hrms"]
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 2
@@ -351,6 +357,7 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		self.assertEqual(mock_frappe.get_doc.call_count, 1)
 
 	def test_no_shifts_when_fully_staffed(self, mock_frappe):
+		mock_frappe.get_installed_apps.return_value = ["frappe", "hrms"]
 		settings = SimpleNamespace(default_shift_type="Morning")
 		mock_frappe.get_cached_doc.return_value = settings
 		mock_frappe.db.count.return_value = 5
@@ -359,6 +366,13 @@ class TestCreateShiftAssignments(unittest.TestCase):
 		eb = _new_booking(staff_requirements=[req])
 		eb.create_shift_assignments()
 
+		mock_frappe.get_doc.assert_not_called()
+
+	def test_skips_when_hrms_not_installed(self, mock_frappe):
+		mock_frappe.get_installed_apps.return_value = ["frappe"]
+		req = _make_staff_req(qty_required=3, qty_assigned=0)
+		eb = _new_booking(staff_requirements=[req])
+		eb.create_shift_assignments()
 		mock_frappe.get_doc.assert_not_called()
 
 

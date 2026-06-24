@@ -19,7 +19,7 @@ class TestGetColumns(unittest.TestCase):
 		names = [c["fieldname"] for c in cols]
 		expected = [
 			"event_name",
-			"customer",
+			"party_name",
 			"event_date",
 			"booking_status",
 			"total_estimated",
@@ -45,7 +45,7 @@ class TestGetData(unittest.TestCase):
 	def _make_booking(self, **overrides):
 		row = _dict(
 			event_name="EVT-001",
-			customer="Acme",
+			party_name="Acme",
 			event_date="2026-07-15",
 			booking_status="Invoiced",
 			total_estimated=50000,
@@ -86,11 +86,11 @@ class TestGetData(unittest.TestCase):
 		data = get_data({})
 		self.assertEqual(data[0]["cogs"], 0)
 
-	def test_filter_by_customer(self, mock_frappe, _mock_cogs):
+	def test_filter_by_party_name(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []
-		get_data({"customer": "Acme"})
+		get_data({"party_name": "Acme"})
 		call_kwargs = mock_frappe.get_all.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["customer"], "Acme")
+		self.assertEqual(call_kwargs[1]["filters"]["party_name"], "Acme")
 
 	def test_filter_by_event_type(self, mock_frappe, _mock_cogs):
 		mock_frappe.get_all.return_value = []

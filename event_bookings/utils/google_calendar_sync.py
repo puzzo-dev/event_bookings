@@ -50,11 +50,12 @@ def delete_from_google_calendar(doc, method=None):
 # ---------------------------------------------------------------------------
 
 def _build_event_body(doc):
+	party_label = f"{doc.party_type}: " if doc.party_type else ""
 	body = {
-		"summary": f"{doc.event_name} ({doc.customer})",
+		"summary": f"{doc.event_name} ({doc.party_name})",
 		"description": (
 			f"Booking Ref: {doc.name}\n"
-			f"Customer: {doc.customer}\n"
+			f"{party_label}{doc.party_name}\n"
 			f"Status: {doc.booking_status}\n"
 			f"Location: {doc.event_location or ''}\n"
 		) + (f"Special Requirements: {doc.special_requirements}\n" if doc.special_requirements else ""),

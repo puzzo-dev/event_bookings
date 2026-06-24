@@ -8,7 +8,9 @@ app_license = "mit"
 # Apps
 # ------------------
 
-required_apps = ["erpnext", "hrms"]
+# ERPNext and HRMS are optional — they unlock Quotation/SO/SI creation and
+# Shift Assignment management respectively.  The app works on plain Frappe.
+# required_apps = ["erpnext", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
