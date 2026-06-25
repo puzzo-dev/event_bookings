@@ -398,6 +398,8 @@ def make_quotation(source_name, target_doc=None):
 def make_project(source_name, target_doc=None):
     if not frappe.has_permission("Event Booking", "read", source_name):
         frappe.throw("You do not have permission to read this Event Booking.")
+    if not erpnext_installed():
+        frappe.throw("ERPNext is required to create a Project.")
 
     def set_missing_values(source, target):
         target.project_name = source.event_name or source.name

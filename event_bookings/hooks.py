@@ -223,7 +223,7 @@ user_data_fields = [
 	{
 		"doctype": "Event Booking",
 		"filter_by": "party_name",
-		"redact_fields": ["party_name", "client_feedback", "special_requirements"],
+		"redact_fields": ["party_name", "special_requirements"],
 		"partial": 1,
 	},
 ]
@@ -255,7 +255,7 @@ fixtures = [
         "Material Request", "Stock Entry",
         "Shift Assignment", "Cost Center"
     ]]]},
-    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event Assistant"]]]},
     {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",

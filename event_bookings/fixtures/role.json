@@ -20,9 +20,9 @@
   "home_page": null,
   "is_custom": 0,
   "modified": "2026-06-12 23:02:04.717290",
-  "name": "Event User",
+  "name": "Event Assistant",
   "restrict_to_domain": null,
-  "role_name": "Event User",
+  "role_name": "Event Assistant",
   "two_factor_auth": 0
  }
 ]

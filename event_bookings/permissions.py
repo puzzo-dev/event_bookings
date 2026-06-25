@@ -16,7 +16,7 @@ def get_event_booking_query(user=None):
       Sales Partner, PLUS bookings with no planner assigned.  This keeps the
       role meaningful on multi-planner sites while still allowing managers to
       see unassigned work.
-    - Event User (read-only role): same filter as Event Manager so they cannot
+    - Event Assistant (read-only role): same filter as Event Manager so they cannot
       accidentally browse other planners' data.
     """
     if not user:
@@ -30,8 +30,8 @@ def get_event_booking_query(user=None):
     if any(r in roles for r in ("Sales Manager", "Sales User", "Accounts User")):
         return ""
 
-    # Event Manager / Event User: restrict to their own Sales Partner + unassigned.
-    if any(r in roles for r in ("Event Manager", "Event User")):
+    # Event Manager / Event Assistant: restrict to their own Sales Partner + unassigned.
+    if any(r in roles for r in ("Event Manager", "Event Assistant")):
         partner = _get_sales_partner_for_user(user)
         if partner:
             escaped = frappe.db.escape(partner)

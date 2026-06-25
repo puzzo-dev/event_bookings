@@ -172,7 +172,7 @@
     "parent": "Event Bookings",
     "parentfield": "roles",
     "parenttype": "Workspace",
-    "role": "Event User"
+    "role": "Event Assistant"
    },
    {
     "parent": "Event Bookings",
