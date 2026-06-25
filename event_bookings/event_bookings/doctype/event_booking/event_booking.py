@@ -3,7 +3,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
 
-from event_bookings.utils.helpers import erpnext_installed, hrms_installed
+from event_bookings.utils.helpers import erpnext_installed
 
 
 # Whitelisted table-to-doctype mapping for SQL totals.
@@ -103,12 +103,6 @@ class EventBooking(Document):
             and not settings.auto_create_cost_center_per_event
         ):
             self.cost_center = settings.default_cost_center
-
-    def get_cost_center(self):
-        """Return the event's cost center, falling back to the default from Event Settings."""
-        if self.cost_center:
-            return self.cost_center
-        return self.get_settings().default_cost_center
 
     def ensure_event_cost_center(self):
         settings = self.get_settings()
@@ -248,31 +242,6 @@ class EventBooking(Document):
         self.quotation = qt.name
 
     # -----------------------------------------------------------------
-    # Staff Assignment Count Sync
-    # -----------------------------------------------------------------
-
-    def update_staff_assignment_counts(self):
-        rows = frappe.db.sql(
-            """
-            SELECT LOWER(TRIM(designation)) as designation, COUNT(*) as cnt
-            FROM `tabShift Assignment`
-            WHERE event_booking = %s AND docstatus < 2
-            GROUP BY LOWER(TRIM(designation))
-            """,
-            self.name,
-            as_dict=True,
-        )
-        # Normalise keys so "DJ" == "dj" == " DJ " all resolve correctly.
-        counts = {(r.get("designation") or "").lower().strip(): r.get("cnt") for r in rows}
-        for req in self.get("staff_requirements") or []:
-            key = (req.get("designation") or "").lower().strip()
-            count = counts.get(key, 0)
-            if isinstance(req, dict):
-                req["qty_assigned"] = count
-            else:
-                req.qty_assigned = count
-
-    # -----------------------------------------------------------------
     # Utilities
     # -----------------------------------------------------------------
 
@@ -296,12 +265,11 @@ def _cancel_linked_documents_background(booking_name):
         ("quotation",        "Quotation"),
         ("sales_order",      "Sales Order"),
         ("sales_invoice",    "Sales Invoice"),
-        ("stock_entry",      "Stock Entry"),
     ]
     booking = frappe.db.get_value(
         "Event Booking",
         booking_name,
-        ["quotation", "sales_order", "sales_invoice", "stock_entry"],
+        ["quotation", "sales_order", "sales_invoice"],
         as_dict=True,
     ) or {}
 
@@ -323,6 +291,26 @@ def _cancel_linked_documents_background(booking_name):
         except Exception:
             frappe.log_error(
                 title=f"Failed to cancel {doctype} {name} for Event Booking {booking_name}",
+                message=frappe.get_traceback(),
+            )
+
+    # Cancel linked Stock Entries (reverse link via event_booking custom field on Stock Entry)
+    for entry in frappe.get_all(
+        "Stock Entry", filters={"event_booking": booking_name, "docstatus": 1}
+    ):
+        try:
+            doc = frappe.get_doc("Stock Entry", entry.name)
+            if not frappe.has_permission("Stock Entry", "cancel", doc):
+                frappe.log_error(
+                    title=f"No cancel permission for Stock Entry {entry.name}",
+                    message=f"Event Booking: {booking_name}",
+                )
+                continue
+            doc.cancel()
+        except Exception:
+            frappe.log_error(
+                title=f"Failed to cancel Stock Entry {entry.name} "
+                      f"for Event Booking {booking_name}",
                 message=frappe.get_traceback(),
             )
 
@@ -382,6 +370,8 @@ def _sql_items_total(doctype, name):
 def make_quotation(source_name, target_doc=None):
     if not frappe.has_permission("Event Booking", "read", source_name):
         frappe.throw("You do not have permission to read this Event Booking.")
+    if not erpnext_installed():
+        frappe.throw("ERPNext is required to create a Quotation.")
 
     def set_missing_values(source, target):
         target.quotation_to = source.party_type
