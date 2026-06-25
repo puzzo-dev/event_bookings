@@ -1,20 +1,12 @@
 {
  "charts": [
   {
-   "chart_name": "Event Booking Revenue Trends",
-   "label": "Event Booking Revenue Trends"
-  },
-  {
    "chart_name": "Event Booking Count Trends",
    "label": "Event Booking Count Trends"
-  },
-  {
-   "chart_name": "Events By Event Type",
-   "label": "Events By Event Type"
   }
  ],
- "content": "[{\"id\": \"onboard01\", \"type\": \"onboarding\", \"data\": {\"onboarding_name\": \"Event Bookings Onboarding\", \"col\": 12}}, {\"id\": \"m4MRkKlQFg\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Revenue Trends\", \"col\": 6}}, {\"id\": \"MUbZAHJ5M3\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Count Trends\", \"col\": 6}}, {\"id\": \"EbTypeChart1\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Events By Event Type\", \"col\": 6}}, {\"id\": \"MFJjZWdnMM\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"sL9nL0i0QM\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 3}}, {\"id\": \"pniihQeVB2\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 4}}, {\"id\": \"JqsVaVc5NS\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 4}}, {\"id\": \"AqsaHh78tr\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 3}}, {\"id\": \"G_QRj89sqy\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 4}}, {\"id\": \"PvlVlUqlsy\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"id\": \"mUYncF4eo3\", \"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"id\": \"R4EQ6ndgWk\", \"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"id\": \"pzzpouJXvV\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
- "creation": "2026-06-18 13:57:44.139478",
+ "content": "[{\"id\": \"onboard01\", \"type\": \"onboarding\", \"data\": {\"onboarding_name\": \"Event Bookings Onboarding\", \"col\": 12}}, {\"id\": \"cnt_chart01\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Count Trends\", \"col\": 12}}, {\"id\": \"nc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"nc01\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Upcoming Events\", \"col\": 3}}, {\"id\": \"nc02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Events This Month\", \"col\": 3}}, {\"id\": \"nc03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Invoices\", \"col\": 3}}, {\"id\": \"nc04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Revenue\", \"col\": 3}}, {\"id\": \"sc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"sc01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 3}}, {\"id\": \"sc02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 3}}, {\"id\": \"sc03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 3}}, {\"id\": \"sc04\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 3}}, {\"id\": \"sc05\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 3}}, {\"id\": \"lk_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"id\": \"lk01\", \"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"id\": \"lk02\", \"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"id\": \"lk03\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "creation": "2026-06-25 16:09:40.727463",
  "custom_blocks": [],
  "docstatus": 0,
  "doctype": "Workspace",
@@ -131,11 +123,28 @@
    "type": "Link"
   }
  ],
- "modified": "2026-06-18 14:05:40.912897",
+ "modified": "2026-06-25 16:44:50.973224",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings",
- "number_cards": [],
+ "number_cards": [
+  {
+   "label": "Upcoming Events",
+   "number_card_name": "Upcoming Events"
+  },
+  {
+   "label": "Events This Month",
+   "number_card_name": "Events This Month"
+  },
+  {
+   "label": "Pending Invoices",
+   "number_card_name": "Pending Invoices"
+  },
+  {
+   "label": "Total Revenue",
+   "number_card_name": "Total Revenue"
+  }
+ ],
  "owner": "Administrator",
  "parent_page": "",
  "public": 1,
@@ -145,7 +154,7 @@
    "role": "Event Manager"
   },
   {
-   "role": "Event User"
+   "role": "Event Assistant"
   },
   {
    "role": "Sales Manager"
