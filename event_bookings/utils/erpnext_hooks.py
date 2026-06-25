@@ -113,20 +113,6 @@ def on_sales_invoice_cancel(doc, method):
 
 
 # ---------------------------------------------------------------------------
-# Stock Entry hooks
-# ---------------------------------------------------------------------------
-
-def on_stock_entry_submit(doc, method):
-    if doc.stock_entry_type == "Material Issue":
-        _update_linked_event_booking(doc)
-
-
-def on_stock_entry_cancel(doc, method):
-    if doc.stock_entry_type == "Material Issue":
-        _update_linked_event_booking(doc)
-
-
-# ---------------------------------------------------------------------------
 # Shift Assignment hooks
 # ---------------------------------------------------------------------------
 
@@ -156,7 +142,6 @@ def on_shift_assignment_update(doc, method):
             """,
             {"booking": doc.event_booking},
         )
-        frappe.db.commit()
     except Exception:
         frappe.log_error(
             title=f"Staff count sync failed for Event Booking {doc.event_booking}",

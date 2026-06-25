@@ -1,54 +1,56 @@
-"""Tests for Event Booking cancellation/reversal and scheduled reminders."""
+"""Tests for Event Booking cancellation/reversal and scheduled alerts."""
 
 from __future__ import annotations
 
 import unittest
 from unittest.mock import MagicMock, patch
 
-from event_bookings.utils.scheduler import send_pre_event_reminders, send_unstaffed_alerts
+from event_bookings.utils.scheduler import send_unstaffed_alerts
 
 
-class TestCancellationAndReminders(unittest.TestCase):
+class TestUnstaffedAlerts(unittest.TestCase):
 
-	@patch("event_bookings.utils.scheduler.frappe")
-	@patch("event_bookings.utils.scheduler.today")
-	@patch("event_bookings.utils.scheduler.add_days")
-	def test_pre_event_reminders_send_emails(self, mock_add_days, mock_today, mock_frappe):
-		mock_today.return_value = "2026-08-01"
-		mock_add_days.return_value = "2026-08-04"
-		mock_frappe.get_all.side_effect = [
-			[{"name": "EVT-001", "event_name": "Launch Party", "event_date": "2026-08-04"}],
-			[{"email": "manager@example.com"}],
-		]
-		mock_frappe.sendmail.return_value = True
+    @patch("event_bookings.utils.scheduler.frappe")
+    def test_alerts_send_via_notification(self, mock_frappe):
+        """send_unstaffed_alerts delegates email to the Notification DocType."""
+        mock_frappe.db.sql.return_value = [{"name": "EVT-002"}]
+        mock_doc = MagicMock()
+        mock_doc.name = "EVT-002"
+        mock_notification = MagicMock()
 
-		send_pre_event_reminders(days=3)
+        def fake_get_doc(doctype, name=None):
+            if doctype == "Event Booking":
+                return mock_doc
+            if doctype == "Notification":
+                return mock_notification
+            return MagicMock()
 
-		mock_frappe.sendmail.assert_called_once()
-		args = mock_frappe.sendmail.call_args.kwargs
-		self.assertIn("Reminder", args["subject"])
-		self.assertEqual(args["reference_name"], "EVT-001")
+        mock_frappe.get_doc.side_effect = fake_get_doc
+        mock_frappe.DoesNotExistError = Exception
 
-	@patch("event_bookings.utils.scheduler.frappe")
-	def test_unstaffed_alerts_only_when_understaffed(self, mock_frappe):
-		mock_doc = MagicMock()
-		mock_doc.event_name = "Gala"
-		mock_doc.name = "EVT-002"
-		mock_doc.staff_requirements = [
-			MagicMock(designation="Waiter", qty_required=5, qty_assigned=2),
-			MagicMock(designation="Bartender", qty_required=2, qty_assigned=2),
-		]
-		mock_frappe.get_doc.return_value = mock_doc
-		mock_frappe.get_all.side_effect = [
-			[{"name": "EVT-002"}],
-			[{"email": "manager@example.com"}],
-		]
-		mock_frappe.sendmail.return_value = True
+        send_unstaffed_alerts()
 
-		send_unstaffed_alerts()
+        mock_notification.send.assert_called_once_with(mock_doc)
 
-		mock_frappe.sendmail.assert_called_once()
-		args = mock_frappe.sendmail.call_args.kwargs
-		self.assertIn("Under-staffed", args["subject"])
-		self.assertIn("Waiter: 2/5", args["message"])
-		self.assertNotIn("Bartender", args["message"])
+    @patch("event_bookings.utils.scheduler.frappe")
+    def test_no_alert_when_fully_staffed(self, mock_frappe):
+        """send_unstaffed_alerts does nothing when no events are understaffed."""
+        mock_frappe.db.sql.return_value = []
+
+        send_unstaffed_alerts()
+
+        mock_frappe.get_doc.assert_not_called()
+
+    @patch("event_bookings.utils.scheduler.frappe")
+    def test_missing_notification_logs_error(self, mock_frappe):
+        """send_unstaffed_alerts logs an error if the Notification record is missing."""
+        mock_frappe.db.sql.return_value = [{"name": "EVT-003"}]
+        mock_frappe.DoesNotExistError = KeyError
+
+        mock_frappe.get_doc.side_effect = KeyError("Notification not found")
+
+        send_unstaffed_alerts()
+
+        mock_frappe.log_error.assert_called_once()
+        title = mock_frappe.log_error.call_args.kwargs.get("title", "")
+        self.assertIn("not found", title)

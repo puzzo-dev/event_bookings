@@ -1,10 +1,22 @@
 import frappe
 from frappe import _
 
+# Fields that affect the Google Calendar event body — skip sync when only
+# unrelated fields (cost_center, quotation, sales_order, etc.) change.
+_CALENDAR_FIELDS = frozenset({
+	"event_name", "event_date", "event_time", "event_end_time",
+	"booking_status", "event_location", "party_name",
+})
+
 
 def push_to_google_calendar(doc, method=None):
 	"""Enqueue Google Calendar sync so HTTP never blocks the save request."""
 	if not doc.sync_with_google_calendar or not doc.google_calendar:
+		return
+	before = doc.get_doc_before_save()
+	if before and not any(
+		getattr(doc, f) != getattr(before, f, None) for f in _CALENDAR_FIELDS
+	):
 		return
 	frappe.enqueue(
 		"event_bookings.utils.google_calendar_sync._sync_to_google_calendar",

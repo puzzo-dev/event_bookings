@@ -164,10 +164,6 @@ doc_events = {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_invoice_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
-	"Stock Entry": {
-		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
-		"on_cancel": "event_bookings.utils.erpnext_hooks.on_stock_entry_cancel",
-	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 	},
@@ -179,9 +175,6 @@ doc_events = {
 scheduler_events = {
 	"daily": [
 		"event_bookings.utils.scheduler.daily"
-	],
-	"hourly": [
-		"event_bookings.utils.scheduler.hourly"
 	],
 }
 
@@ -280,4 +273,9 @@ fixtures = [
         "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
     ]]]},
     {"dt": "Report", "filters": [["name", "in", ["Event Summary", "Event Revenue Trend"]]]},
+    {"dt": "Notification", "filters": [["name", "in", [
+        "Event Pre-Event Reminder 3 Days",
+        "Event Pre-Event Reminder 1 Day",
+        "Event Under-Staffed Alert",
+    ]]]},
 ]
