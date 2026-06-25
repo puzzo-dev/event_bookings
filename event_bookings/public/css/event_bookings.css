@@ -1,0 +1,24 @@
+/* Event Bookings — Workspace Shortcut Overlap Fix */
+
+/* Give shortcut boxes enough right padding so the count badge
+   does not visually overlap the label text */
+.workspace-skeleton .shortcut-widget-box {
+	padding-right: 36px !important;
+}
+
+/* Ensure the count badge stays within its reserved space */
+.workspace-skeleton .shortcut-widget-box .indicator-pill {
+	position: absolute;
+	right: 8px;
+	top: 50%;
+	transform: translateY(-50%);
+	margin-left: 0;
+}
+
+/* Prevent long shortcut labels from wrapping under the badge */
+.workspace-skeleton .shortcut-widget-box .ellipsis {
+	overflow: hidden;
+	text-overflow: ellipsis;
+	white-space: nowrap;
+	max-width: calc(100% - 30px);
+}

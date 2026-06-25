@@ -17,7 +17,7 @@ def get_columns():
 		{"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
 		{"fieldname": "party_type", "label": _("Party Type"), "fieldtype": "Data", "width": 100},
 		{"fieldname": "party_name", "label": _("Party"), "fieldtype": "Dynamic Link", "options": "party_type", "width": 160},
-		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 120},
+		{"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
 		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
 		{"fieldname": "total_estimated", "label": _("Estimated Revenue"), "fieldtype": "Currency", "width": 140},
 		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
@@ -81,11 +81,16 @@ def _get_damages_map(event_names):
 
 
 def get_data(filters):
-	conditions = {}
-	if filters.get("from_date"):
-		conditions["event_date"] = [">=", filters["from_date"]]
-	if filters.get("to_date"):
-		conditions["event_date"] = ["<=", filters["to_date"]]
+	conditions = {"docstatus": ["!=", 2]}
+	if filters.get("from_date") and filters.get("to_date"):
+		conditions["event_timing"] = ["between", [
+			f"{filters['from_date']} 00:00:00",
+			f"{filters['to_date']} 23:59:59",
+		]]
+	elif filters.get("from_date"):
+		conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+	elif filters.get("to_date"):
+		conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
 	if filters.get("party_type"):
 		conditions["party_type"] = filters["party_type"]
 	if filters.get("party_name"):
@@ -101,15 +106,12 @@ def get_data(filters):
 		"Event Booking",
 		filters=conditions,
 		fields=[
-			"name as event_name", "party_type", "party_name", "event_date", "booking_status",
+			"name as event_name", "party_type", "party_name", "event_timing", "booking_status",
 			"total_estimated", "total_actual"
 		],
-		order_by="event_date desc",
+		order_by="event_timing desc",
 		limit_page_length=0,
 	)
-
-	if not bookings:
-		return []
 
 	event_names = tuple(eb.event_name for eb in bookings)
 	cogs_map = _get_cogs_map(event_names)

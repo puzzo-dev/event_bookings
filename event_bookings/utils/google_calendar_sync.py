@@ -1,97 +1,54 @@
+"""Google Calendar sync for Event Booking.
+
+Piggybacks on Frappe's existing Google Calendar OAuth infrastructure
+(frappe.integrations.doctype.google_calendar) so no additional credentials
+are needed — users just configure a Google Calendar doc the same way they
+would for the native Frappe Event.
+
+Push flow  (Event Booking → Google):
+  after_insert / on_update  →  push_to_google_calendar()
+  on_trash                  →  delete_from_google_calendar()
+
+Pull flow  (Google → Frappe):
+  Not implemented here.  Events created directly in Google Calendar will not
+  automatically create Event Bookings (that would require a full booking
+  workflow, customer selection, etc.).  Users can trigger a manual sync from
+  the Google Calendar doc form if they want to pull.
+"""
+
+import datetime
+
 import frappe
 from frappe import _
+from googleapiclient.errors import HttpError
 
-# Fields that affect the Google Calendar event body — skip sync when only
-# unrelated fields (cost_center, quotation, sales_order, etc.) change.
-_CALENDAR_FIELDS = frozenset({
-	"event_name", "event_date", "event_time", "event_end_time",
-	"booking_status", "event_location", "party_name",
-})
+from frappe.integrations.doctype.google_calendar.google_calendar import (
+	format_date_according_to_google_calendar,
+	get_google_calendar_object,
+)
+from frappe.utils import get_datetime, getdate, get_time
 
 
-def push_to_google_calendar(doc, method=None):
-	"""Enqueue Google Calendar sync so HTTP never blocks the save request."""
-	if not doc.sync_with_google_calendar or not doc.google_calendar:
-		return
-	before = doc.get_doc_before_save()
-	if before and not any(
-		getattr(doc, f) != getattr(before, f, None) for f in _CALENDAR_FIELDS
-	):
-		return
-	frappe.enqueue(
-		"event_bookings.utils.google_calendar_sync._sync_to_google_calendar",
-		booking_name=doc.name,
-		queue="default",
-		now=frappe.flags.in_test,
+def _should_sync(doc):
+	"""Return True when this document should be pushed to Google Calendar."""
+	return (
+		bool(doc.sync_with_google_calendar)
+		and not doc.pulled_from_google_calendar
+		and bool(doc.google_calendar)
+		and frappe.db.exists("Google Calendar", {"name": doc.google_calendar})
 	)
 
-
-def _sync_to_google_calendar(booking_name):
-	"""Background worker: push a single Event Booking to Google Calendar."""
-	doc = frappe.get_doc("Event Booking", booking_name)
-	if not doc.sync_with_google_calendar or not doc.google_calendar:
-		return
-
-	try:
-		account = frappe.get_doc("Google Calendar", doc.google_calendar)
-		if not account.enable:
-			return
-
-		google_calendar, calendar_id = _get_google_calendar_object(account)
-		if google_calendar is None:
-			return
-
-		if doc.google_calendar_event_id:
-			_update_event(google_calendar, calendar_id, doc)
-		else:
-			_insert_event(google_calendar, calendar_id, doc)
-
-	except Exception:
-		frappe.log_error(
-			title=_("Google Calendar sync failed for {0}").format(doc.name),
-			message=frappe.get_traceback(),
-		)
-
-
-def delete_from_google_calendar(doc, method=None):
-	"""Enqueue Google Calendar event deletion so on_trash never blocks on HTTP."""
-	if not doc.google_calendar_event_id or not doc.google_calendar:
-		return
-	frappe.enqueue(
-		"event_bookings.utils.google_calendar_sync._delete_from_google_calendar_background",
-		booking_name=doc.name,
-		google_calendar=doc.google_calendar,
-		google_calendar_event_id=doc.google_calendar_event_id,
-		queue="default",
-		now=frappe.flags.in_test,
-	)
-
-
-def _delete_from_google_calendar_background(
-	booking_name, google_calendar, google_calendar_event_id
-):
-	"""Background worker: delete a single Google Calendar event."""
-	try:
-		account = frappe.get_doc("Google Calendar", google_calendar)
-		gc, calendar_id = _get_google_calendar_object(account)
-		if gc is None:
-			return
-		gc.events().delete(
-			calendarId=calendar_id,
-			eventId=google_calendar_event_id,
-		).execute()
-	except Exception:
-		frappe.log_error(
-			title=_("Google Calendar delete failed for {0}").format(booking_name),
-			message=frappe.get_traceback(),
-		)
-
-
-# ---------------------------------------------------------------------------
-# Internal helpers
-# ---------------------------------------------------------------------------
 
 def _build_event_body(doc):
+	"""Map Event Booking fields to a Google Calendar events.insert/patch body."""
+	# Combine date + time fields into Python datetime objects
+	event_date = getdate(doc.event_date)
+	start_time = get_time(doc.event_time or "00:00:00")
+	end_time = get_time(doc.event_end_time or doc.event_time or "23:59:00")
+
+	start_dt = get_datetime(datetime.datetime.combine(event_date, start_time))
+	end_dt = get_datetime(datetime.datetime.combine(event_date, end_time))
+
 	party_label = f"{doc.party_type}: " if doc.party_type else ""
 	body = {
 		"summary": f"{doc.event_name} ({doc.party_name})",
@@ -103,68 +60,127 @@ def _build_event_body(doc):
 		) + (f"Special Requirements: {doc.special_requirements}\n" if doc.special_requirements else ""),
 		"location": doc.event_location or "",
 	}
-
-	start_date = doc.event_date
-	end_date = doc.event_date
-
-	if doc.event_time:
-		fmt = _format_date_according_to_google_calendar
-		body["start"] = {
-			"dateTime": fmt(False, f"{start_date} {doc.event_time}"),
-		}
-		end_time = doc.event_end_time or doc.event_time
-		body["end"] = {
-			"dateTime": fmt(False, f"{end_date} {end_time}"),
-		}
-	else:
-		body["start"] = {"date": str(start_date)}
-		body["end"] = {"date": str(end_date)}
-
+	body.update(
+		format_date_according_to_google_calendar(
+			False,   # not all-day — Event Bookings always have a time
+			start_dt,
+			end_dt,
+		)
+	)
 	return body
 
 
-def _insert_event(google_calendar, calendar_id, doc):
-	body = _build_event_body(doc)
-	result = google_calendar.events().insert(calendarId=calendar_id, body=body).execute()
-	frappe.db.set_value(
-		"Event Booking",
-		doc.name,
-		{
-			"google_calendar_event_id": result.get("id"),
-			"google_calendar_id": calendar_id,
-		},
-	)
+# ── Push: Event Booking → Google Calendar ──────────────────────────
 
 
-def _update_event(google_calendar, calendar_id, doc):
-	body = _build_event_body(doc)
-	google_calendar.events().update(
-		calendarId=calendar_id,
-		eventId=doc.google_calendar_event_id,
-		body=body,
-	).execute()
+def push_to_google_calendar(doc, method=None):
+	"""Insert or update this Event Booking in Google Calendar.
+
+	Registered as after_insert and on_update on the Event Booking DocType.
+	"""
+	if not _should_sync(doc):
+		return
+
+	if not doc.google_calendar_event_id:
+		_insert_event(doc)
+	else:
+		_update_event(doc)
 
 
-def _get_google_calendar_object(account):
-	"""Delegate to Frappe's built-in Google Calendar helper; return None if unavailable."""
+def _insert_event(doc):
 	try:
-		from frappe.integrations.doctype.google_calendar.google_calendar import (
-			get_google_calendar_object as _get,
-		)
-		return _get(account)
-	except ImportError:
+		google_calendar, account = get_google_calendar_object(doc.google_calendar)
+	except Exception:
 		frappe.log_error(
-			title="Google Calendar integration unavailable",
-			message="frappe.integrations.doctype.google_calendar not found.",
+			title=f"Google Calendar — could not get object for {doc.name}",
+			message=frappe.get_traceback(),
 		)
-		return None, None
+		return
 
+	if not account.push_to_google_calendar:
+		return
 
-def _format_date_according_to_google_calendar(all_day, date_time_str):
 	try:
-		from frappe.integrations.doctype.google_calendar.google_calendar import (
-			format_date_according_to_google_calendar as _fmt,
+		event = (
+			google_calendar.events()
+			.insert(
+				calendarId=doc.google_calendar_id,
+				body=_build_event_body(doc),
+				sendUpdates="all",
+			)
+			.execute()
 		)
-		return _fmt(all_day, date_time_str)
-	except ImportError:
-		return date_time_str
+		frappe.db.set_value(
+			"Event Booking",
+			doc.name,
+			"google_calendar_event_id",
+			event.get("id"),
+			update_modified=False,
+		)
+		frappe.msgprint(_("Event Booking synced with Google Calendar."))
+	except HttpError as err:
+		frappe.log_error(
+			title=f"Google Calendar — insert failed for {doc.name}",
+			message=str(err),
+		)
+		frappe.throw(
+			_("Google Calendar — could not create event, error code {0}.").format(err.resp.status)
+		)
+
+
+def _update_event(doc):
+	# Skip during initial save (creation == modified means we are in after_insert path)
+	if doc.modified == doc.creation:
+		return
+
+	try:
+		google_calendar, account = get_google_calendar_object(doc.google_calendar)
+	except Exception:
+		frappe.log_error(
+			title=f"Google Calendar — could not get object for {doc.name}",
+			message=frappe.get_traceback(),
+		)
+		return
+
+	if not account.push_to_google_calendar:
+		return
+
+	try:
+		google_calendar.events().patch(
+			calendarId=doc.google_calendar_id,
+			eventId=doc.google_calendar_event_id,
+			body=_build_event_body(doc),
+			sendUpdates="all",
+		).execute()
+	except HttpError as err:
+		frappe.log_error(
+			title=f"Google Calendar — update failed for {doc.name}",
+			message=str(err),
+		)
+
+
+# ── Delete: cancel event in Google Calendar on trash ───────────────
+
+
+def delete_from_google_calendar(doc, method=None):
+	"""Set the Google Calendar event status to 'cancelled' when the booking is deleted."""
+	if not doc.google_calendar_event_id or not doc.google_calendar:
+		return
+
+	try:
+		google_calendar, _account = get_google_calendar_object(doc.google_calendar)
+		google_calendar.events().patch(
+			calendarId=doc.google_calendar_id,
+			eventId=doc.google_calendar_event_id,
+			body={"status": "cancelled"},
+		).execute()
+	except HttpError as err:
+		frappe.log_error(
+			title=f"Google Calendar — delete failed for {doc.name}",
+			message=str(err),
+		)
+	except Exception:
+		frappe.log_error(
+			title=f"Google Calendar — unexpected error deleting {doc.name}",
+			message=frappe.get_traceback(),
+		)

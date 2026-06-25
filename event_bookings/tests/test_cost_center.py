@@ -4,27 +4,21 @@ from frappe.tests.utils import FrappeTestCase
 
 class TestEventCostCenter(FrappeTestCase):
     def setUp(self):
-        if "erpnext" in frappe.get_installed_apps():
-            cg = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
-            if not frappe.db.exists("Customer", "_Test CC Customer"):
-                frappe.get_doc(
-                    {
-                        "doctype": "Customer",
-                        "customer_name": "_Test CC Customer",
-                        "customer_type": "Individual",
-                        "customer_group": cg,
-                    }
-                ).insert(ignore_permissions=True)
-            self.party_type = "Customer"
-            self.party_name = "_Test CC Customer"
-        else:
-            self.party_type = "Individual"
-            self.party_name = "_Test CC Individual"
-
+        cg = frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
+        if not frappe.db.exists("Customer", "_Test CC Customer"):
+            frappe.get_doc(
+                {
+                    "doctype": "Customer",
+                    "customer_name": "_Test CC Customer",
+                    "customer_type": "Individual",
+                    "customer_group": cg,
+                }
+            ).insert(ignore_permissions=True)
         if not frappe.db.exists("Event Type", "_Test"):
             frappe.get_doc({"doctype": "Event Type", "type_name": "_Test"}).insert(
                 ignore_permissions=True
             )
+        self.customer = "_Test CC Customer"
         self.event_type = "_Test"
 
     def tearDown(self):
@@ -34,54 +28,26 @@ class TestEventCostCenter(FrappeTestCase):
         defaults = {
             "doctype": "Event Booking",
             "event_name": "Cost Center Test Event",
-            "party_type": self.party_type,
-            "party_name": self.party_name,
+            "customer": self.customer,
             "event_type": self.event_type,
             "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
             "event_time": "18:00:00",
             "event_location": "Test Venue",
             "booking_status": "New",
+            "booking_date": frappe.utils.today(),
         }
         defaults.update(kwargs)
         doc = frappe.get_doc(defaults)
         doc.insert(ignore_permissions=True)
         return doc
 
-    def test_auto_cost_center_disabled_uses_default(self):
-        settings = frappe.get_single("Event Settings")
-        settings.auto_create_cost_center_per_event = 0
+    def test_manual_cost_center_selection(self):
+        """User can manually select a Cost Center on the Event Booking form."""
         parent_cc = frappe.db.get_value(
             "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 0}, "name"
         )
-        settings.default_cost_center = parent_cc
-        settings.save(ignore_permissions=True)
-
-        eb = self._make_event()
-        self.assertEqual(eb.cost_center, parent_cc)
-
-    def test_auto_cost_center_creates_child_on_confirm(self):
-        settings = frappe.get_single("Event Settings")
-        settings.auto_create_cost_center_per_event = 1
-        parent_cc = frappe.db.get_value(
-            "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 1}, "name"
-        )
-        settings.default_cost_center = parent_cc
-        settings.save(ignore_permissions=True)
-
-        eb = self._make_event()
-        self.assertFalse(eb.cost_center)
-
-        # Step through valid workflow transitions to reach Confirmed
-        for status in ("Quoted", "Negotiating", "Confirmed"):
-            eb.booking_status = status
-            eb.save(ignore_permissions=True)
-
-        self.assertTrue(eb.cost_center)
-        self.assertIn(eb.name, eb.cost_center)
-
-        cc = frappe.get_doc("Cost Center", eb.cost_center)
-        self.assertEqual(cc.is_cost_center, 1)
-        self.assertEqual(cc.parent_cost_center, parent_cc)
+        eb = self._make_event(event_cost_center=parent_cc)
+        self.assertEqual(eb.event_cost_center, parent_cc)
 
     def test_naming_series_format(self):
         eb = self._make_event()

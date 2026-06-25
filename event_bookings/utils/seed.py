@@ -9,6 +9,6 @@ def seed_event_types():
 		try:
 			if not frappe.db.exists("Event Type", t):
 				frappe.get_doc({"doctype": "Event Type", "type_name": t}).insert(ignore_permissions=True)
-		except Exception:
+		except (frappe.DuplicateEntryError, frappe.ValidationError):
 			frappe.log_error(title=f"Failed to seed Event Type: {t}")
 	frappe.db.commit()

@@ -12,7 +12,6 @@
   "reviewer_email",
   "rating",
   "review_text",
-  "review_status",
   "is_published",
   "submitted_via"
  ],
@@ -71,12 +70,12 @@
    "fieldname": "submitted_via",
    "fieldtype": "Select",
    "label": "Submitted Via",
-   "options": "Public Link\nDirect\nEvent Manager"
+   "options": "Public Link\nDirect\nStaff Entry"
   }
  ],
  "index_web_pages_for_search": 1,
  "links": [],
- "modified": "2026-06-25 00:00:00.000000",
+ "modified": "2026-06-15 16:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Booking Review",
@@ -110,7 +109,7 @@
   },
   {
    "read": 1,
-   "role": "Event Assistant"
+   "role": "Event User"
   }
  ],
  "row_format": "Dynamic",
