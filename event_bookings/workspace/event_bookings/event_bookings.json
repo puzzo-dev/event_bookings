@@ -21,7 +21,7 @@
    "label": "Lead Conversion Funnel"
   }
  ],
- "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Inquiry vs Conversion\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Deals Completed\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Deals Lost\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Lead Conversion Funnel\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Bookings\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":6}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}}]",
+ "content": "[{\"type\":\"header\",\"data\":{\"text\":\"<span class=\\\"h4\\\">Event Bookings</span>\",\"col\":12}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Monthly Events\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Inquiry vs Conversion\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Deals Completed\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Deals Lost\",\"col\":6}},{\"type\":\"chart\",\"data\":{\"chart_name\":\"Event Lead Conversion Funnel\",\"col\":12}},{\"type\":\"card\",\"data\":{\"card_name\":\"Bookings\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Reports\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Sales / Selling\",\"col\":6}},{\"type\":\"card\",\"data\":{\"card_name\":\"Buying / Purchase\",\"col\":6}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"New Event Booking\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Bookings List\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Types\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Event Settings\",\"col\":3}},{\"type\":\"shortcut\",\"data\":{\"shortcut_name\":\"Booking Reviews\",\"col\":3}}]",
  "creation": "2026-06-13 03:00:00.000000",
  "custom_blocks": [],
  "docstatus": 0,
@@ -48,6 +48,15 @@
    "link_to": "Event Booking",
    "link_type": "DocType",
    "onboard": 1,
+   "type": "Link"
+  },
+  {
+   "hidden": 0,
+   "is_query_report": 0,
+   "label": "Booking Review",
+   "link_to": "Booking Review",
+   "link_type": "DocType",
+   "onboard": 0,
    "type": "Link"
   },
   {
@@ -131,24 +140,6 @@
   {
    "hidden": 0,
    "is_query_report": 0,
-   "label": "Purchase Order",
-   "link_to": "Purchase Order",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
-   "label": "Purchase Invoice",
-   "link_to": "Purchase Invoice",
-   "link_type": "DocType",
-   "onboard": 0,
-   "type": "Link"
-  },
-  {
-   "hidden": 0,
-   "is_query_report": 0,
    "label": "Material Request",
    "link_to": "Material Request",
    "link_type": "DocType",
@@ -193,7 +184,7 @@
  "quick_lists": [],
  "roles": [
   {"role": "Event Manager"},
-  {"role": "Event User"},
+  {"role": "Event Assistant"},
   {"role": "Sales Manager"},
   {"role": "System Manager"}
  ],
@@ -236,6 +227,16 @@
    "icon": "settings",
    "label": "Event Settings",
    "link_to": "Event Settings",
+   "stats_filter": "",
+   "type": "DocType"
+  },
+  {
+   "color": "Purple",
+   "doc_view": "List",
+   "format": "",
+   "icon": "star",
+   "label": "Booking Reviews",
+   "link_to": "Booking Review",
    "stats_filter": "",
    "type": "DocType"
   }

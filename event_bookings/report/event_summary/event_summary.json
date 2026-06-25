@@ -52,7 +52,7 @@
  "report_type": "Script Report",
  "roles": [
   {"role": "Event Manager"},
-  {"role": "Event User"},
+  {"role": "Event Assistant"},
   {"role": "System Manager"}
  ]
 }

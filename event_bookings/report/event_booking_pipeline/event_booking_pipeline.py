@@ -59,7 +59,7 @@ def get_data(filters):
     if _erpnext_installed():
         fields += ["total_estimated", "total_actual", "quotation", "sales_invoice"]
 
-    bookings = frappe.get_all(
+    bookings = frappe.get_list(
         "Event Booking",
         filters=conditions,
         fields=fields,

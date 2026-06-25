@@ -10,6 +10,7 @@
   "sec_core",
   "event_name",
   "booking_status",
+  "booking_date",
   "party_type",
   "party_name",
   "col_type",
@@ -44,16 +45,7 @@
   "col_google_calendar",
   "google_calendar_id",
   "google_calendar_event_id",
-  "pulled_from_google_calendar",
-  "sec_post",
-  "damages_cost",
-  "col_rev",
-  "client_feedback",
-  "review_requested",
-  "review_received",
-  "reminder_sent_3d",
-  "reminder_sent_1d",
-  "booking_date"
+  "pulled_from_google_calendar"
  ],
  "fields": [
   {
@@ -294,53 +286,6 @@
    "read_only": 1
   },
   {
-   "fieldname": "sec_post",
-   "fieldtype": "Section Break",
-   "label": "Post-Event"
-  },
-  {
-   "fieldname": "damages_cost",
-   "fieldtype": "Currency",
-   "label": "Damages / Losses"
-  },
-  {
-   "fieldname": "col_rev",
-   "fieldtype": "Column Break"
-  },
-  {
-   "fieldname": "client_feedback",
-   "fieldtype": "Text",
-   "label": "Client Feedback"
-  },
-  {
-   "default": "0",
-   "fieldname": "review_requested",
-   "fieldtype": "Check",
-   "label": "Review Requested"
-  },
-  {
-   "default": "0",
-   "fieldname": "review_received",
-   "fieldtype": "Check",
-   "label": "Review Received"
-  },
-  {
-   "default": "0",
-   "fieldname": "reminder_sent_3d",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "3-Day Reminder Sent",
-   "read_only": 1
-  },
-  {
-   "default": "0",
-   "fieldname": "reminder_sent_1d",
-   "fieldtype": "Check",
-   "hidden": 1,
-   "label": "1-Day Reminder Sent",
-   "read_only": 1
-  },
-  {
    "default": "Today",
    "fieldname": "booking_date",
    "fieldtype": "Date",
@@ -372,7 +317,7 @@
   },
   {
    "read": 1,
-   "role": "Event User"
+   "role": "Event Assistant"
   },
   {
    "create": 1,
