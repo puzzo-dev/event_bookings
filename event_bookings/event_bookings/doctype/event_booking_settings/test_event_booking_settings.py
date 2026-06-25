@@ -1,0 +1,11 @@
+# Copyright (c) 2026, Avril Beetails and Contributors
+# See license.txt
+
+import frappe
+from frappe.tests.utils import FrappeTestCase
+
+
+class TestEventBookingSettings(FrappeTestCase):
+	def test_settings_exists(self):
+		self.assertTrue(frappe.db.exists("Event Booking Settings", "Event Booking Settings"))
+

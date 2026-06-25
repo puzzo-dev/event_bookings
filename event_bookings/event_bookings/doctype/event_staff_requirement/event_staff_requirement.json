@@ -27,11 +27,11 @@
    "reqd": 1
   },
   {
+   "default": "0",
    "fieldname": "qty_assigned",
    "fieldtype": "Int",
    "in_list_view": 1,
-   "label": "Qty Assigned",
-   "read_only": 1
+   "label": "Qty Assigned"
   },
   {
    "fieldname": "notes",
@@ -43,7 +43,7 @@
  "index_web_pages_for_search": 1,
  "istable": 1,
  "links": [],
- "modified": "2026-06-24 00:00:00.000000",
+ "modified": "2026-06-16 20:54:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Staff Requirement",

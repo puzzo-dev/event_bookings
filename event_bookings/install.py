@@ -1,433 +1,413 @@
 import frappe
 from frappe.utils import cstr
 
+from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, is_erpnext_installed, is_hrms_installed
 from event_bookings.utils.seed import seed_event_types
-from event_bookings.utils.helpers import erpnext_installed
 
-# Private backup tables — plain MySQL, not Frappe DocTypes.
-# Prefixed __eb_ so they are clearly internal and survive any app uninstall/reinstall.
-_ERPNEXT_BACKUP_TABLE = "__eb_erpnext_link_backup"
-_HRMS_BACKUP_TABLE = "__eb_hrms_link_backup"
-
-# Site-config keys used to store the path of the Frappe partial backup file
-# created before each uninstall.  Lets the user locate the file manually too.
-_CONF_ERPNEXT_BACKUP = "event_bookings_erpnext_backup_path"
-_CONF_HRMS_BACKUP = "event_bookings_hrms_backup_path"
-
-
-# ---------------------------------------------------------------------------
-# App lifecycle hooks
-# ---------------------------------------------------------------------------
 
 def after_install():
-    """
-    Hook executed after this app is freshly installed.
-    Validates dependency coupling, seeds default data, and (if ERPNext is
-    present) creates event-specific Chart of Accounts accounts.
-    """
-    _validate_dependency_coupling()
-    seed_event_types()
-    if erpnext_installed():
-        create_event_coa_accounts()
+	"""
+	Hook executed after app is installed.
+	- Seeds default Event Types
+	- Creates event-specific Chart of Accounts accounts
+	- Creates default Email Templates
+	- Registers Event Booking as an Accounting Dimension
+	- Creates custom fields on native doctypes
+	"""
+	seed_event_types()
+	create_email_templates()
+	if is_erpnext_installed():
+		create_event_coa_accounts()    # requires Account + Company DocTypes
+		create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
+		create_custom_fields()         # creates remaining app custom fields
+		create_default_settings()      # one Event Booking Settings record per company
+	upgrade_designation_for_hrms()  # Link(Designation) when HRMS present, Data otherwise
+	migrate_workspace_charts()     # ensure workspace references current charts
 
 
-def after_app_install(app):
-    """
-    Fires after *any* app is installed on this site.
-
-    Handles two scenarios:
-    1. Standalone → ERPNext+HRMS: both apps now present for the first time.
-       Create CoA accounts for all existing companies.
-    2. ERPNext+HRMS reinstall after a previous uninstall: backup tables may
-       exist from before_app_uninstall.  Restore them now that the doctypes
-       are live again.
-    """
-    if app not in ("erpnext", "hrms"):
-        return
-
-    installed = frappe.get_installed_apps()
-
-    # Only act once both ERPNext and HRMS are present together.
-    if "erpnext" not in installed or "hrms" not in installed:
-        return
-
-    # Restore any snapshots taken during a prior uninstall cycle.
-    _restore_erpnext_links()
-    _restore_hrms_links()
-
-    # Ensure CoA accounts exist (idempotent — checks before creating).
-    create_event_coa_accounts()
+def after_migrate():
+	"""
+	Hook executed after every bench migrate.
+	Cleans up any legacy is_standard charts that fixtures cannot delete,
+	ensures the workspace content block always references the current charts,
+	and creates missing Event Booking Settings records for companies added after install.
+	"""
+	migrate_workspace_charts()
+	if is_erpnext_installed():
+		create_default_settings()
+	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
 
 
-def before_app_uninstall(app):
-    """
-    Fires just before *any* app is uninstalled from this site.
+def migrate_workspace_charts():
+	"""
+	Idempotent: ensure the workspace content references the correct Report-based charts
+	and that all Dashboard Chart records have valid filters_json.
+	"""
+	import json
 
-    Does two things for each relevant app:
-    1. Frappe partial backup — calls new_backup(include_doctypes=...) so a
-       proper .sql.gz lands in the site's backups folder.  Stores the path
-       in site config so the user can find it and, if needed, run
-       frappe.installer.partial_restore(path) for a full table recovery.
-    2. Raw SQL backup table — snapshots just the link column values into a
-       private MySQL table (__eb_*).  This table survives the uninstall and
-       is used by after_app_install for a surgical, row-by-row restore that
-       does not overwrite any new bookings created in the interim.
-    """
-    if app == "erpnext":
-        _frappe_partial_backup(
-            doctypes="Event Booking,Event Assigned Staff",
-            conf_key=_CONF_ERPNEXT_BACKUP,
-        )
-        _backup_erpnext_links()
-        _null_erpnext_links()
+	# ── 1. Fix stale filters_json in Dashboard Chart records ──────────────
+	_fix_chart_filters_json()
 
-    if app == "hrms":
-        _frappe_partial_backup(
-            doctypes="Event Assigned Staff",
-            conf_key=_CONF_HRMS_BACKUP,
-        )
-        _backup_hrms_links()
-        _null_hrms_links()
+	# ── 2. Sync workspace content and charts child table ──────────────────
+	if not frappe.db.exists("Workspace", "Event Bookings"):
+		return
 
+	ws = frappe.get_doc("Workspace", "Event Bookings")
 
-# ---------------------------------------------------------------------------
-# Frappe-native partial backup (safety net / disaster recovery)
-# ---------------------------------------------------------------------------
+	try:
+		content = json.loads(ws.content or "[]")
+	except (ValueError, TypeError):
+		content = []
 
-def _frappe_partial_backup(doctypes: str, conf_key: str):
-    """
-    Create a Frappe partial backup (.sql.gz) for the given doctypes and
-    record the file path in site config.
+	# Replace any legacy chart references in the content blocks
+	chart_map = {
+		"Event Revenue Trend": "Event Booking Revenue Trends",
+		"Monthly Events":      "Event Booking Count Trends",
+	}
 
-    The file is a standard mysqldump that the user (or ops team) can inspect
-    and restore manually with:
-        bench --site <site> partial-restore <path>
-    or programmatically with:
-        frappe.installer.partial_restore(path)
+	updated = False
+	for block in content:
+		if block.get("type") == "chart":
+			old_name = block.get("data", {}).get("chart_name")
+			if old_name in chart_map:
+				block["data"]["chart_name"] = chart_map[old_name]
+				updated = True
 
-    We do NOT use partial_restore in our own restore path because it replaces
-    the entire table — any new Event Bookings created after the uninstall
-    would be wiped.  Our __eb_* raw tables handle the selective column
-    restore instead.
-    """
-    try:
-        from frappe.utils.backups import new_backup
+	# Ensure onboarding block at position 0
+	if not any(b.get("type") == "onboarding" for b in content):
+		content.insert(0, {
+			"id": "onboard01",
+			"type": "onboarding",
+			"data": {"onboarding_name": "Event Bookings Onboarding", "col": 12},
+		})
+		updated = True
 
-        odb = new_backup(
-            include_doctypes=doctypes,
-            ignore_files=True,
-            force=True,
-        )
-        backup_path = odb.backup_path_db
-        frappe.utils.update_site_config(conf_key, backup_path)
-        frappe.logger().info(
-            f"Event Bookings: Frappe partial backup written to {backup_path} "
-            f"(key: {conf_key}).  Use frappe.installer.partial_restore(path) "
-            f"for a full table recovery."
-        )
-    except Exception:
-        frappe.log_error(title="Event Bookings: Frappe partial backup failed")
+	# Ensure all three charts are in the content blocks
+	current_chart_blocks = {
+		b["data"]["chart_name"]
+		for b in content
+		if b.get("type") == "chart"
+	}
+	desired_charts = [
+		("Event Booking Revenue Trends", 6),
+		("Event Booking Count Trends",   6),
+		("Events By Event Type",         6),
+	]
+	for chart_name, col in desired_charts:
+		if chart_name not in current_chart_blocks:
+			content.append({
+				"type": "chart",
+				"data": {"chart_name": chart_name, "col": col},
+			})
+			updated = True
 
+	if updated:
+		ws.content = json.dumps(content)
+		ws.module_onboarding = "Event Bookings Onboarding"
 
-# ---------------------------------------------------------------------------
-# ERPNext link backup / restore  (targeted column-level mechanism)
-# ---------------------------------------------------------------------------
+	# Always sync the charts child table to match all desired charts
+	legacy_names = {"Monthly Events", "Event Revenue Trend"}
+	ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names]
+	existing_chart_names = {c.chart_name for c in ws.charts}
+	for chart_name, _ in desired_charts:
+		if chart_name not in existing_chart_names:
+			ws.append("charts", {"chart_name": chart_name, "label": chart_name})
+			updated = True
 
-def _backup_erpnext_links():
-    """
-    Snapshot ERPNext-linked fields from tabEvent Booking into a private
-    MySQL table before they are nulled.  A fresh DELETE clears any stale
-    data from a previous uninstall cycle so repeated cycling works cleanly.
-    """
-    frappe.db.sql(f"""
-        CREATE TABLE IF NOT EXISTS `{_ERPNEXT_BACKUP_TABLE}` (
-            `eb_name`          VARCHAR(140) NOT NULL,
-            `quotation`        VARCHAR(140),
-            `sales_order`      VARCHAR(140),
-            `sales_invoice`    VARCHAR(140),
-            `material_request` VARCHAR(140),
-            PRIMARY KEY (`eb_name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    """)
-
-    # Overwrite any data from a previous uninstall cycle.
-    frappe.db.sql(f"DELETE FROM `{_ERPNEXT_BACKUP_TABLE}`")
-
-    frappe.db.sql(f"""
-        INSERT INTO `{_ERPNEXT_BACKUP_TABLE}`
-            (eb_name, quotation, sales_order, sales_invoice, material_request)
-        SELECT name, quotation, sales_order, sales_invoice, material_request
-        FROM `tabEvent Booking`
-        WHERE quotation        IS NOT NULL
-           OR sales_order      IS NOT NULL
-           OR sales_invoice    IS NOT NULL
-           OR material_request IS NOT NULL
-    """)
-
-    count = frappe.db.sql(f"SELECT COUNT(*) FROM `{_ERPNEXT_BACKUP_TABLE}`")[0][0]
-    frappe.logger().info(
-        f"Event Bookings: backed up ERPNext links for {count} booking(s)."
-    )
+	if updated:
+		ws.save(ignore_permissions=True)
+		frappe.db.commit()
+		frappe.logger().info("event_bookings: workspace charts patched successfully")
 
 
-def _null_erpnext_links():
-    """Null ERPNext-owned Link fields on Event Booking after backup."""
-    for field in ("quotation", "sales_order", "sales_invoice", "material_request"):
-        frappe.db.sql(
-            f"UPDATE `tabEvent Booking` SET `{field}` = NULL WHERE `{field}` IS NOT NULL"
-        )
-    frappe.db.commit()
-    frappe.logger().info("Event Bookings: nulled ERPNext link fields before ERPNext uninstall.")
+def _fix_chart_filters_json():
+	"""
+	Normalise the date_field on the trend Dashboard Charts to 'booking_date'.
+	Trends are measured by when a booking was made, not the (future) event
+	date. Repairs legacy 'event_timing'/'event_date' values idempotently on
+	every migrate. Also normalises dynamic_filters_json to static company.
+	Replaces user-created from_date/to_date filters with fiscal_year so charts
+	behave like ERPNext system charts and avoid filter hangs outside fiscal years.
+	Run idempotently on every migrate.
+	"""
+	import json
+
+	# Charts that aggregate by date and must use booking_date
+	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
+	all_charts = trend_charts + ["Events By Event Type"]
+	legacy_date_fields = {"event_timing", "event_date"}
+	current_fy = get_fiscal_year_safe()
+
+	for chart_name in all_charts:
+		if not frappe.db.exists("Dashboard Chart", chart_name):
+			continue
+
+		raw = frappe.db.get_value("Dashboard Chart", chart_name, "filters_json") or "{}"
+		try:
+			stored = json.loads(raw)
+		except (ValueError, TypeError):
+			stored = {}
+
+		changed = False
+
+		# Fix date_field on trend charts
+		if chart_name in trend_charts and stored.get("date_field") in legacy_date_fields:
+			stored["date_field"] = "booking_date"
+			changed = True
+
+		# Remove any hardcoded company so the report uses the user's default
+		# company instead of locking charts to a single company.
+		if "company" in stored:
+			stored.pop("company", None)
+			changed = True
+
+		# Remove user-defined from_date / to_date to prevent hangs when dates
+		# fall outside any active Fiscal Year.
+		for obsolete in ("from_date", "to_date"):
+			if obsolete in stored:
+				stored.pop(obsolete, None)
+				changed = True
+
+		# Add fiscal_year if missing and ERPNext provides one
+		if "fiscal_year" not in stored and current_fy:
+			stored["fiscal_year"] = current_fy
+			changed = True
+
+		if changed:
+			frappe.db.set_value(
+				"Dashboard Chart", chart_name, "filters_json",
+				json.dumps(stored), update_modified=False,
+			)
+
+		# Strip dynamic JS expression from dynamic_filters_json
+		raw_dyn = frappe.db.get_value("Dashboard Chart", chart_name, "dynamic_filters_json") or "{}"
+		try:
+			dyn = json.loads(raw_dyn)
+		except (ValueError, TypeError):
+			dyn = {}
+
+		if dyn:
+			frappe.db.set_value(
+				"Dashboard Chart", chart_name, "dynamic_filters_json",
+				"{}", update_modified=False,
+			)
+
+	frappe.db.commit()
 
 
-def _restore_erpnext_links():
-    """
-    Restore ERPNext link values from the raw backup table after a reinstall.
+def upgrade_designation_for_hrms():
+	"""Upgrade Event Staff Requirement.designation from Data → Link(Designation) when
+	HRMS is installed so users get full autocomplete from the HRMS Designation list.
 
-    Only restores a value when the referenced document still exists in the
-    newly reinstalled ERPNext — guards against dangling refs when the user
-    started a fresh ERPNext install without restoring its data.
+	The DocType JSON ships the field as Data (Frappe-only baseline). This function
+	promotes it to a proper Link at install/migrate time when HRMS is present.
+	It is called on every after_migrate because bench migrate resets the field to
+	the JSON baseline (Data) before this hook runs. Idempotent.
+	"""
+	if not is_hrms_installed():
+		return
+	if not frappe.db.exists("DocType", "Designation"):
+		return
 
-    Drops the backup table when done.  If the table does not exist (first
-    install, or user already cleaned it up) the function is a no-op.
-    """
-    if not frappe.db.sql(f"SHOW TABLES LIKE '{_ERPNEXT_BACKUP_TABLE}'"):
-        _log_frappe_backup_hint(_CONF_ERPNEXT_BACKUP)
-        return
+	current = frappe.db.get_value(
+		"DocField",
+		{"parent": "Event Staff Requirement", "fieldname": "designation"},
+		"fieldtype",
+	)
+	if current == "Link":
+		return  # already upgraded — nothing to do
 
-    rows = frappe.db.sql(
-        f"SELECT eb_name, quotation, sales_order, sales_invoice, material_request "
-        f"FROM `{_ERPNEXT_BACKUP_TABLE}`",
-        as_dict=True,
-    )
-    if not rows:
-        frappe.db.sql(f"DROP TABLE IF EXISTS `{_ERPNEXT_BACKUP_TABLE}`")
-        return
-
-    doctype_map = {
-        "quotation":        "Quotation",
-        "sales_order":      "Sales Order",
-        "sales_invoice":    "Sales Invoice",
-        "material_request": "Material Request",
-    }
-
-    restored = skipped = 0
-    for row in rows:
-        updates = {}
-        for field, doctype in doctype_map.items():
-            value = row.get(field)
-            if value and frappe.db.exists(doctype, value):
-                updates[field] = value
-
-        if updates:
-            set_clause = ", ".join(f"`{f}` = %s" for f in updates)
-            frappe.db.sql(
-                f"UPDATE `tabEvent Booking` SET {set_clause} WHERE name = %s",
-                list(updates.values()) + [row.eb_name],
-            )
-            restored += 1
-        else:
-            skipped += 1
-
-    frappe.db.sql(f"DROP TABLE IF EXISTS `{_ERPNEXT_BACKUP_TABLE}`")
-    # Clear the conf key now that the backup table has been consumed.
-    frappe.utils.update_site_config(_CONF_ERPNEXT_BACKUP, None)
-    frappe.db.commit()
-
-    frappe.logger().info(
-        f"Event Bookings: restored ERPNext links for {restored} booking(s); "
-        f"{skipped} skipped (referenced docs not found in reinstalled ERPNext — "
-        f"use the Frappe partial backup for full recovery if needed)."
-    )
+	frappe.db.set_value(
+		"DocField",
+		{"parent": "Event Staff Requirement", "fieldname": "designation"},
+		{"fieldtype": "Link", "options": "Designation"},
+		update_modified=False,
+	)
+	frappe.db.commit()
+	frappe.clear_cache(doctype="Event Staff Requirement")
+	frappe.logger().info(
+		"event_bookings: upgraded Event Staff Requirement.designation "
+		"to Link(Designation) — HRMS is installed"
+	)
 
 
-# ---------------------------------------------------------------------------
-# HRMS link backup / restore  (targeted column-level mechanism)
-# ---------------------------------------------------------------------------
-
-def _backup_hrms_links():
-    """
-    Snapshot HRMS staff data from tabEvent Assigned Staff into a private
-    table before it is cleared.  Since employee/designation/shift_assignment
-    are Data fields (plain strings), the values are always safe to restore
-    without an existence check.
-    """
-    frappe.db.sql(f"""
-        CREATE TABLE IF NOT EXISTS `{_HRMS_BACKUP_TABLE}` (
-            `row_name`         VARCHAR(140) NOT NULL,
-            `parent`           VARCHAR(140),
-            `employee`         VARCHAR(140),
-            `designation`      VARCHAR(140),
-            `shift_assignment` VARCHAR(140),
-            PRIMARY KEY (`row_name`)
-        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
-    """)
-
-    frappe.db.sql(f"DELETE FROM `{_HRMS_BACKUP_TABLE}`")
-
-    frappe.db.sql(f"""
-        INSERT INTO `{_HRMS_BACKUP_TABLE}`
-            (row_name, parent, employee, designation, shift_assignment)
-        SELECT name, parent, employee, designation, shift_assignment
-        FROM `tabEvent Assigned Staff`
-        WHERE employee         IS NOT NULL
-           OR shift_assignment IS NOT NULL
-    """)
-
-    count = frappe.db.sql(f"SELECT COUNT(*) FROM `{_HRMS_BACKUP_TABLE}`")[0][0]
-    frappe.logger().info(
-        f"Event Bookings: backed up HRMS staff data for {count} row(s)."
-    )
+def create_default_settings():
+	"""Create one Event Booking Settings record per company (idempotent).
+	Only called when ERPNext is installed — Company DocType must exist.
+	"""
+	for company in frappe.get_all("Company", pluck="name", limit_page_length=0):
+		if not frappe.db.exists("Event Booking Settings", company):
+			try:
+				frappe.get_doc({
+					"doctype": "Event Booking Settings",
+					"company": company,
+				}).insert(ignore_permissions=True)
+			except (frappe.DuplicateEntryError, frappe.ValidationError):
+				frappe.log_error(title=f"Failed to create Event Booking Settings for {company}")
+	frappe.db.commit()
 
 
-def _null_hrms_links():
-    """Clear HRMS staff data from Event Assigned Staff after backup."""
-    frappe.db.sql(
-        "UPDATE `tabEvent Assigned Staff` "
-        "SET employee = NULL, designation = NULL, shift_assignment = NULL "
-        "WHERE employee IS NOT NULL OR designation IS NOT NULL OR shift_assignment IS NOT NULL"
-    )
-    frappe.db.commit()
-    frappe.logger().info("Event Bookings: cleared HRMS staff fields before HRMS uninstall.")
+def create_custom_fields():
+	"""
+	Create Event Booking link fields on doctypes not covered by the
+	Accounting Dimension auto-generation. Uses frappe.custom.doctype helpers
+	so they are idempotent (safe to run multiple times).
+	Skips any DocType that does not exist on this site.
+	"""
+	from frappe.custom.doctype.custom_field.custom_field import create_custom_field
+
+	fields = [
+		# Doctype, fieldname, insert_after, extra kwargs
+		("Quotation",           "event_booking", "title", {}),
+		("Journal Entry",       "event_booking", "title", {}),
+		("Material Request",    "event_booking", "title", {}),
+		("Stock Reconciliation","event_booking", "title", {}),
+	]
+
+	for dt, fieldname, insert_after, extra in fields:
+		if not frappe.db.exists("DocType", dt):
+			continue
+
+		df = {
+			"fieldname": fieldname,
+			"fieldtype": extra.get("fieldtype", "Link"),
+			"label": extra.get("label", "Event Booking"),
+			"options": "Event Booking" if extra.get("fieldtype", "Link") == "Link" else None,
+			"insert_after": insert_after,
+			"search_index": 1,
+		}
+		df.update({k: v for k, v in extra.items() if k not in ("fieldtype", "label")})
+
+		try:
+			create_custom_field(dt, df)
+		except (frappe.DuplicateEntryError, frappe.ValidationError):
+			frappe.log_error(title=f"Failed to create custom field {fieldname} on {dt}")
 
 
-def _restore_hrms_links():
-    """
-    Restore HRMS staff strings from the backup table after a reinstall.
-    No existence check needed — these are Data (string) fields, not Links.
-    Drops the backup table when done.
-    """
-    if not frappe.db.sql(f"SHOW TABLES LIKE '{_HRMS_BACKUP_TABLE}'"):
-        _log_frappe_backup_hint(_CONF_HRMS_BACKUP)
-        return
+def create_accounting_dimension():
+	"""Register Event Booking as an Accounting Dimension in ERPNext.
+	Only called when ERPNext is installed — guarded by caller.
+	"""
+	try:
+		if not frappe.db.exists("Accounting Dimension", "Event Booking"):
+			doc = frappe.get_doc({
+				"doctype": "Accounting Dimension",
+				"document_type": "Event Booking",
+				"label": "Event Booking",
+				"disabled": 0,
+			})
+			doc.insert(ignore_permissions=True)
+			frappe.db.commit()
+	except (frappe.DuplicateEntryError, frappe.ValidationError):
+		frappe.log_error(title="Failed to create Accounting Dimension for Event Booking")
 
-    rows = frappe.db.sql(
-        f"SELECT row_name, employee, designation, shift_assignment "
-        f"FROM `{_HRMS_BACKUP_TABLE}`",
-        as_dict=True,
-    )
-    if not rows:
-        frappe.db.sql(f"DROP TABLE IF EXISTS `{_HRMS_BACKUP_TABLE}`")
-        return
-
-    for row in rows:
-        frappe.db.sql(
-            "UPDATE `tabEvent Assigned Staff` "
-            "SET employee = %s, designation = %s, shift_assignment = %s "
-            "WHERE name = %s",
-            (row.employee, row.designation, row.shift_assignment, row.row_name),
-        )
-
-    frappe.db.sql(f"DROP TABLE IF EXISTS `{_HRMS_BACKUP_TABLE}`")
-    frappe.utils.update_site_config(_CONF_HRMS_BACKUP, None)
-    frappe.db.commit()
-    frappe.logger().info(
-        f"Event Bookings: restored HRMS staff data for {len(rows)} row(s)."
-    )
-
-
-def _log_frappe_backup_hint(conf_key: str):
-    """
-    If no raw backup table exists but a Frappe partial backup path was saved,
-    log a hint so the operator knows a full-table recovery option is available.
-    """
-    path = frappe.conf.get(conf_key)
-    if path:
-        frappe.logger().info(
-            f"Event Bookings: no raw backup table found for restore. "
-            f"A Frappe partial backup exists at: {path}. "
-            f"Run frappe.installer.partial_restore('{path}') for a full table recovery."
-        )
-
-
-# ---------------------------------------------------------------------------
-# Validation
-# ---------------------------------------------------------------------------
-
-def _validate_dependency_coupling():
-    """
-    ERPNext and HRMS must be installed together with this app.
-    Installing ERPNext without HRMS leaves staff management non-functional.
-    """
-    installed = frappe.get_installed_apps()
-    if "erpnext" in installed and "hrms" not in installed:
-        frappe.throw(
-            "HRMS is required when using Event Bookings with ERPNext. "
-            "Please install HRMS alongside ERPNext before installing this app."
-        )
-
-
-# ---------------------------------------------------------------------------
-# CoA account creation
-# ---------------------------------------------------------------------------
 
 def create_event_coa_accounts():
-    """
-    Creates Event Revenue, Event COGS, and Event Damages Expense accounts
-    under the company's existing Income and Expense root accounts.
-    Only runs when ERPNext is installed (Account doctype is ERPNext-owned).
-    Idempotent — checks existence before inserting.
-    """
-    companies = frappe.get_all("Company", pluck="name")
-    for company in companies:
-        income_root = _get_first_active_root("Income", company)
-        expense_root = _get_first_active_root("Expense", company)
-        if not income_root or not expense_root:
-            frappe.log_error(
-                f"Could not find Income/Expense roots for {company}",
-                "Event Bookings Install",
-            )
-            continue
+	"""
+	Creates Event Revenue, Event COGS, and Event Damages Expense accounts
+	under the company's existing Income and Expense root accounts.
+	Does NOT assume hardcoded parent names — walks the COA tree dynamically.
+	Only called when ERPNext is installed — guarded by caller.
+	"""
+	companies = frappe.get_all("Company", pluck="name", limit_page_length=0)
+	for company in companies:
+		income_root = _get_first_active_root("Income", company)
 
-        accounts = [
-            {
-                "account_name": "Event Revenue",
-                "account_type": "Income Account",
-                "root_type": "Income",
-                "parent_account": income_root,
-            },
-            {
-                "account_name": "Event COGS",
-                "account_type": "Expense Account",
-                "root_type": "Expense",
-                "parent_account": expense_root,
-            },
-            {
-                "account_name": "Event Damages Expenses",
-                "account_type": "Expense Account",
-                "root_type": "Expense",
-                "parent_account": expense_root,
-            },
-        ]
+		expense_root = _get_first_active_root("Expense", company)
+		if not income_root or not expense_root:
+			frappe.log_error(f"Could not find Income/Expense roots for {company}", "Event Bookings Install")
+			continue
 
-        for acc in accounts:
-            abbr = cstr(frappe.db.get_value("Company", company, "abbr"))
-            account_name = f"{acc['account_name']} - {abbr}"
-            try:
-                if not frappe.db.exists("Account", account_name):
-                    frappe.get_doc(
-                        {
-                            "doctype": "Account",
-                            "account_name": acc["account_name"],
-                            "company": company,
-                            "parent_account": acc["parent_account"],
-                            "root_type": acc["root_type"],
-                            "account_type": acc["account_type"],
-                            "is_group": 0,
-                        }
-                    ).insert(ignore_permissions=True)
-            except Exception:
-                frappe.log_error(
-                    title=f"Failed to create account {acc['account_name']} for {company}"
-                )
+		accounts = [
+			{
+				"account_name": "Event Revenue",
+				"account_type": "Income Account",
+				"root_type": "Income",
+				"parent_account": income_root,
+			},
+			{
+				"account_name": "Event COGS",
+				"account_type": "Expense Account",
+				"root_type": "Expense",
+				"parent_account": expense_root,
+			},
+			{
+				"account_name": "Event Damages Expenses",
+				"account_type": "Expense Account",
+				"root_type": "Expense",
+				"parent_account": expense_root,
+			},
+		]
 
-    frappe.db.commit()
+		for acc in accounts:
+			account_name = f"{acc['account_name']} - {cstr(frappe.db.get_value('Company', company, 'abbr'))}"
+			try:
+				if not frappe.db.exists("Account", account_name):
+					frappe.get_doc(
+						{
+							"doctype": "Account",
+							"account_name": acc["account_name"],
+							"company": company,
+							"parent_account": acc["parent_account"],
+							"root_type": acc["root_type"],
+							"account_type": acc["account_type"],
+							"is_group": 0,
+						}
+					).insert(ignore_permissions=True)
+			except (frappe.DuplicateEntryError, frappe.ValidationError):
+				frappe.log_error(title=f"Failed to create account {acc['account_name']} for {company}")
+
+	frappe.db.commit()
 
 
 def _get_first_active_root(root_type, company):
-    return frappe.db.get_value(
-        "Account",
-        {"root_type": root_type, "company": company, "is_group": 1, "disabled": 0},
-        "name",
-        order_by="lft asc",
-    )
+	"""Return the first group active account under the given root type."""
+	return frappe.db.get_value(
+		"Account",
+		{"root_type": root_type, "company": company, "is_group": 1, "disabled": 0},
+		"name",
+		order_by="lft asc",
+	)
+
+
+def create_email_templates():
+	"""Create default Email Templates for Event Bookings."""
+	templates = [
+		{
+			"name": "Event Quotation",
+			"subject": "Quotation for {{ doc.event_name or 'your event' }}",
+			"response": """<p>Dear {{ doc.customer_name or 'Customer' }},</p>
+<p>Please find attached our quotation for <strong>{{ doc.event_name or 'your event' }}</strong> scheduled for {{ doc.get_formatted('event_timing') or 'TBD' }}.</p>
+<p>We look forward to your confirmation.</p>
+<p>Best regards,<br>Events Team</p>""",
+			"ref_doctype": "Quotation",
+		},
+		{
+			"name": "Booking Confirmation",
+			"subject": "Booking Confirmation - {{ doc.name }}",
+			"response": """<p>Dear {{ doc.customer_name or 'Customer' }},</p>
+<p>Your event booking <strong>{{ doc.name }}</strong> for <strong>{{ doc.event_name }}</strong> on {{ doc.get_formatted('event_timing') }} has been confirmed.</p>
+<p>Location: {{ doc.event_location or 'TBD' }}</p>
+<p>We look forward to making your event memorable!</p>
+<p>Best regards,<br>Events Team</p>""",
+			"ref_doctype": "Event Booking",
+		},
+	]
+
+	for t in templates:
+		if not frappe.db.exists("Email Template", t["name"]):
+			try:
+				frappe.get_doc(
+					{
+						"doctype": "Email Template",
+						"name": t["name"],
+						"subject": t["subject"],
+						"response": t["response"],
+						"ref_doctype": t["ref_doctype"],
+						"owner": "Administrator",
+					}
+				).insert(ignore_permissions=True)
+			except (frappe.DuplicateEntryError, frappe.ValidationError):
+				frappe.log_error(title=f"Failed to create Email Template {t['name']}")
+
+	frappe.db.commit()

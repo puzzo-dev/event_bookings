@@ -1,149 +1,91 @@
 import frappe
 
-from event_bookings.event_bookings.doctype.event_booking.event_booking import _sql_items_total
 
+def _update_linked_event_booking(doc, callback=None, **field_updates):
+	"""Fetch the linked Event Booking and apply field updates.
 
-def _update_linked_event_booking(doc, recalculate_totals=False, **field_updates):
-    """
-    Apply targeted DB updates to the linked Event Booking without triggering
-    the full controller save chain.
+	Fields are always persisted via frappe.db.set_value first so that the
+	link is recorded even if a subsequent full save() is blocked by validation
+	(e.g. a stale status-transition check on the draft booking).
 
-    Using eb.save() here would cause:
-    - Re-running status transition validation (unnecessary for link syncs)
-    - Google Calendar API call on every Quotation/SO/SI submit
-    - A circular doc-fetch: validate() → calculate_totals() → frappe.get_doc(Quotation)
-      on the same document that triggered this hook
+	For draft bookings (docstatus=0) a full save() is also attempted so that
+	calculate_totals(), version history, and any callback logic fire.  If that
+	save fails, the field update is already committed — no data loss.
 
-    Instead we use frappe.db.set_value for atomic field updates and call
-    _sql_items_total() directly for revenue recalculation — no Document objects loaded.
+	For submitted bookings (docstatus=1) only set_value is used (save() is
+	not allowed on submitted documents without ignore_permissions).
+	"""
+	if not getattr(doc, "event_booking", None):
+		return
 
-    Errors are logged and surfaced via msgprint so that failures in Event Booking
-    back-linking do not block the ERPNext document from being processed.
-    """
-    if not doc.event_booking:
-        return
-    try:
-        updates = dict(field_updates)
+	eb_name = doc.event_booking
 
-        if recalculate_totals:
-            # Read current link fields from DB (merging any just-updated values)
-            eb_links = frappe.db.get_value(
-                "Event Booking",
-                doc.event_booking,
-                ["quotation", "sales_order", "sales_invoice"],
-                as_dict=True,
-            )
-            # Prefer values from field_updates (just set) over what is in DB
-            quotation     = updates.get("quotation",     eb_links.quotation)
-            sales_order   = updates.get("sales_order",   eb_links.sales_order)
-            sales_invoice = updates.get("sales_invoice", eb_links.sales_invoice)
+	# Step 1 — always persist the field changes immediately.
+	try:
+		for field, value in field_updates.items():
+			frappe.db.set_value("Event Booking", eb_name, field, value, update_modified=False)
+	except frappe.DatabaseError:
+		frappe.log_error(
+			title=f"Failed to update Event Booking {eb_name} fields "
+			      f"on {doc.doctype} {doc.name}"
+		)
+		return
 
-            total_estimated = _sql_items_total("Quotation", quotation)
-            total_actual    = _sql_items_total("Sales Order", sales_order)
-            if not total_actual and sales_invoice:
-                total_actual = _sql_items_total("Sales Invoice", sales_invoice)
+	# Step 2 — for draft bookings, also run a full save so that
+	# calculate_totals, version tracking, and any callback logic fire.
+	eb = frappe.get_doc("Event Booking", eb_name)
+	if eb.docstatus != 0:
+		return
 
-            updates["total_estimated"] = total_estimated
-            updates["total_actual"]    = total_actual
+	if callback:
+		callback(eb)
 
-        if updates:
-            frappe.db.set_value("Event Booking", doc.event_booking, updates)
+	try:
+		eb.save()
+	except frappe.ValidationError:
+		frappe.log_error(
+			title=f"Could not recalculate totals on Event Booking {eb_name} "
+			      f"after {doc.doctype} {doc.name} — field update is already persisted"
+		)
 
-    except Exception:
-        frappe.log_error(
-            title=f"Event Booking link failed on {doc.doctype} {doc.name}",
-            message=frappe.get_traceback(),
-        )
-        frappe.msgprint(
-            f"Could not update Event Booking {doc.event_booking}. Check the Error Log.",
-            indicator="orange",
-            alert=True,
-        )
-
-
-# ---------------------------------------------------------------------------
-# Quotation hooks
-# ---------------------------------------------------------------------------
 
 def on_quotation_submit(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, quotation=doc.name)
+	_update_linked_event_booking(doc, quotation=doc.name)
 
 
-def on_quotation_update(doc, method):
-    if doc.docstatus == 1:
-        _update_linked_event_booking(doc, recalculate_totals=True)
+def on_sales_order_submit(doc, method):
+	_update_linked_event_booking(doc, sales_order=doc.name)
+
+
+def on_sales_invoice_submit(doc, method):
+	_update_linked_event_booking(doc, sales_invoice=doc.name)
+
+
+def on_stock_entry_submit(doc, method):
+	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
+		_update_linked_event_booking(doc, stock_entry=doc.name)
+
+
+def on_stock_entry_cancel(doc, method):
+	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
+		_update_linked_event_booking(doc, stock_entry=None)
 
 
 def on_quotation_cancel(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, quotation=None)
-
-
-# ---------------------------------------------------------------------------
-# Sales Order hooks
-# ---------------------------------------------------------------------------
-
-def on_sales_order_submit(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, sales_order=doc.name)
-
-
-def on_sales_order_update(doc, method):
-    if doc.docstatus == 1:
-        _update_linked_event_booking(doc, recalculate_totals=True)
+	_update_linked_event_booking(doc, quotation=None)
 
 
 def on_sales_order_cancel(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, sales_order=None)
-
-
-# ---------------------------------------------------------------------------
-# Sales Invoice hooks
-# ---------------------------------------------------------------------------
-
-def on_sales_invoice_submit(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, sales_invoice=doc.name)
-
-
-def on_sales_invoice_update(doc, method):
-    if doc.docstatus == 1:
-        _update_linked_event_booking(doc, recalculate_totals=True)
+	_update_linked_event_booking(doc, sales_order=None)
 
 
 def on_sales_invoice_cancel(doc, method):
-    _update_linked_event_booking(doc, recalculate_totals=True, sales_invoice=None)
+	_update_linked_event_booking(doc, sales_invoice=None)
 
 
-# ---------------------------------------------------------------------------
-# Shift Assignment hooks
-# ---------------------------------------------------------------------------
+def on_material_request_submit(doc, method):
+	_update_linked_event_booking(doc, material_request=doc.name)
 
-def on_shift_assignment_update(doc, method):
-    """
-    Sync qty_assigned counts on Event Staff Requirement rows after a
-    Shift Assignment changes state.
 
-    Single UPDATE JOIN replaces the previous N+1 pattern (frappe.db.set_value
-    per child row).  Uses a derived-table subquery so all rows are updated in
-    one round-trip without loading the Event Booking document at all.
-    """
-    if not doc.event_booking:
-        return
-    try:
-        frappe.db.sql(
-            """
-            UPDATE `tabEvent Staff Requirement` esr
-            LEFT JOIN (
-                SELECT LOWER(TRIM(designation)) AS desig, COUNT(*) AS cnt
-                FROM `tabShift Assignment`
-                WHERE event_booking = %(booking)s AND docstatus < 2
-                GROUP BY LOWER(TRIM(designation))
-            ) counts ON counts.desig = LOWER(TRIM(esr.designation))
-            SET esr.qty_assigned = COALESCE(counts.cnt, 0)
-            WHERE esr.parent = %(booking)s
-            """,
-            {"booking": doc.event_booking},
-        )
-    except Exception:
-        frappe.log_error(
-            title=f"Staff count sync failed for Event Booking {doc.event_booking}",
-            message=frappe.get_traceback(),
-        )
+def on_material_request_cancel(doc, method):
+	_update_linked_event_booking(doc, material_request=None)

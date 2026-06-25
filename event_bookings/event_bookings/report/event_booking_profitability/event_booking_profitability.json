@@ -10,10 +10,16 @@
    "width": 180
   },
   {
+   "fieldname": "party_type",
+   "fieldtype": "Data",
+   "label": "Party Type",
+   "width": 100
+  },
+  {
    "fieldname": "party_name",
    "fieldtype": "Data",
    "label": "Party",
-   "width": 150
+   "width": 160
   },
   {
    "fieldname": "event_date",
@@ -84,9 +90,25 @@
    "wildcard_filter": 0
   },
   {
+   "fieldname": "party_type",
+   "fieldtype": "Select",
+   "label": "Party Type",
+   "options": "\nCustomer\nLead",
+   "mandatory": 0,
+   "wildcard_filter": 0
+  },
+  {
    "fieldname": "party_name",
    "fieldtype": "Data",
-   "label": "Party Name",
+   "label": "Party",
+   "mandatory": 0,
+   "wildcard_filter": 0
+  },
+  {
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "label": "Company",
+   "options": "Company",
    "mandatory": 0,
    "wildcard_filter": 0
   },
@@ -110,7 +132,7 @@
  "idx": 0,
  "is_standard": "Yes",
  "letter_head": null,
- "modified": "2026-06-24 00:00:00.000000",
+ "modified": "2026-06-14 08:16:24.607817",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Booking Profitability",

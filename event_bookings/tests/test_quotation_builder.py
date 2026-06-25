@@ -26,16 +26,16 @@ class TestQuotationBuilder(FrappeTestCase):
 				"party_type": self.test_party_type,
 				"party_name": self.test_party_name,
 				"event_type": self.test_event_type,
-				"event_date": frappe.utils.add_days(frappe.utils.today(), 7),
-				"event_time": "18:00:00",
+				"event_timing": frappe.utils.add_days(frappe.utils.today(), 7) + " 18:00:00",
 				"event_location": "Test Venue",
 				"booking_status": "New",
+				"booking_date": frappe.utils.now(),
 			}
 		)
 		doc.insert(ignore_permissions=True)
 
-		# Trigger Quoted status to create blank quotation
-		doc.booking_status = "Quoted"
+		# Manually create quotation via action button equivalent
+		doc.create_quotation()
 		doc.save(ignore_permissions=True)
 
 		self.assertTrue(doc.quotation)
