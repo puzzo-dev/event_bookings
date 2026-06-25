@@ -7,6 +7,12 @@ from frappe.model.document import Document
 from frappe.utils import sanitize_html, validate_email_address
 
 
+_MAX_REVIEW_TEXT = 5000
+_ALLOWED_STATUSES = {"Executed", "Invoiced", "Paid"}
+_RATE_LIMIT_WINDOW = 3600  # 1 hour
+_MAX_REVIEWS_PER_WINDOW = 3
+
+
 class BookingReview(Document):
 	def validate(self):
 		"""Enforce data constraints at the controller level regardless of entry path."""
@@ -28,20 +34,19 @@ class BookingReview(Document):
 			frappe.throw(_("Invalid Review Status '{0}'.").format(self.review_status))
 
 
-_MAX_REVIEW_TEXT = 5000
-_ALLOWED_STATUSES = {"Executed", "Invoiced", "Paid"}
-
-
-_RATE_LIMIT_WINDOW = 3600  # 1 hour
-_MAX_REVIEWS_PER_WINDOW = 3
-
-
 @frappe.whitelist(allow_guest=False)
 def submit_review(event_booking, rating=None, review_text=None):
-	"""Submit a review for an event. Reviewer is derived from the linked Customer.
+	"""Submit a review for a completed event booking.
 
-	Rate-limited: max 3 reviews per customer per hour.
-	Requires authentication (called from external frontend with customer context).
+	Allowed callers:
+	- Administrator / system API user (public form submits with owner credentials in bg)
+	- Event Manager (desk submission on behalf of the customer)
+	- A Frappe user linked to the booking's Customer via Contact.user or Customer.user
+
+	Reviewer identity is always derived from the Event Booking's linked Customer so
+	that reviews are correctly attributed regardless of who submits them.
+
+	Rate-limited: max {_MAX_REVIEWS_PER_WINDOW} submissions per customer+event per hour.
 	"""
 	if not event_booking:
 		frappe.throw(_("Event Booking is required."))
@@ -49,7 +54,7 @@ def submit_review(event_booking, rating=None, review_text=None):
 	if not frappe.db.exists("Event Booking", event_booking):
 		frappe.throw(_("Event Booking not found."))
 
-	# --- state guard: only review completed events --------------------------------
+	# Only review completed events
 	booking_status = frappe.db.get_value("Event Booking", event_booking, "booking_status")
 	if booking_status not in _ALLOWED_STATUSES:
 		frappe.throw(
@@ -59,17 +64,28 @@ def submit_review(event_booking, rating=None, review_text=None):
 			).format(booking_status)
 		)
 
-	# --- derive reviewer from Customer --------------------------------------------
-	customer = frappe.db.get_value("Event Booking", event_booking, "customer")
+	# Derive reviewer from Customer — Event Booking uses party_type / party_name
+	party_type, party_name = frappe.db.get_value(
+		"Event Booking", event_booking, ["party_type", "party_name"]
+	)
+	if party_type != "Customer":
+		frappe.throw(
+			_(
+				"Reviews can only be submitted for bookings with a Customer party type. "
+				"Current party type: '{0}'."
+			).format(party_type)
+		)
+	customer = party_name
 	if not customer:
 		frappe.throw(_("No customer linked to this Event Booking."))
 
-	# --- authorization: verify caller is linked to this customer ----------------
-	if not _caller_linked_to_customer(customer):
+	# Authorization: determine caller type and submitted_via in one pass
+	submitted_via = _get_submitted_via(customer)
+	if submitted_via is None:
 		frappe.throw(
 			_(
 				"You are not authorized to submit a review for this event. "
-				"Only contacts linked to the customer can submit reviews."
+				"Only the customer, an Event Manager, or the system API can submit reviews."
 			),
 			frappe.PermissionError,
 		)
@@ -78,20 +94,20 @@ def submit_review(event_booking, rating=None, review_text=None):
 	if not reviewer_email:
 		frappe.throw(_("No email found for customer {0}. Please add a contact.").format(customer))
 
-	# --- rate limiting per customer+event -----------------------------------------
+	# Rate limiting per customer+event
 	_cache_key = f"event_booking_review_limit:{customer}:{event_booking}"
 	_count = frappe.cache().get(_cache_key) or 0
 	if int(_count) >= _MAX_REVIEWS_PER_WINDOW:
 		frappe.throw(_("Rate limit exceeded. Please try again later."))
 	frappe.cache().set(_cache_key, int(_count) + 1, expires_in_sec=_RATE_LIMIT_WINDOW)
 
-	# --- email validation ---------------------------------------------------------
+	# Email validation
 	try:
 		validate_email_address(reviewer_email, throw=True)
 	except frappe.exceptions.ValidationError:
 		frappe.throw(_("Invalid reviewer email address."))
 
-	# --- rating validation --------------------------------------------------------
+	# Rating validation
 	try:
 		rating_int = int(rating) if rating is not None else 3
 	except (ValueError, TypeError):
@@ -99,12 +115,12 @@ def submit_review(event_booking, rating=None, review_text=None):
 	if not (1 <= rating_int <= 5):
 		frappe.throw(_("Rating must be between 1 and 5."))
 
-	# --- review text sanitization & length validation ---------------------------
+	# Review text sanitization and length validation
 	review_text = sanitize_html(review_text or "").strip()
 	if len(review_text) > _MAX_REVIEW_TEXT:
 		frappe.throw(_("Review text must not exceed {0} characters.").format(_MAX_REVIEW_TEXT))
 
-	# --- duplicate prevention (same customer + event, 24h window) ----------------
+	# Duplicate prevention (same customer + event, 24h window)
 	last_review = frappe.db.get_value(
 		"Booking Review",
 		{"event_booking": event_booking, "reviewer_email": reviewer_email},
@@ -112,7 +128,7 @@ def submit_review(event_booking, rating=None, review_text=None):
 		order_by="creation desc",
 	)
 	if last_review and frappe.utils.time_diff_in_hours(frappe.utils.now(), last_review) < 24:
-		frappe.throw(_("You have already submitted a review for this event within the last 24 hours."))
+		frappe.throw(_("A review for this event was already submitted within the last 24 hours."))
 
 	review = frappe.get_doc({
 		"doctype": "Booking Review",
@@ -123,17 +139,55 @@ def submit_review(event_booking, rating=None, review_text=None):
 		"review_text": review_text,
 		"is_published": 0,
 		"review_status": "Submitted",
-		"submitted_via": "Direct",  # customer submitted via authenticated session
+		"submitted_via": submitted_via,
 	})
-	review.insert()
+	review.insert(ignore_permissions=True)
 	return {"message": "Review submitted successfully.", "name": review.name}
 
 
-def _get_primary_contact_for_customer(customer):
-	"""Return the name of the primary Contact for a Customer, joining Contact for is_primary_contact ordering.
+def _get_submitted_via(customer):
+	"""Return the submitted_via label for the current caller, or None if not authorised.
 
-	`is_primary_contact` lives on `tabContact`, not `tabDynamic Link`, so a JOIN is required.
+	Priority:
+	1. Administrator / system API user → "Public Link"
+	   (public form authenticates with owner API credentials in the background)
+	2. Event Manager role → "Event Manager"
+	   (desk submission; manager knows the customer from the booking context)
+	3. Frappe user linked to the customer → "Direct"
+	   (customer self-service via portal or direct API call)
 	"""
+	user = frappe.session.user
+
+	if user == frappe.conf.get("admin_user", "Administrator") or user == "Administrator":
+		return "Public Link"
+
+	roles = frappe.get_roles(user)
+	if "Event Manager" in roles:
+		return "Event Manager"
+
+	if _user_linked_to_customer(user, customer):
+		return "Direct"
+
+	return None
+
+
+def _user_linked_to_customer(user, customer):
+	"""Return True if user is linked to the given Customer via Contact or Customer record."""
+	contact = _get_primary_contact_for_customer(customer)
+	if contact:
+		contact_user = frappe.db.get_value("Contact", contact, "user")
+		if contact_user == user:
+			return True
+
+	customer_user = frappe.db.get_value("Customer", customer, "user")
+	if customer_user == user:
+		return True
+
+	return False
+
+
+def _get_primary_contact_for_customer(customer):
+	"""Return the name of the primary Contact for a Customer."""
 	result = frappe.db.sql(
 		"""
 		SELECT dl.parent
@@ -155,47 +209,15 @@ def _get_customer_contact_info(customer):
 	name = None
 	email = None
 
-	# Try primary contact (single query via JOIN to respect is_primary_contact ordering)
 	contact = _get_primary_contact_for_customer(customer)
 	if contact:
 		contact_info = frappe.db.get_value("Contact", contact, ["first_name", "email_id"], as_dict=True) or {}
 		name = contact_info.get("first_name")
 		email = contact_info.get("email_id")
 
-	# Fallback: customer email_id
 	if not email:
 		email = frappe.db.get_value("Customer", customer, "email_id")
 	if not name:
 		name = frappe.db.get_value("Customer", customer, "customer_name")
 
 	return name, email
-
-
-def _caller_linked_to_customer(customer):
-	"""Return True if the current user is linked to the given customer."""
-	# Allow system administrator (standard Frappe root user)
-	if frappe.session.user == frappe.conf.get("admin_user", "Administrator"):
-		return True
-
-	# Check if user is linked via Contact > Dynamic Link
-	contact = _get_primary_contact_for_customer(customer)
-	if contact:
-		contact_user = frappe.db.get_value("Contact", contact, "user")
-		if contact_user == frappe.session.user:
-			return True
-
-	# Check if user is linked via Customer.user (if exists)
-	customer_user = frappe.db.get_value("Customer", customer, "user")
-	if customer_user == frappe.session.user:
-		return True
-
-	# Staff override — any user with explicit write permission on Booking Review
-	# (e.g., Event Manager) is allowed to submit on behalf of a customer.
-	# This is intentional: internal staff must be able to enter reviews
-	# collected offline (phone, paper feedback form).
-	# If this override should be restricted further, replace with a dedicated
-	# "Booking Review Staff" role check instead of the broad has_permission.
-	if frappe.has_permission("Booking Review", "write"):
-		return True
-
-	return False
