@@ -161,7 +161,7 @@
   },
   {
    "fieldname": "event_location",
-   "fieldtype": "Small Text",
+   "fieldtype": "Data",
    "label": "Event Location",
    "reqd": 1
   },
