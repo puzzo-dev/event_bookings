@@ -1,96 +1,106 @@
 import frappe
 from frappe import _
+from frappe.utils import getdate, today
 
 
 def execute(filters=None):
     if not filters:
         filters = {}
-
     columns = get_columns()
     data = get_data(filters)
     return columns, data
 
 
+def _erpnext_installed():
+    return "erpnext" in frappe.get_installed_apps()
+
+
 def get_columns():
-    return [
+    cols = [
         {"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
-        {"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 150},
+        {"fieldname": "party_name", "label": _("Party"), "fieldtype": "Data", "width": 150},
         {"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
-        {"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
+        {"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 120},
         {"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
         {"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
-        {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
-        {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
         {"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
-        {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
-        {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
+        {"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
     ]
+    if _erpnext_installed():
+        cols += [
+            {"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
+            {"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
+            {"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
+            {"fieldname": "sales_invoice", "label": _("Invoice"), "fieldtype": "Link", "options": "Sales Invoice", "width": 130},
+        ]
+    return cols
 
 
 def get_data(filters):
     conditions = {}
     if filters.get("from_date"):
-        conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+        conditions["event_date"] = [">=", filters["from_date"]]
     if filters.get("to_date"):
-        conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
-    if filters.get("customer"):
-        conditions["customer"] = filters["customer"]
+        conditions["event_date"] = ["<=", filters["to_date"]]
+    if filters.get("party_name"):
+        conditions["party_name"] = filters["party_name"]
     if filters.get("event_type"):
         conditions["event_type"] = filters["event_type"]
     if filters.get("booking_status"):
         conditions["booking_status"] = filters["booking_status"]
 
-    bookings = frappe.get_all(
+    fields = [
+        "name as event_name",
+        "party_name",
+        "event_type",
+        "event_date",
+        "booking_status",
+    ]
+    if _erpnext_installed():
+        fields += ["total_estimated", "total_actual", "quotation", "sales_invoice"]
+
+    bookings = frappe.get_list(
         "Event Booking",
         filters=conditions,
-        fields=[
-            "name as event_name",
-            "customer",
-            "event_type",
-            "event_timing",
-            "booking_status",
-            "total_estimated",
-            "total_actual",
-            "quotation",
-            "sales_invoice",
-        ],
-        order_by="event_timing asc",
-        limit_page_length=0,
+        fields=fields,
+        order_by="event_date asc",
     )
 
-    today = frappe.utils.today()
+    today_date = getdate(today())
     data = []
     for eb in bookings:
-        days_until = (frappe.utils.getdate(eb.event_timing) - frappe.utils.getdate(today)).days if eb.event_timing else 0
-        staff_required = _get_staff_counts(eb.event_name)
+        days_until = (getdate(eb.event_date) - today_date).days if eb.event_date else 0
+        staff_required, staff_assigned = _get_staff_counts(eb.event_name)
 
-        data.append({
+        row = {
             "event_name": eb.event_name,
-            "customer": eb.customer,
+            "party_name": eb.party_name,
             "event_type": eb.event_type,
-            "event_timing": eb.event_timing,
+            "event_date": eb.event_date,
             "booking_status": eb.booking_status,
             "days_until_event": days_until,
-            "total_estimated": eb.total_estimated or 0,
-            "total_actual": eb.total_actual or 0,
             "staff_required": staff_required,
-            "quotation": eb.quotation,
-            "sales_invoice": eb.sales_invoice,
-        })
+            "staff_assigned": staff_assigned,
+        }
+        if _erpnext_installed():
+            row["total_estimated"] = eb.get("total_estimated") or 0
+            row["total_actual"] = eb.get("total_actual") or 0
+            row["quotation"] = eb.get("quotation")
+            row["sales_invoice"] = eb.get("sales_invoice")
+        data.append(row)
 
     return data
 
 
 def _get_staff_counts(event_name):
-    """Return total qty_required for an event from staff requirements."""
     rows = frappe.db.sql(
         """
-        SELECT SUM(qty_required)
+        SELECT SUM(qty_required), SUM(qty_assigned)
         FROM `tabEvent Staff Requirement`
         WHERE parent = %s
         """,
         event_name,
     )
     if rows and rows[0]:
-        return rows[0][0] or 0
-    return 0
+        return rows[0][0] or 0, rows[0][1] or 0
+    return 0, 0

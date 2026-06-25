@@ -1,67 +1,53 @@
 {
  "actions": [],
+ "allow_rename": 1,
  "autoname": "EVT-.YYYY.-.####",
  "creation": "2026-06-12 22:47:36.158952",
  "doctype": "DocType",
  "editable_grid": 1,
  "engine": "InnoDB",
  "field_order": [
-  "tab_details",
   "sec_core",
   "event_name",
   "booking_status",
   "booking_date",
-  "booking_time",
   "party_type",
   "party_name",
-  "contact_person",
   "col_type",
-  "company",
   "event_type",
   "event_planner",
-  "event_planner_commission_amount",
-  "event_cost_center",
+  "company",
+  "cost_center",
   "project",
   "sec_logistics",
   "event_date",
   "event_time",
-  "event_end_date",
   "event_end_time",
-  "col_loc",
   "guest_count",
+  "col_loc",
   "event_location",
-  "events_warehouse",
-  "sec_special_req",
   "special_requirements",
-  "col_est_actual",
+  "sec_services",
+  "items_html",
   "total_estimated",
   "total_actual",
-  "sec_linked_docs",
+  "col_fin",
   "quotation",
   "sales_order",
   "sales_invoice",
   "material_request",
-  "stock_entry",
   "sec_staffing",
   "staff_requirements",
+  "assigned_staff",
   "sec_google_calendar",
   "sync_with_google_calendar",
   "google_calendar",
   "col_google_calendar",
   "google_calendar_id",
   "google_calendar_event_id",
-  "pulled_from_google_calendar",
-  "tab_connections",
-  "customer",
-  "event_timing",
-  "event_end_datetime"
+  "pulled_from_google_calendar"
  ],
  "fields": [
-  {
-   "fieldname": "tab_details",
-   "fieldtype": "Tab Break",
-   "label": "Details"
-  },
   {
    "fieldname": "sec_core",
    "fieldtype": "Section Break",
@@ -79,54 +65,28 @@
    "fieldname": "booking_status",
    "fieldtype": "Select",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Booking Status",
    "options": "New\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
    "reqd": 1,
    "search_index": 1
   },
   {
-   "default": "Today",
-   "fieldname": "booking_date",
-   "fieldtype": "Date",
-   "in_list_view": 1,
-   "label": "Booking Date",
-   "reqd": 1
-  },
-  {
-   "fieldname": "booking_time",
-   "fieldtype": "Time",
-   "label": "Booking Time"
-  },
-  {
+   "default": "Individual",
    "fieldname": "party_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Party Type",
-   "options": "Customer\nLead",
+   "options": "Individual\nOrganization\nCustomer\nLead",
    "reqd": 1
   },
   {
    "fieldname": "party_name",
-   "fieldtype": "Dynamic Link",
+   "fieldtype": "Data",
    "in_list_view": 1,
    "label": "Party Name",
-   "options": "party_type",
    "reqd": 1,
    "search_index": 1
-  },
-  {
-   "fieldname": "customer",
-   "fieldtype": "Link",
-   "hidden": 1,
-   "label": "Customer",
-   "options": "Customer",
-   "read_only": 1
-  },
-  {
-   "fieldname": "contact_person",
-   "fieldtype": "Link",
-   "label": "Contact Person",
-   "options": "Contact"
   },
   {
    "fieldname": "col_type",
@@ -146,13 +106,15 @@
    "options": "Sales Partner"
   },
   {
-   "fieldname": "event_planner_commission_amount",
-   "fieldtype": "Currency",
-   "label": "Planner Commission Amount",
-   "read_only": 1
+   "fieldname": "company",
+   "fieldtype": "Link",
+   "in_standard_filter": 1,
+   "label": "Company",
+   "options": "Company",
+   "search_index": 1
   },
   {
-   "fieldname": "event_cost_center",
+   "fieldname": "cost_center",
    "fieldtype": "Link",
    "label": "Cost Center",
    "options": "Cost Center"
@@ -169,18 +131,13 @@
    "label": "Logistics & Schedule"
   },
   {
-   "fieldname": "event_timing",
-   "fieldtype": "Datetime",
-   "hidden": 1,
-   "label": "Event Timing",
-   "search_index": 1
-  },
-  {
    "fieldname": "event_date",
    "fieldtype": "Date",
    "in_list_view": 1,
+   "in_standard_filter": 1,
    "label": "Event Date",
-   "reqd": 1
+   "reqd": 1,
+   "search_index": 1
   },
   {
    "fieldname": "event_time",
@@ -189,24 +146,9 @@
    "reqd": 1
   },
   {
-   "fieldname": "event_end_datetime",
-   "fieldtype": "Datetime",
-   "hidden": 1,
-   "label": "Event End Datetime"
-  },
-  {
-   "fieldname": "event_end_date",
-   "fieldtype": "Date",
-   "label": "Event End Date"
-  },
-  {
    "fieldname": "event_end_time",
    "fieldtype": "Time",
    "label": "Event End Time"
-  },
-  {
-   "fieldname": "col_loc",
-   "fieldtype": "Column Break"
   },
   {
    "fieldname": "guest_count",
@@ -214,21 +156,14 @@
    "label": "Guest Count"
   },
   {
+   "fieldname": "col_loc",
+   "fieldtype": "Column Break"
+  },
+  {
    "fieldname": "event_location",
-   "fieldtype": "Data",
+   "fieldtype": "Small Text",
    "label": "Event Location",
    "reqd": 1
-  },
-  {
-   "fieldname": "events_warehouse",
-   "fieldtype": "Link",
-   "label": "Events Warehouse",
-   "options": "Warehouse"
-  },
-  {
-   "fieldname": "sec_special_req",
-   "fieldtype": "Section Break",
-   "label": "Special Requirements & Financials"
   },
   {
    "fieldname": "special_requirements",
@@ -236,27 +171,30 @@
    "label": "Special Requirements"
   },
   {
-   "fieldname": "col_est_actual",
-   "fieldtype": "Column Break"
+   "fieldname": "sec_services",
+   "fieldtype": "Section Break",
+   "label": "Services & Financials"
   },
   {
-   "default": "0",
+   "fieldname": "items_html",
+   "fieldtype": "HTML",
+   "label": "Items"
+  },
+  {
    "fieldname": "total_estimated",
    "fieldtype": "Currency",
    "label": "Total Estimated",
    "read_only": 1
   },
   {
-   "default": "0",
    "fieldname": "total_actual",
    "fieldtype": "Currency",
    "label": "Total Actual",
    "read_only": 1
   },
   {
-   "fieldname": "sec_linked_docs",
-   "fieldtype": "Section Break",
-   "label": "Linked Documents"
+   "fieldname": "col_fin",
+   "fieldtype": "Column Break"
   },
   {
    "fieldname": "quotation",
@@ -277,20 +215,14 @@
    "fieldtype": "Link",
    "label": "Sales Invoice",
    "options": "Sales Invoice",
-   "read_only": 1
+   "read_only": 1,
+   "search_index": 1
   },
   {
    "fieldname": "material_request",
    "fieldtype": "Link",
    "label": "Material Request",
    "options": "Material Request",
-   "read_only": 1
-  },
-  {
-   "fieldname": "stock_entry",
-   "fieldtype": "Link",
-   "label": "Stock Entry",
-   "options": "Stock Entry",
    "read_only": 1
   },
   {
@@ -305,6 +237,12 @@
    "options": "Event Staff Requirement"
   },
   {
+   "fieldname": "assigned_staff",
+   "fieldtype": "Table",
+   "label": "Assigned Staff",
+   "options": "Event Assigned Staff"
+  },
+  {
    "collapsible": 1,
    "fieldname": "sec_google_calendar",
    "fieldtype": "Section Break",
@@ -317,7 +255,6 @@
    "label": "Sync with Google Calendar"
   },
   {
-   "depends_on": "sync_with_google_calendar",
    "fieldname": "google_calendar",
    "fieldtype": "Link",
    "label": "Google Calendar",
@@ -328,7 +265,6 @@
    "fieldtype": "Column Break"
   },
   {
-   "depends_on": "sync_with_google_calendar",
    "fieldname": "google_calendar_id",
    "fieldtype": "Data",
    "label": "Google Calendar ID",
@@ -346,76 +282,22 @@
    "fieldname": "pulled_from_google_calendar",
    "fieldtype": "Check",
    "hidden": 1,
-   "label": "Pulled From Google Calendar",
+   "label": "Pulled from Google Calendar",
    "read_only": 1
   },
   {
-   "fieldname": "tab_connections",
-   "fieldtype": "Tab Break",
-   "label": "Connections",
-   "show_dashboard": 1
-  },
-  {
-   "default": "frappe.defaults.get_user_default(\"Company\")",
-   "fieldname": "company",
-   "fieldtype": "Link",
-   "label": "Company",
-   "options": "Company",
-   "reqd": 1,
-   "search_index": 1
+   "default": "Today",
+   "fieldname": "booking_date",
+   "fieldtype": "Date",
+   "in_list_view": 1,
+   "label": "Booking Date",
+   "reqd": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "is_submittable": 1,
- "links": [
-  {
-   "group": "Sales",
-   "link_doctype": "Quotation",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Sales",
-   "link_doctype": "Sales Order",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Sales",
-   "link_doctype": "Sales Invoice",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Purchase",
-   "link_doctype": "Material Request",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Purchase",
-   "link_doctype": "Stock Entry",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Purchase",
-   "link_doctype": "Purchase Invoice",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Finance",
-   "link_doctype": "Journal Entry",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Finance",
-   "link_doctype": "Expense Claim",
-   "link_fieldname": "event_booking"
-  },
-  {
-   "group": "Reviews",
-   "link_doctype": "Booking Review",
-   "link_fieldname": "event_booking"
-  }
- ],
- "modified": "2026-06-24 00:00:00.000000",
+ "links": [],
+ "modified": "2026-06-13 15:46:18.824620",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Booking",
@@ -423,8 +305,6 @@
  "owner": "Administrator",
  "permissions": [
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "email": 1,
    "export": 1,
@@ -433,12 +313,11 @@
    "report": 1,
    "role": "Event Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   },
   {
    "read": 1,
-   "role": "Event User"
+   "role": "Event Assistant"
   },
   {
    "create": 1,
@@ -473,8 +352,6 @@
    "write": 1
   },
   {
-   "amend": 1,
-   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -484,7 +361,6 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
-   "submit": 1,
    "write": 1
   }
  ],

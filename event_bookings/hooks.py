@@ -1,18 +1,16 @@
 app_name = "event_bookings"
 app_title = "Event Bookings"
-app_publisher = "Avril Beetails"
+app_publisher = "I-Varse Technologies NG"
 app_description = "Event Management"
-app_email = "admin@avrilbeetails.com"
+app_email = "dev@itechnologies.ng"
 app_license = "mit"
 
 # Apps
 # ------------------
 
-# No hard dependencies — the app installs on Frappe alone.
-# ERPNext and HRMS are soft dependencies: their integrations activate
-# automatically when those apps are present on the same site.
-# See event_bookings/utils/erpnext_bridge.py for the integration layer.
-required_apps = []
+# ERPNext and HRMS are optional — they unlock Quotation/SO/SI creation and
+# Shift Assignment management respectively.  The app works on plain Frappe.
+# required_apps = ["erpnext", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
 # add_to_apps_screen = [
@@ -29,8 +27,8 @@ required_apps = []
 # ------------------
 
 # include js, css files in header of desk.html
-app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = "/assets/event_bookings/js/workspace_charts.js"
+# app_include_css = "/assets/event_bookings/css/event_bookings.css"
+app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"
@@ -87,12 +85,18 @@ app_include_js = "/assets/event_bookings/js/workspace_charts.js"
 # ------------
 
 # before_install = "event_bookings.install.before_install"
+after_install = "event_bookings.install.after_install"
 
 # Uninstallation
 # ------------
 
 # before_uninstall = "event_bookings.uninstall.before_uninstall"
 # after_uninstall = "event_bookings.uninstall.after_uninstall"
+
+# Integration Setup — react when sibling apps are installed or removed
+# ------------------
+after_app_install = "event_bookings.install.after_app_install"
+before_app_uninstall = "event_bookings.install.before_app_uninstall"
 
 # Integration Setup
 # ------------------
@@ -121,7 +125,7 @@ app_include_js = "/assets/event_bookings/js/workspace_charts.js"
 # Permissions evaluated in scripted ways
 
 permission_query_conditions = {
-	"Event Booking": "event_bookings.utils.permissions.get_permission_query_conditions",
+	"Event Booking": "event_bookings.permissions.get_event_booking_query",
 }
 
 # has_permission = {
@@ -142,29 +146,26 @@ permission_query_conditions = {
 
 doc_events = {
 	"Event Booking": {
-		"after_insert": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		"on_update": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		"on_trash": "event_bookings.utils.google_calendar_sync.delete_from_google_calendar",
 	},
 	"Quotation": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_quotation_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_quotation_cancel",
 	},
 	"Sales Order": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_order_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_order_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_order_cancel",
 	},
 	"Sales Invoice": {
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_invoice_submit",
+		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_invoice_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
-	"Stock Entry": {
-		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_submit",
-		"on_cancel": "event_bookings.utils.erpnext_hooks.on_stock_entry_cancel",
-	},
-	"Material Request": {
-		"on_submit": "event_bookings.utils.erpnext_hooks.on_material_request_submit",
-		"on_cancel": "event_bookings.utils.erpnext_hooks.on_material_request_cancel",
+	"Shift Assignment": {
+		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 	},
 }
 
@@ -218,26 +219,14 @@ scheduler_events = {
 # User Data Protection
 # --------------------
 
-# user_data_fields = [
-# 	{
-# 		"doctype": "{doctype_1}",
-# 		"filter_by": "{filter_by}",
-# 		"redact_fields": ["{field_1}", "{field_2}"],
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_2}",
-# 		"filter_by": "{filter_by}",
-# 		"partial": 1,
-# 	},
-# 	{
-# 		"doctype": "{doctype_3}",
-# 		"strict": False,
-# 	},
-# 	{
-# 		"doctype": "{doctype_4}"
-# 	}
-# ]
+user_data_fields = [
+	{
+		"doctype": "Event Booking",
+		"filter_by": "party_name",
+		"redact_fields": ["party_name", "special_requirements"],
+		"partial": 1,
+	},
+]
 
 # Authentication and authorization
 # --------------------------------
@@ -258,41 +247,35 @@ scheduler_events = {
 # List of apps whose translatable strings should be excluded from this app's translations.
 # ignore_translatable_strings_from = []
 
-# Custom Hooks (extension points for other apps)
-# -----------------------------------------------
-# WhatsApp reminder delivery hook.
-# Any WhatsApp provider app registers its handler here — event_bookings never
-# imports from frappe_whatsapp or any other WhatsApp app directly.
-#
-# To integrate, add the following to your app's hooks.py:
-#
-#   event_booking_whatsapp_reminder = [
-#       "your_app.module.send_event_booking_reminder"
-#   ]
-#
-# Handler signature:
-#   def send_event_booking_reminder(booking_name: str, phone: str) -> None
-#
-# event_bookings resolves the mobile number and fires this hook.
-# When no handler is registered the notification is silently skipped.
-
-after_install = "event_bookings.install.after_install"
-after_migrate = "event_bookings.install.after_migrate"
-
 # Fixtures
 # --------
 fixtures = [
-    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event User"]]]},
+    {"dt": "Custom Field", "filters": [["dt", "in", [
+        "Quotation", "Sales Order", "Sales Invoice",
+        "Material Request", "Stock Entry",
+        "Shift Assignment", "Cost Center"
+    ]]]},
+    {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event Assistant"]]]},
+    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
     {"dt": "Number Card", "filters": [["name", "in", [
-        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue"
+        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",
+        "Deals Completed", "Deals Pending", "Deals Lost", "New Inquiries", "Leads Booked",
+    ]]]},
+    {"dt": "Dashboard", "filters": [["name", "=", "Event Bookings"]]},
+    {"dt": "Dashboard Chart Source", "filters": [["name", "in", [
+        "Monthly Events", "Event Revenue Trend",
+        "Event Deals Completed", "Event Deals Lost",
+        "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
     ]]]},
     {"dt": "Dashboard Chart", "filters": [["name", "in", [
-        "Event Booking Revenue Trends", "Event Booking Count Trends", "Events By Event Type"
+        "Monthly Events", "Event Revenue Trend",
+        "Event Deals Completed", "Event Deals Lost",
+        "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
     ]]]},
-    {"dt": "Report", "filters": [["name", "in", [
-        "Event Booking Trends",
-        "Event Booking Pipeline",
-        "Event Booking Profitability",
-        "Events By Event Type",
+    {"dt": "Report", "filters": [["name", "in", ["Event Summary", "Event Revenue Trend"]]]},
+    {"dt": "Notification", "filters": [["name", "in", [
+        "Event Pre-Event Reminder 3 Days",
+        "Event Pre-Event Reminder 1 Day",
+        "Event Under-Staffed Alert",
     ]]]},
 ]
