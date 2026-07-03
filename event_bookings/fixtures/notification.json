@@ -1,6 +1,7 @@
 [
   {
     "doctype": "Notification",
+    "module": "Event Bookings",
     "name": "Event Pre-Event Reminder 3 Days",
     "enabled": 1,
     "document_type": "Event Booking",
@@ -21,6 +22,7 @@
   },
   {
     "doctype": "Notification",
+    "module": "Event Bookings",
     "name": "Event Pre-Event Reminder 1 Day",
     "enabled": 1,
     "document_type": "Event Booking",
@@ -41,6 +43,7 @@
   },
   {
     "doctype": "Notification",
+    "module": "Event Bookings",
     "name": "Event Under-Staffed Alert",
     "enabled": 1,
     "document_type": "Event Booking",
