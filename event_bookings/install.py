@@ -86,6 +86,12 @@ def before_uninstall():
 	for template_name in ("Event Quotation", "Booking Confirmation"):
 		if frappe.db.exists("Email Template", template_name):
 			_safe_delete("Email Template", template_name)
+	# App-owned roles.  Roles have no `module` link, so Frappe's module-based
+	# uninstall never removes them — they must be swept explicitly.  force=True
+	# also clears the associated Has Role assignments.
+	for role in ("Event Manager", "Event Assistant"):
+		if frappe.db.exists("Role", role):
+			_safe_delete("Role", role)
 	frappe.db.commit()
 
 
