@@ -85,8 +85,7 @@ class TestSendPreEventReminders(unittest.TestCase):
 		mock_add_days.assert_called_once_with("2026-07-10", 3)
 		mock_frappe.get_all.assert_called_once()
 		call_kwargs = mock_frappe.get_all.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["event_timing"][0], "between")
-		self.assertEqual(call_kwargs[1]["filters"]["event_timing"][1], ["2026-07-13 00:00:00", "2026-07-13 23:59:59"])
+		self.assertEqual(call_kwargs[1]["filters"]["event_date"], "2026-07-13")
 
 	def test_custom_days_parameter(self, _today, mock_add_days, mock_frappe):
 		mock_add_days.return_value = "2026-07-11"
@@ -107,7 +106,7 @@ class TestSendUnstaffedAlerts(unittest.TestCase):
 			SimpleNamespace(
 				name="EVT-001",
 				event_name="Test Event",
-				event_timing="2026-07-15",
+				event_date="2026-07-15",
 				designation="Waiter",
 				qty_required=3,
 				qty_assigned=1,

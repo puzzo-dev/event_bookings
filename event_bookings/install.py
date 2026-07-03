@@ -38,6 +38,88 @@ def after_migrate():
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
 
 
+# ---------------------------------------------------------------------------
+# Sibling-app integration hooks (wired in hooks.py) — fire when ANY app on the
+# site is installed/uninstalled.  They MUST exist: frappe.get_attr resolves the
+# dotted path for every app install/uninstall, so a missing function raises
+# AttributeError and aborts the operation site-wide.
+# ---------------------------------------------------------------------------
+
+def after_app_install(app_name):
+	"""Set up ERPNext/HRMS integration when those apps arrive AFTER event_bookings."""
+	if app_name == "erpnext" and is_erpnext_installed():
+		create_event_coa_accounts()
+		create_accounting_dimension()
+		create_custom_fields()
+		create_default_settings()
+	elif app_name == "hrms" and is_hrms_installed():
+		create_custom_fields()          # (re)create Shift Assignment.event_booking
+		upgrade_designation_for_hrms()
+
+
+def before_app_uninstall(app_name):
+	"""Tear down our ERPNext/HRMS integration objects before a sibling app is removed,
+	so nothing we added dangles once that app's doctypes disappear."""
+	if app_name == "erpnext":
+		_remove_accounting_dimension()
+		_remove_event_booking_custom_fields()
+	elif app_name == "hrms":
+		_remove_custom_field("Shift Assignment", "event_booking")
+
+
+def before_uninstall():
+	"""event_bookings' own uninstall cleanup.
+
+	Frappe deletes this app's modules and DocTypes automatically, but it does NOT
+	remove the artefacts we added to CORE / ERPNext doctypes.  Left behind, the
+	``event_booking`` Link custom fields and the Accounting Dimension keep pointing
+	at the now-deleted ``Event Booking`` DocType and raise
+	"DocType Event Booking not found" on every affected form.  Remove them here.
+	"""
+	# Accounting Dimension first: ERPNext's on_trash removes the event_booking
+	# custom fields it generated on Sales Order / Sales Invoice / Stock Entry / etc.
+	_remove_accounting_dimension()
+	# Sweep any remaining Event Booking link fields and the legacy cost-center marker.
+	_remove_event_booking_custom_fields()
+	_remove_custom_field_by_fieldname("is_event_cost_center")
+	# App-created Email Templates.
+	for template_name in ("Event Quotation", "Booking Confirmation"):
+		if frappe.db.exists("Email Template", template_name):
+			_safe_delete("Email Template", template_name)
+	frappe.db.commit()
+
+
+def _remove_accounting_dimension():
+	if not frappe.db.exists("DocType", "Accounting Dimension"):
+		return
+	if frappe.db.exists("Accounting Dimension", "Event Booking"):
+		_safe_delete("Accounting Dimension", "Event Booking")
+
+
+def _remove_event_booking_custom_fields():
+	"""Delete every Custom Field whose fieldname is ``event_booking`` (our marker),
+	regardless of which doctype it was attached to."""
+	_remove_custom_field_by_fieldname("event_booking")
+
+
+def _remove_custom_field_by_fieldname(fieldname):
+	for name in frappe.get_all("Custom Field", filters={"fieldname": fieldname}, pluck="name"):
+		_safe_delete("Custom Field", name)
+
+
+def _remove_custom_field(doctype, fieldname):
+	name = f"{doctype}-{fieldname}"
+	if frappe.db.exists("Custom Field", name):
+		_safe_delete("Custom Field", name)
+
+
+def _safe_delete(doctype, name):
+	try:
+		frappe.delete_doc(doctype, name, force=True, ignore_permissions=True)
+	except Exception:
+		frappe.log_error(title=f"event_bookings uninstall: failed to delete {doctype} {name}")
+
+
 def migrate_workspace_charts():
 	"""
 	Idempotent: ensure the workspace content references the correct Report-based charts
@@ -262,6 +344,10 @@ def create_custom_fields():
 		("Journal Entry",       "event_booking", "title", {}),
 		("Material Request",    "event_booking", "title", {}),
 		("Stock Reconciliation","event_booking", "title", {}),
+		# HRMS Shift Assignment is not an accounting doc, so it is not covered by
+		# the Accounting Dimension auto-field. Needed for staff-count sync and
+		# cancellation cascade. Skipped automatically when HRMS is not installed.
+		("Shift Assignment",    "event_booking", "shift_type", {}),
 	]
 
 	for dt, fieldname, insert_after, extra in fields:
@@ -377,7 +463,7 @@ def create_email_templates():
 			"name": "Event Quotation",
 			"subject": "Quotation for {{ doc.event_name or 'your event' }}",
 			"response": """<p>Dear {{ doc.customer_name or 'Customer' }},</p>
-<p>Please find attached our quotation for <strong>{{ doc.event_name or 'your event' }}</strong> scheduled for {{ doc.get_formatted('event_timing') or 'TBD' }}.</p>
+<p>Please find attached our quotation for <strong>{{ doc.event_name or 'your event' }}</strong>.</p>
 <p>We look forward to your confirmation.</p>
 <p>Best regards,<br>Events Team</p>""",
 			"ref_doctype": "Quotation",
@@ -386,7 +472,7 @@ def create_email_templates():
 			"name": "Booking Confirmation",
 			"subject": "Booking Confirmation - {{ doc.name }}",
 			"response": """<p>Dear {{ doc.customer_name or 'Customer' }},</p>
-<p>Your event booking <strong>{{ doc.name }}</strong> for <strong>{{ doc.event_name }}</strong> on {{ doc.get_formatted('event_timing') }} has been confirmed.</p>
+<p>Your event booking <strong>{{ doc.name }}</strong> for <strong>{{ doc.event_name }}</strong> on {{ doc.get_formatted('event_date') }} has been confirmed.</p>
 <p>Location: {{ doc.event_location or 'TBD' }}</p>
 <p>We look forward to making your event memorable!</p>
 <p>Best regards,<br>Events Team</p>""",

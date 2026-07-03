@@ -77,37 +77,7 @@ frappe.ui.form.on("Event Booking", {
     party_type(frm) {
         frm.set_value("party_name", "");
     },
-
-    event_date(frm) {
-        _sync_event_timing(frm);
-    },
-
-    event_time(frm) {
-        _sync_event_timing(frm);
-    },
-
-    event_end_date(frm) {
-        _sync_event_end_datetime(frm);
-    },
-
-    event_end_time(frm) {
-        _sync_event_end_datetime(frm);
-    },
 });
-
-function _sync_event_timing(frm) {
-    if (frm.doc.event_date && frm.doc.event_time) {
-        frm.set_value('event_timing', frm.doc.event_date + ' ' + frm.doc.event_time);
-    }
-}
-
-function _sync_event_end_datetime(frm) {
-    const end_date = frm.doc.event_end_date;
-    const end_time = frm.doc.event_end_time;
-    if (end_date && end_time) {
-        frm.set_value('event_end_datetime', end_date + ' ' + end_time);
-    }
-}
 
 function _prompt_lead_conversion(frm, on_skip) {
     // Check if this Lead already has a Customer in the system — skip the dialog if so

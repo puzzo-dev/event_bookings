@@ -17,7 +17,8 @@ def get_columns():
 		{"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
 		{"fieldname": "party_type", "label": _("Party Type"), "fieldtype": "Data", "width": 100},
 		{"fieldname": "party_name", "label": _("Party"), "fieldtype": "Dynamic Link", "options": "party_type", "width": 160},
-		{"fieldname": "event_timing", "label": _("Event Timing"), "fieldtype": "Datetime", "width": 150},
+		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 110},
+		{"fieldname": "event_time", "label": _("Event Time"), "fieldtype": "Time", "width": 90},
 		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
 		{"fieldname": "total_estimated", "label": _("Estimated Revenue"), "fieldtype": "Currency", "width": 140},
 		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
@@ -83,14 +84,11 @@ def _get_damages_map(event_names):
 def get_data(filters):
 	conditions = {"docstatus": ["!=", 2]}
 	if filters.get("from_date") and filters.get("to_date"):
-		conditions["event_timing"] = ["between", [
-			f"{filters['from_date']} 00:00:00",
-			f"{filters['to_date']} 23:59:59",
-		]]
+		conditions["event_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	elif filters.get("from_date"):
-		conditions["event_timing"] = [">=", f"{filters['from_date']} 00:00:00"]
+		conditions["event_date"] = [">=", filters["from_date"]]
 	elif filters.get("to_date"):
-		conditions["event_timing"] = ["<=", f"{filters['to_date']} 23:59:59"]
+		conditions["event_date"] = ["<=", filters["to_date"]]
 	if filters.get("party_type"):
 		conditions["party_type"] = filters["party_type"]
 	if filters.get("party_name"):
@@ -102,14 +100,16 @@ def get_data(filters):
 	if filters.get("booking_status"):
 		conditions["booking_status"] = filters["booking_status"]
 
-	bookings = frappe.get_all(
+	# get_list (not get_all) so the report honours role permissions and the
+	# Event Booking permission_query_conditions (planner/company partitioning).
+	bookings = frappe.get_list(
 		"Event Booking",
 		filters=conditions,
 		fields=[
-			"name as event_name", "party_type", "party_name", "event_timing", "booking_status",
-			"total_estimated", "total_actual"
+			"name as event_name", "party_type", "party_name", "event_date", "event_time",
+			"booking_status", "total_estimated", "total_actual"
 		],
-		order_by="event_timing desc",
+		order_by="event_date desc, event_time desc",
 		limit_page_length=0,
 	)
 

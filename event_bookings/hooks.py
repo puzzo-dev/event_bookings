@@ -90,7 +90,7 @@ after_install = "event_bookings.install.after_install"
 # Uninstallation
 # ------------
 
-# before_uninstall = "event_bookings.uninstall.before_uninstall"
+before_uninstall = "event_bookings.install.before_uninstall"
 # after_uninstall = "event_bookings.uninstall.after_uninstall"
 
 # Integration Setup — react when sibling apps are installed or removed
@@ -272,7 +272,6 @@ fixtures = [
         "Event Deals Completed", "Event Deals Lost",
         "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
     ]]]},
-    {"dt": "Report", "filters": [["name", "in", ["Event Summary", "Event Revenue Trend"]]]},
     {"dt": "Notification", "filters": [["name", "in", [
         "Event Pre-Event Reminder 3 Days",
         "Event Pre-Event Reminder 1 Day",

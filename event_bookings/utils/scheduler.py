@@ -58,10 +58,10 @@ def sync_invoice_payment_status():
 
 
 def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
-	"""Send email reminders T-{days} days before event, scoped to one company."""
+	"""Send email reminders T-{days} days before the event, optionally scoped to one company."""
 	target_date = add_days(today(), days)
 	filters = {
-		"event_timing": ("between", [f"{target_date} 00:00:00", f"{target_date} 23:59:59"]),
+		"event_date": target_date,
 		"booking_status": ("in", ["In Preparation", "Confirmed"]),
 	}
 	if company:
@@ -69,42 +69,27 @@ def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
 	events = frappe.get_all(
 		"Event Booking",
 		filters=filters,
-		fields=["name", "event_name", "event_timing", "customer", "party_type", "party_name", "contact_person"],
+		fields=["name", "event_name", "event_date", "event_time", "party_type", "party_name"],
 		limit_page_length=0,
 	)
 	if not events:
 		return
 
-	# --- batch fetch contact emails ----------------------------------------
-	contact_persons = list({ev.contact_person for ev in events if ev.contact_person})
-	contact_emails = {}
-	if contact_persons:
-		contact_emails = {
-			r.name: r.email_id
-			for r in frappe.get_all("Contact", filters={"name": ("in", contact_persons)}, fields=["name", "email_id"])
-		}
+	# --- batch resolve party emails (Customer via Contact, Lead directly) ---
+	customer_names = [ev.party_name for ev in events if ev.party_type == "Customer" and ev.party_name]
+	customer_emails = _customer_emails(customer_names)
 
-	# --- batch fetch Customer emails (for Customer-type parties) -----------
-	customers = list({ev.customer for ev in events if ev.customer})
-	customer_emails = {}
-	if customers:
-		customer_emails = {
-			r.name: r.email_id
-			for r in frappe.get_all("Customer", filters={"name": ("in", customers)}, fields=["name", "email_id"])
-		}
-
-	# --- batch fetch Lead emails (for Lead-type parties) -------------------
-	leads = list({ev.party_name for ev in events if ev.party_type == "Lead" and ev.party_name})
+	lead_names = list({ev.party_name for ev in events if ev.party_type == "Lead" and ev.party_name})
 	lead_emails = {}
-	if leads:
+	if lead_names:
 		lead_emails = {
 			r.name: r.email_id
-			for r in frappe.get_all("Lead", filters={"name": ("in", leads)}, fields=["name", "email_id"])
+			for r in frappe.get_all("Lead", filters={"name": ("in", lead_names)}, fields=["name", "email_id"])
 		}
 
 	for ev in events:
 		try:
-			recipients = _build_event_recipients(ev, contact_emails, customer_emails, lead_emails)
+			recipients = _build_event_recipients(ev, customer_emails, lead_emails)
 			if not recipients:
 				continue
 			message = (
@@ -112,7 +97,7 @@ def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
 				"<p>This is a friendly reminder that the event <strong>{0}</strong> "
 				"is scheduled for <strong>{1}</strong>.</p>"
 				"<p>Please confirm all arrangements are in place.</p>"
-			).format(ev.event_name, frappe.utils.formatdate(ev.event_timing))
+			).format(ev.event_name, frappe.utils.formatdate(ev.event_date))
 			_enqueue_email(
 				recipients=recipients,
 				subject=_("Reminder: Upcoming Event – {0}").format(ev.event_name),
@@ -126,21 +111,44 @@ def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
 			frappe.log_error(title=_("Pre-event reminder failed for {0}").format(ev.name))
 
 
-def _build_event_recipients(ev, contact_emails, customer_emails, lead_emails=None):
-	"""Build recipient list from pre-fetched email maps, handling Lead and Customer parties."""
-	recipients = []
-	if ev.contact_person:
-		email = contact_emails.get(ev.contact_person)
-		if email:
-			recipients.append(email)
-	if not recipients:
-		if ev.party_type == "Lead" and ev.party_name:
-			email = (lead_emails or {}).get(ev.party_name)
-		else:
-			email = customer_emails.get(ev.customer) if ev.customer else None
-		if email:
-			recipients.append(email)
-	return recipients
+def _customer_emails(customer_names):
+	"""Batch-resolve Customer → email via the primary linked Contact (single query).
+
+	Customer has no email column of its own in ERPNext; the address book lives on
+	Contact linked through Dynamic Link.  Primary contacts are preferred.
+	"""
+	names = list({c for c in customer_names if c})
+	if not names:
+		return {}
+	rows = frappe.db.sql(
+		"""
+		SELECT dl.link_name AS customer, c.email_id AS email
+		FROM `tabDynamic Link` dl
+		INNER JOIN `tabContact` c ON c.name = dl.parent
+		WHERE dl.parenttype = 'Contact'
+		  AND dl.link_doctype = 'Customer'
+		  AND dl.link_name IN %(names)s
+		  AND IFNULL(c.email_id, '') != ''
+		ORDER BY c.is_primary_contact DESC, c.creation ASC
+		""",
+		{"names": tuple(names)},
+		as_dict=True,
+	)
+	out = {}
+	for r in rows:
+		out.setdefault(r.customer, r.email)  # first (primary) contact wins
+	return out
+
+
+def _build_event_recipients(ev, customer_emails, lead_emails):
+	"""Resolve the recipient email for an event from its party (Customer or Lead)."""
+	if not ev.party_name:
+		return []
+	if ev.party_type == "Lead":
+		email = lead_emails.get(ev.party_name)
+	else:
+		email = customer_emails.get(ev.party_name)
+	return [email] if email else []
 
 
 
@@ -182,7 +190,7 @@ def send_unstaffed_alerts():
 		SELECT
 			eb.name,
 			eb.event_name,
-			eb.event_timing,
+			eb.event_date,
 			esr.designation,
 			esr.qty_required,
 			IFNULL(esr.qty_assigned, 0) AS qty_assigned
@@ -190,9 +198,9 @@ def send_unstaffed_alerts():
 		INNER JOIN `tabEvent Staff Requirement` esr
 			ON esr.parent = eb.name AND esr.parenttype = 'Event Booking'
 		WHERE eb.booking_status = 'In Preparation'
-			AND eb.event_timing >= %(today)s
+			AND eb.event_date >= %(today)s
 			AND IFNULL(esr.qty_assigned, 0) < esr.qty_required
-		ORDER BY eb.event_timing ASC
+		ORDER BY eb.event_date ASC
 		""",
 		{"today": today()},
 		as_dict=True,
@@ -206,7 +214,7 @@ def send_unstaffed_alerts():
 		if row.name not in events:
 			events[row.name] = {
 				"event_name": row.event_name,
-				"event_timing": row.event_timing,
+				"event_date": row.event_date,
 				"shortfalls": [],
 			}
 		events[row.name]["shortfalls"].append(
@@ -220,7 +228,7 @@ def send_unstaffed_alerts():
 	for ev in events.values():
 		lines.append(
 			"<li><strong>{0} – {1}</strong><ul>{2}</ul></li>".format(
-				frappe.utils.formatdate(ev["event_timing"]),
+				frappe.utils.formatdate(ev["event_date"]),
 				ev["event_name"],
 				"".join(ev["shortfalls"]),
 			)
@@ -250,10 +258,10 @@ def notify_managers_upcoming_events():
 	events = frappe.get_all(
 		"Event Booking",
 		filters={
-			"event_timing": ("between", [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]),
+			"event_date": ("between", [from_date, to_date]),
 			"booking_status": ("in", ["New", "Quoted", "Negotiating", "Confirmed", "In Preparation", "Executed"]),
 		},
-		fields=["name", "event_name", "event_timing", "event_location", "booking_status"],
+		fields=["name", "event_name", "event_date", "event_location", "booking_status"],
 		limit_page_length=0,
 	)
 	managers = frappe.get_all("Has Role", filters={"role": "Event Manager", "parenttype": "User"}, pluck="parent", limit_page_length=0)
@@ -287,7 +295,7 @@ def notify_managers_upcoming_events():
 					"Event {0} is scheduled for {1} at {2}. Status: {3}"
 				).format(
 					ev.event_name,
-					frappe.utils.formatdate(ev.event_timing),
+					frappe.utils.formatdate(ev.event_date),
 					ev.event_location or "TBD",
 					ev.booking_status,
 				),
@@ -384,7 +392,7 @@ def _send_whatsapp_notification(ev, message):
 	on/off gate and is checked by the caller before this function is invoked.
 	"""
 	try:
-		if ev.party_type != "Customer" or not ev.customer:
+		if ev.party_type != "Customer" or not ev.party_name:
 			return
 
 		handlers = frappe.get_hooks("event_booking_whatsapp_reminder")
@@ -405,7 +413,7 @@ def _send_whatsapp_notification(ev, message):
 			ORDER BY c.is_primary_contact DESC, dl.creation DESC
 			LIMIT 1
 			""",
-			(ev.customer,),
+			(ev.party_name,),
 		)
 		contact = result[0][0] if result else None
 		if not contact:
