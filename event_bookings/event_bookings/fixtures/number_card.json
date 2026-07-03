@@ -6,7 +6,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"booking_status\",\"=\",\"Confirmed\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Upcoming Events",
   "module": "Event Bookings",
   "name": "Upcoming Events"
@@ -18,7 +18,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"event_date\",\"Timespan\",\"this month\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Events This Month",
   "module": "Event Bookings",
   "name": "Events This Month"
@@ -30,7 +30,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"booking_status\",\"=\",\"Invoiced\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Pending Invoices",
   "module": "Event Bookings",
   "name": "Pending Invoices"
@@ -42,7 +42,7 @@
   "doctype": "Number Card",
   "filters_json": "[]",
   "function": "Sum",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Total Revenue",
   "module": "Event Bookings",
   "name": "Total Revenue"
@@ -54,7 +54,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"booking_status\",\"in\",\"Invoiced,Paid\",false],[\"Event Booking\",\"event_date\",\"Timespan\",\"this month\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Event Deals Completed",
   "module": "Event Bookings",
   "name": "Deals Completed"
@@ -66,7 +66,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"quotation\",\"is\",\"set\",false],[\"Event Booking\",\"booking_status\",\"not in\",\"Cancelled,Paid\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Event Deals Pending",
   "module": "Event Bookings",
   "name": "Deals Pending"
@@ -78,7 +78,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"quotation\",\"is\",\"set\",false],[\"Event Booking\",\"booking_status\",\"=\",\"Cancelled\",false],[\"Event Booking\",\"modified\",\"Timespan\",\"this year\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Event Deals Lost",
   "module": "Event Bookings",
   "name": "Deals Lost"
@@ -90,7 +90,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"booking_date\",\"Timespan\",\"this month\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Event Inquiries",
   "module": "Event Bookings",
   "name": "New Inquiries"
@@ -102,7 +102,7 @@
   "doctype": "Number Card",
   "filters_json": "[[\"Event Booking\",\"party_type\",\"=\",\"Lead\",false],[\"Event Booking\",\"booking_date\",\"Timespan\",\"this month\",false]]",
   "function": "Count",
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Event Leads Booked",
   "module": "Event Bookings",
   "name": "Leads Booked"
