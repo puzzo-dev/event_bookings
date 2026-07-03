@@ -53,22 +53,28 @@ def on_quotation_submit(doc, method):
 	_update_linked_event_booking(doc, quotation=doc.name)
 
 
+def on_quotation_update(doc, method):
+	# Keep the reverse link fresh on every save (link set/changed on the source doc).
+	if getattr(doc, "event_booking", None):
+		_update_linked_event_booking(doc, quotation=doc.name)
+
+
 def on_sales_order_submit(doc, method):
 	_update_linked_event_booking(doc, sales_order=doc.name)
+
+
+def on_sales_order_update(doc, method):
+	if getattr(doc, "event_booking", None):
+		_update_linked_event_booking(doc, sales_order=doc.name)
 
 
 def on_sales_invoice_submit(doc, method):
 	_update_linked_event_booking(doc, sales_invoice=doc.name)
 
 
-def on_stock_entry_submit(doc, method):
-	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
-		_update_linked_event_booking(doc, stock_entry=doc.name)
-
-
-def on_stock_entry_cancel(doc, method):
-	if doc.stock_entry_type in ("Material Issue", "Material Transfer"):
-		_update_linked_event_booking(doc, stock_entry=None)
+def on_sales_invoice_update(doc, method):
+	if getattr(doc, "event_booking", None):
+		_update_linked_event_booking(doc, sales_invoice=doc.name)
 
 
 def on_quotation_cancel(doc, method):
@@ -83,9 +89,30 @@ def on_sales_invoice_cancel(doc, method):
 	_update_linked_event_booking(doc, sales_invoice=None)
 
 
-def on_material_request_submit(doc, method):
-	_update_linked_event_booking(doc, material_request=doc.name)
+def on_shift_assignment_update(doc, method):
+	"""Recompute per-designation ``qty_assigned`` on the linked booking's staff
+	requirements whenever a Shift Assignment tied to it changes.
 
-
-def on_material_request_cancel(doc, method):
-	_update_linked_event_booking(doc, material_request=None)
+	Counts submitted Shift Assignments for the booking, matching the assigned
+	Employee's designation to each Event Staff Requirement row.  Safe no-op when
+	the Shift Assignment carries no ``event_booking`` link (field absent → None).
+	"""
+	booking = getattr(doc, "event_booking", None)
+	if not booking:
+		return
+	frappe.db.sql(
+		"""
+		UPDATE `tabEvent Staff Requirement` esr
+		SET esr.qty_assigned = (
+			SELECT COUNT(*)
+			FROM `tabShift Assignment` sa
+			INNER JOIN `tabEmployee` emp ON emp.name = sa.employee
+			WHERE sa.event_booking = %(booking)s
+			  AND sa.docstatus = 1
+			  AND emp.designation = esr.designation
+		)
+		WHERE esr.parent = %(booking)s
+		  AND esr.parenttype = 'Event Booking'
+		""",
+		{"booking": booking},
+	)

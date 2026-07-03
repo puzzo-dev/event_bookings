@@ -1,4 +1,5 @@
 import frappe
+from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
@@ -18,9 +19,6 @@ _ITEMS_TABLE = {
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
-
-    def before_insert(self):
-        self.set_defaults_from_settings()
 
     def before_save(self):
         self.calculate_totals()
@@ -87,67 +85,6 @@ class EventBooking(Document):
                 frappe.throw("Event Date cannot be moved to a past date on an existing booking.")
 
     # -----------------------------------------------------------------
-    # Defaults
-    # -----------------------------------------------------------------
-
-    def set_cost_center(self):
-        settings = self.get_settings()
-        if not self.cost_center and settings.default_cost_center:
-            self.cost_center = settings.default_cost_center
-
-    def set_defaults_from_settings(self):
-        settings = self.get_settings()
-        if (
-            not self.cost_center
-            and settings.default_cost_center
-            and not settings.auto_create_cost_center_per_event
-        ):
-            self.cost_center = settings.default_cost_center
-
-    def ensure_event_cost_center(self):
-        settings = self.get_settings()
-        if not settings.auto_create_cost_center_per_event:
-            if not self.cost_center and settings.default_cost_center:
-                self.cost_center = settings.default_cost_center
-            return
-
-        if self.cost_center:
-            return
-
-        parent_cc = settings.default_cost_center
-        if not parent_cc:
-            frappe.throw(
-                "Set a Default Cost Center in Event Settings to auto-create per-event cost centers."
-            )
-
-        cc_name = f"{self.name} - {self.event_name}"
-        company = self.get_company_from_cost_center(parent_cc)
-        abbr = frappe.db.get_value("Company", company, "abbr")
-        full_cc_name = f"{cc_name} - {abbr}"
-
-        if not frappe.db.exists("Cost Center", full_cc_name):
-            if not frappe.has_permission("Cost Center", "create"):
-                frappe.throw("You do not have permission to create a Cost Center.")
-            cc = frappe.get_doc(
-                {
-                    "doctype": "Cost Center",
-                    "cost_center_name": cc_name,
-                    "parent_cost_center": parent_cc,
-                    "is_event_cost_center": 1,
-                    "company": company,
-                }
-            )
-            cc.insert(ignore_permissions=True)
-            full_cc_name = cc.name
-
-        self.cost_center = full_cc_name
-
-    def get_company_from_cost_center(self, cost_center):
-        return frappe.db.get_value(
-            "Cost Center", cost_center, "company"
-        ) or frappe.defaults.get_defaults().get("company")
-
-    # -----------------------------------------------------------------
     # Status Transition Hook
     # -----------------------------------------------------------------
 
@@ -169,9 +106,6 @@ class EventBooking(Document):
 
         if status == "Quoted":
             self.create_quotation()
-
-        elif status == "Confirmed":
-            self.ensure_event_cost_center()
 
         elif status == "In Preparation":
             self._notify_staff_requirements()
@@ -228,13 +162,12 @@ class EventBooking(Document):
                 f"Cannot create a Quotation for party type '{self.party_type}'. "
                 "Set Party Type to Customer or Lead first."
             )
-        settings = self.get_settings()
         qt = frappe.get_doc({
             "doctype": "Quotation",
             "quotation_to": self.party_type,
             "party_name": self.party_name,
             "event_booking": self.name,
-            "cost_center": self.cost_center or settings.default_cost_center,
+            "cost_center": self.cost_center,
         })
         if not frappe.has_permission("Quotation", "create"):
             frappe.throw("You do not have permission to create a Quotation.")
@@ -246,7 +179,7 @@ class EventBooking(Document):
     # -----------------------------------------------------------------
 
     def get_settings(self):
-        return frappe.get_cached_doc("Event Settings", "Event Settings")
+        return frappe.get_cached_doc("Event Booking Settings")
 
 
 # ---------------------------------------------------------------------------
@@ -392,6 +325,61 @@ def make_quotation(source_name, target_doc=None):
         target_doc,
         set_missing_values,
     )
+
+
+@frappe.whitelist()
+def convert_lead_and_update_booking(booking_name):
+    """Convert the booking's Lead party to a Customer (or link an existing one)
+    and repoint the Event Booking to that Customer.
+
+    Called by the "Convert Lead to Customer" button and the lead-conversion
+    dialog in event_booking.js.  Returns the shape the client expects::
+
+        {"customer": <customer name>, "already_existed": <bool>}
+    """
+    if not frappe.has_permission("Event Booking", "write", booking_name):
+        frappe.throw(
+            _("You do not have permission to modify this Event Booking."),
+            frappe.PermissionError,
+        )
+    if not erpnext_installed():
+        frappe.throw(_("ERPNext is required to convert a Lead to a Customer."))
+
+    party_type, lead = frappe.db.get_value(
+        "Event Booking", booking_name, ["party_type", "party_name"]
+    )
+    if party_type != "Lead":
+        frappe.throw(_("This booking's party is not a Lead."))
+    if not lead:
+        frappe.throw(_("No Lead is linked to this booking."))
+
+    # Already converted? Reuse the existing Customer linked to this Lead.
+    existing = frappe.db.get_value("Customer", {"lead_name": lead}, "name")
+    if existing:
+        customer_name = existing
+        already_existed = True
+    else:
+        if not frappe.has_permission("Customer", "create"):
+            frappe.throw(
+                _("You do not have permission to create a Customer."),
+                frappe.PermissionError,
+            )
+        from erpnext.crm.doctype.lead.lead import make_customer
+
+        customer_doc = make_customer(lead)
+        customer_doc.insert(ignore_permissions=True)
+        customer_name = customer_doc.name
+        already_existed = False
+
+    # Repoint the booking via set_value so the (possibly past-dated) booking's
+    # validate() date guard cannot block a legitimate party conversion.
+    frappe.db.set_value(
+        "Event Booking",
+        booking_name,
+        {"party_type": "Customer", "party_name": customer_name},
+    )
+
+    return {"customer": customer_name, "already_existed": already_existed}
 
 
 @frappe.whitelist()

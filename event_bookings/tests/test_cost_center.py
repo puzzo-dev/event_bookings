@@ -28,7 +28,8 @@ class TestEventCostCenter(FrappeTestCase):
         defaults = {
             "doctype": "Event Booking",
             "event_name": "Cost Center Test Event",
-            "customer": self.customer,
+            "party_type": "Customer",
+            "party_name": self.customer,
             "event_type": self.event_type,
             "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
             "event_time": "18:00:00",
@@ -46,8 +47,8 @@ class TestEventCostCenter(FrappeTestCase):
         parent_cc = frappe.db.get_value(
             "Cost Center", {"company": frappe.defaults.get_defaults().get("company"), "is_group": 0}, "name"
         )
-        eb = self._make_event(event_cost_center=parent_cc)
-        self.assertEqual(eb.event_cost_center, parent_cc)
+        eb = self._make_event(cost_center=parent_cc)
+        self.assertEqual(eb.cost_center, parent_cc)
 
     def test_naming_series_format(self):
         eb = self._make_event()

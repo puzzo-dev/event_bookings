@@ -41,9 +41,14 @@ def get_event_booking_query(user=None):
                 f" OR `tabEvent Booking`.`event_planner` = '')"
             )
         # No linked Sales Partner — show only unassigned bookings.
+        # NOTE: the whole OR-group MUST stay parenthesised.  Frappe concatenates
+        # this fragment into the WHERE clause with " and " WITHOUT adding parens
+        # (see frappe/model/db_query.py), so an unwrapped `A OR B` would let the
+        # OR escape any preceding AND (user-permission / company) conditions and
+        # leak rows across tenants.
         return (
-            "`tabEvent Booking`.`event_planner` IS NULL"
-            " OR `tabEvent Booking`.`event_planner` = ''"
+            "(`tabEvent Booking`.`event_planner` IS NULL"
+            " OR `tabEvent Booking`.`event_planner` = '')"
         )
 
     # Fallback: no additional restriction for any other role.
