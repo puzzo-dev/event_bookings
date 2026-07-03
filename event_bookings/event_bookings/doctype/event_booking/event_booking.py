@@ -144,7 +144,7 @@ class EventBooking(Document):
             "._cancel_linked_documents_background",
             booking_name=self.name,
             queue="default",
-            now=frappe.flags.in_test,
+            now=frappe.in_test,
         )
 
     # -----------------------------------------------------------------
