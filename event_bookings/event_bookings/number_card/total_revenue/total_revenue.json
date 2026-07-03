@@ -8,7 +8,7 @@
   "function": "Sum",
   "idx": 0,
   "is_public": 1,
-  "is_standard": 1,
+  "is_standard": 0,
   "label": "Total Revenue",
   "modified": "2026-06-13 05:54:07.413879",
   "modified_by": "Administrator",
