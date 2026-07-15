@@ -58,7 +58,7 @@ frappe.provide("event_bookings.workspace");
 	// which is more reliable than the page-change + setTimeout(300) pattern.
 	frappe.router.on("change", function () {
 		var route = frappe.get_route ? frappe.get_route() : [];
-		if (route[0] === "Workspaces") {
+		if (route[0] === "workspace") {
 			// requestAnimationFrame defers until the browser has painted the
 			// workspace — avoids querying elements before they exist.
 			requestAnimationFrame(apply_conditions);

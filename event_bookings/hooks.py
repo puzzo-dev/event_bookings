@@ -4,6 +4,9 @@ app_publisher = "I-Varse Technologies NG"
 app_description = "Event Management"
 app_email = "dev@itechnologies.ng"
 app_license = "mit"
+app_icon = "/assets/event_bookings/images/logo.svg"
+app_logo_url = "/assets/event_bookings/images/logo.svg"
+favicon = "/assets/event_bookings/images/logo.png"
 
 # Apps
 # ------------------
@@ -13,22 +16,25 @@ app_license = "mit"
 # required_apps = ["erpnext", "hrms"]
 
 # Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "event_bookings",
-# 		"logo": "/assets/event_bookings/logo.png",
-# 		"title": "Event Bookings",
-# 		"route": "/event_bookings",
-# 		"has_permission": "event_bookings.api.permission.has_app_permission"
-# 	}
-# ]
+add_to_apps_screen = [
+	{
+		"name": "event_bookings",
+		"logo": "/assets/event_bookings/images/logo.svg",
+		"title": "Event Bookings",
+		"route": "/app",
+		"has_permission": "event_bookings.api.permission.has_app_permission"
+	}
+]
 
 # Includes in <head>
 # ------------------
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
+app_include_js = [
+    "/assets/event_bookings/js/workspace_conditional.js",
+    "/assets/event_bookings/js/workspace_charts.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"
@@ -86,6 +92,7 @@ app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
 
 # before_install = "event_bookings.install.before_install"
 after_install = "event_bookings.install.after_install"
+after_migrate = "event_bookings.install.after_migrate"
 
 # Uninstallation
 # ------------

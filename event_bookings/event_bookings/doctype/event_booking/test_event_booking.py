@@ -15,14 +15,37 @@ class TestEventBooking(FrappeTestCase):
 		doc.event_location = "Test Venue"
 		self.assertTrue(doc.event_name)
 
-	def test_flexible_status_changes(self):
-		"""Status changes are not hardcoded; orgs can design their own workflow."""
+	def test_valid_status_transition(self):
+		"""Valid transitions (New → Quoted) should be accepted on save."""
 		doc = frappe.new_doc("Event Booking")
-		doc.event_name = "Test Event"
+		doc.event_name = "Test Transition"
 		doc.booking_status = "New"
-		doc.event_date = frappe.utils.add_days(frappe.utils.today(), 7)
+		doc.party_type = "Individual"
+		doc.party_name = "Test Party"
+		doc.event_type = "Wedding"
+		doc.event_date = frappe.utils.add_days(frappe.utils.today(), 30)
 		doc.event_time = "10:00:00"
 		doc.event_location = "Test Venue"
-		# Any status value should be accepted without a hardcoded transition error
+		doc.insert()
+		self.assertEqual(doc.booking_status, "New")
+
+		doc.booking_status = "Quoted"
+		doc.save()
+		self.assertEqual(doc.booking_status, "Quoted")
+
+	def test_invalid_status_transition(self):
+		"""Invalid transitions (New → Paid) should be rejected."""
+		doc = frappe.new_doc("Event Booking")
+		doc.event_name = "Test Invalid Transition"
+		doc.booking_status = "New"
+		doc.party_type = "Individual"
+		doc.party_name = "Test Party"
+		doc.event_type = "Wedding"
+		doc.event_date = frappe.utils.add_days(frappe.utils.today(), 30)
+		doc.event_time = "10:00:00"
+		doc.event_location = "Test Venue"
+		doc.insert()
+
 		doc.booking_status = "Paid"
-		self.assertEqual(doc.booking_status, "Paid")
+		with self.assertRaises(frappe.ValidationError):
+			doc.save()

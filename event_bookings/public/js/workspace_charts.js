@@ -14,6 +14,8 @@ frappe.provide('event_bookings.workspace');
  * Safe to call even when ERPNext is not installed.
  */
 function _get_current_fiscal_year() {
+	// Only available when ERPNext is installed — return empty string otherwise.
+	if (typeof erpnext === 'undefined' || !erpnext.utils) return '';
 	const fy = frappe.boot && frappe.boot.current_fiscal_year;
 	if (fy && fy[0]) return fy[0];
 	return frappe.defaults.get_user_default('fiscal_year') || '';

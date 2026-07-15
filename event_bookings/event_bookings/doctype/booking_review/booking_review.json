@@ -12,6 +12,7 @@
   "reviewer_email",
   "rating",
   "review_text",
+  "review_status",
   "is_published",
   "submitted_via"
  ],
@@ -70,7 +71,7 @@
    "fieldname": "submitted_via",
    "fieldtype": "Select",
    "label": "Submitted Via",
-   "options": "Public Link\nDirect\nStaff Entry"
+   "options": "Public Link\nDirect\nEvent Manager"
   }
  ],
  "index_web_pages_for_search": 1,
@@ -109,7 +110,7 @@
   },
   {
    "read": 1,
-   "role": "Event User"
+   "role": "Event Assistant"
   }
  ],
  "row_format": "Dynamic",

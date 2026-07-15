@@ -3,54 +3,65 @@
 from __future__ import annotations
 
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import patch
 
 from event_bookings.utils.scheduler import send_unstaffed_alerts
+
+
+_SHORTFALL_ROW = {
+    "name": "EVT-002",
+    "event_name": "Test Event",
+    "event_date": "2026-07-20",
+    "designation": "DJ",
+    "qty_required": 2,
+    "qty_assigned": 0,
+}
 
 
 class TestUnstaffedAlerts(unittest.TestCase):
 
     @patch("event_bookings.utils.scheduler.frappe")
-    def test_alerts_send_via_notification(self, mock_frappe):
-        """send_unstaffed_alerts delegates email to the Notification DocType."""
-        mock_frappe.db.sql.return_value = [{"name": "EVT-002"}]
-        mock_doc = MagicMock()
-        mock_doc.name = "EVT-002"
-        mock_notification = MagicMock()
-
-        def fake_get_doc(doctype, name=None):
-            if doctype == "Event Booking":
-                return mock_doc
-            if doctype == "Notification":
-                return mock_notification
-            return MagicMock()
-
-        mock_frappe.get_doc.side_effect = fake_get_doc
-        mock_frappe.DoesNotExistError = Exception
+    def test_alerts_send_email_digest(self, mock_frappe):
+        """send_unstaffed_alerts sends a single digest via frappe.sendmail."""
+        mock_frappe.get_all.side_effect = [
+            ["manager@example.com"],            # Has Role → pluck="parent"
+            [{"email": "manager@example.com"}], # User email rows
+        ]
+        mock_frappe.db.sql.return_value = [_SHORTFALL_ROW]
+        mock_frappe.utils.formatdate.return_value = "20-07-2026"
 
         send_unstaffed_alerts()
 
-        mock_notification.send.assert_called_once_with(mock_doc)
+        mock_frappe.sendmail.assert_called_once()
+        recipients = mock_frappe.sendmail.call_args[1]["recipients"]
+        self.assertIn("manager@example.com", recipients)
 
     @patch("event_bookings.utils.scheduler.frappe")
     def test_no_alert_when_fully_staffed(self, mock_frappe):
         """send_unstaffed_alerts does nothing when no events are understaffed."""
+        mock_frappe.get_all.side_effect = [
+            ["manager@example.com"],
+            [{"email": "manager@example.com"}],
+        ]
         mock_frappe.db.sql.return_value = []
 
         send_unstaffed_alerts()
 
-        mock_frappe.get_doc.assert_not_called()
+        mock_frappe.sendmail.assert_not_called()
 
     @patch("event_bookings.utils.scheduler.frappe")
-    def test_missing_notification_logs_error(self, mock_frappe):
-        """send_unstaffed_alerts logs an error if the Notification record is missing."""
-        mock_frappe.db.sql.return_value = [{"name": "EVT-003"}]
-        mock_frappe.DoesNotExistError = KeyError
-
-        mock_frappe.get_doc.side_effect = KeyError("Notification not found")
+    def test_sendmail_error_is_logged(self, mock_frappe):
+        """send_unstaffed_alerts logs an error if sendmail raises."""
+        mock_frappe.get_all.side_effect = [
+            ["manager@example.com"],
+            [{"email": "manager@example.com"}],
+        ]
+        mock_frappe.db.sql.return_value = [_SHORTFALL_ROW]
+        mock_frappe.utils.formatdate.return_value = "20-07-2026"
+        mock_frappe.DatabaseError = Exception
+        mock_frappe.ValidationError = Exception
+        mock_frappe.sendmail.side_effect = Exception("DB error")
 
         send_unstaffed_alerts()
 
-        mock_frappe.log_error.assert_called_once()
-        title = mock_frappe.log_error.call_args.kwargs.get("title", "")
-        self.assertIn("not found", title)
+        mock_frappe.log_error.assert_called()

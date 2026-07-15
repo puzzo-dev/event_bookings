@@ -14,8 +14,8 @@ from event_bookings.event_bookings.doctype.booking_review.booking_review import 
 
 
 @patch(
-	"event_bookings.event_bookings.doctype.booking_review.booking_review._caller_linked_to_customer",
-	return_value=True,
+	"event_bookings.event_bookings.doctype.booking_review.booking_review._get_submitted_via",
+	return_value="Direct",
 )
 @patch("event_bookings.event_bookings.doctype.booking_review.booking_review.frappe")
 class TestSubmitReview(unittest.TestCase):
@@ -62,7 +62,7 @@ class TestSubmitReview(unittest.TestCase):
 			None, None, None,
 			"Acme Corp",
 		]
-		mock_frappe.cache.return_value.get.return_value = "3"
+		mock_frappe.cache.incr.return_value = 4  # exceeds _MAX_REVIEWS_PER_WINDOW (3)
 		with self.assertRaises(Exception):
 			submit_review("EVT-001", rating=5)
 		mock_frappe.throw.assert_called()
@@ -74,7 +74,7 @@ class TestSubmitReview(unittest.TestCase):
 			None, None, None,
 			"Acme Corp", "acme@example.com", "2026-07-15 10:00:00",
 		]
-		mock_frappe.cache.return_value.get.return_value = 0
+		mock_frappe.cache.incr.return_value = 1  # within limit
 		mock_frappe.utils.time_diff_in_hours.return_value = 12
 		with self.assertRaises(Exception):
 			submit_review("EVT-001", rating=5)
@@ -87,7 +87,7 @@ class TestSubmitReview(unittest.TestCase):
 			None, None, None,
 			"Acme Corp", None, None,
 		]
-		mock_frappe.cache.return_value.get.return_value = 0
+		mock_frappe.cache.incr.return_value = 1  # within limit
 		mock_frappe.utils.time_diff_in_hours.return_value = 48
 
 		mock_review = MagicMock()
@@ -108,7 +108,7 @@ class TestSubmitReview(unittest.TestCase):
 			None, None, None,
 			"Acme Corp", None, None,
 		]
-		mock_frappe.cache.return_value.get.return_value = 0
+		mock_frappe.cache.incr.return_value = 1  # within limit
 		mock_frappe.utils.time_diff_in_hours.return_value = 48
 
 		mock_review = MagicMock()
@@ -117,9 +117,9 @@ class TestSubmitReview(unittest.TestCase):
 
 		submit_review("EVT-001", rating=5, review_text="Great!")
 
-		cache_calls = mock_frappe.cache.return_value.set.call_args_list
-		self.assertTrue(cache_calls)
-		key = cache_calls[0][0][0]
+		incr_call = mock_frappe.cache.incr.call_args
+		self.assertIsNotNone(incr_call)
+		key = incr_call[0][0]
 		self.assertIn("EVT-001", key)
 
 

@@ -170,37 +170,40 @@ def migrate_workspace_charts():
 		})
 		updated = True
 
-	# Ensure all three charts are in the content blocks
-	current_chart_blocks = {
-		b["data"]["chart_name"]
-		for b in content
-		if b.get("type") == "chart"
-	}
-	desired_charts = [
-		("Event Booking Revenue Trends", 6),
-		("Event Booking Count Trends",   6),
-		("Events By Event Type",         6),
-	]
-	for chart_name, col in desired_charts:
-		if chart_name not in current_chart_blocks:
-			content.append({
-				"type": "chart",
-				"data": {"chart_name": chart_name, "col": col},
-			})
-			updated = True
+	# Workspace shows only the Event Booking Count Trends chart (full-width).
+	# Remove any legacy or extra chart blocks from content.
+	desired_chart = "Event Booking Count Trends"
+	non_chart_blocks = [b for b in content if b.get("type") != "chart"]
+	count_block = next(
+		(b for b in content if b.get("type") == "chart" and b.get("data", {}).get("chart_name") == desired_chart),
+		{"id": "cnt_chart01", "type": "chart", "data": {"chart_name": desired_chart, "col": 12}},
+	)
+	# Ensure the single chart block is full-width
+	count_block.setdefault("data", {})["col"] = 12
+	new_content = []
+	for b in non_chart_blocks:
+		new_content.append(b)
+		# Insert chart block right after the onboarding block
+		if b.get("type") == "onboarding" and not any(x.get("type") == "chart" for x in new_content):
+			new_content.append(count_block)
+	if not any(b.get("type") == "chart" for b in new_content):
+		# No onboarding block present — prepend chart
+		new_content.insert(1 if new_content else 0, count_block)
+
+	if json.dumps(new_content) != json.dumps(content):
+		content = new_content
+		updated = True
 
 	if updated:
 		ws.content = json.dumps(content)
 		ws.module_onboarding = "Event Bookings Onboarding"
 
-	# Always sync the charts child table to match all desired charts
-	legacy_names = {"Monthly Events", "Event Revenue Trend"}
-	ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names]
-	existing_chart_names = {c.chart_name for c in ws.charts}
-	for chart_name, _ in desired_charts:
-		if chart_name not in existing_chart_names:
-			ws.append("charts", {"chart_name": chart_name, "label": chart_name})
-			updated = True
+	# Sync the charts child table — only the single count chart
+	legacy_names = {"Monthly Events", "Event Revenue Trend", "Event Booking Revenue Trends", "Events By Event Type"}
+	ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names and c.chart_name == desired_chart]
+	if not any(c.chart_name == desired_chart for c in ws.charts):
+		ws.append("charts", {"chart_name": desired_chart, "label": desired_chart})
+		updated = True
 
 	if updated:
 		ws.save(ignore_permissions=True)
@@ -320,19 +323,13 @@ def upgrade_designation_for_hrms():
 
 
 def create_default_settings():
-	"""Create one Event Booking Settings record per company (idempotent).
-	Only called when ERPNext is installed — Company DocType must exist.
+	"""Ensure the Event Booking Settings Single doctype exists with defaults.
+	The Single record is auto-created by Frappe on first save — this just
+	seeds sensible defaults if the record doesn't exist yet.
 	"""
-	for company in frappe.get_all("Company", pluck="name", limit_page_length=0):
-		if not frappe.db.exists("Event Booking Settings", company):
-			try:
-				frappe.get_doc({
-					"doctype": "Event Booking Settings",
-					"company": company,
-				}).insert(ignore_permissions=True)
-			except (frappe.DuplicateEntryError, frappe.ValidationError):
-				frappe.log_error(title=f"Failed to create Event Booking Settings for {company}")
-	frappe.db.commit()
+	if not frappe.db.exists("Event Booking Settings", "Event Booking Settings"):
+		frappe.get_doc({"doctype": "Event Booking Settings"}).insert(ignore_permissions=True)
+		frappe.db.commit()
 
 
 def create_custom_fields():
