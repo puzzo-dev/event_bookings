@@ -4,7 +4,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
 
-from event_bookings.utils.helpers import erpnext_installed
+from event_bookings.utils.erpnext_bridge import is_erpnext_installed, make_customer_from_lead
 
 
 # Whitelisted table-to-doctype mapping for SQL totals.
@@ -104,10 +104,7 @@ class EventBooking(Document):
     def handle_status_transition(self):
         status = self.booking_status
 
-        if status == "Quoted":
-            self.create_quotation()
-
-        elif status == "In Preparation":
+        if status == "In Preparation":
             self._notify_staff_requirements()
 
         elif status == "Cancelled":
@@ -150,29 +147,6 @@ class EventBooking(Document):
     # -----------------------------------------------------------------
     # Document Creation Helpers
     # -----------------------------------------------------------------
-
-    def create_quotation(self):
-        if self.quotation:
-            return
-        if not erpnext_installed():
-            return
-        # Quotation.quotation_to only accepts "Customer" or "Lead" (ERPNext values).
-        if self.party_type not in ("Customer", "Lead"):
-            frappe.throw(
-                f"Cannot create a Quotation for party type '{self.party_type}'. "
-                "Set Party Type to Customer or Lead first."
-            )
-        qt = frappe.get_doc({
-            "doctype": "Quotation",
-            "quotation_to": self.party_type,
-            "party_name": self.party_name,
-            "event_booking": self.name,
-            "cost_center": self.cost_center,
-        })
-        if not frappe.has_permission("Quotation", "create"):
-            frappe.throw("You do not have permission to create a Quotation.")
-        qt.insert(ignore_permissions=True)
-        self.quotation = qt.name
 
     # -----------------------------------------------------------------
     # Utilities
@@ -303,7 +277,7 @@ def _sql_items_total(doctype, name):
 def make_quotation(source_name, target_doc=None):
     if not frappe.has_permission("Event Booking", "read", source_name):
         frappe.throw("You do not have permission to read this Event Booking.")
-    if not erpnext_installed():
+    if not is_erpnext_installed():
         frappe.throw("ERPNext is required to create a Quotation.")
 
     def set_missing_values(source, target):
@@ -342,7 +316,7 @@ def convert_lead_and_update_booking(booking_name):
             _("You do not have permission to modify this Event Booking."),
             frappe.PermissionError,
         )
-    if not erpnext_installed():
+    if not is_erpnext_installed():
         frappe.throw(_("ERPNext is required to convert a Lead to a Customer."))
 
     party_type, lead = frappe.db.get_value(
@@ -364,9 +338,7 @@ def convert_lead_and_update_booking(booking_name):
                 _("You do not have permission to create a Customer."),
                 frappe.PermissionError,
             )
-        from erpnext.crm.doctype.lead.lead import make_customer
-
-        customer_doc = make_customer(lead)
+        customer_doc = make_customer_from_lead(lead)
         customer_doc.insert(ignore_permissions=True)
         customer_name = customer_doc.name
         already_existed = False
@@ -386,7 +358,7 @@ def convert_lead_and_update_booking(booking_name):
 def make_project(source_name, target_doc=None):
     if not frappe.has_permission("Event Booking", "read", source_name):
         frappe.throw("You do not have permission to read this Event Booking.")
-    if not erpnext_installed():
+    if not is_erpnext_installed():
         frappe.throw("ERPNext is required to create a Project.")
 
     def set_missing_values(source, target):

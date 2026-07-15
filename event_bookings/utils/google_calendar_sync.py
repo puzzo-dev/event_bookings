@@ -20,12 +20,6 @@ import datetime
 
 import frappe
 from frappe import _
-from googleapiclient.errors import HttpError
-
-from frappe.integrations.doctype.google_calendar.google_calendar import (
-	format_date_according_to_google_calendar,
-	get_google_calendar_object,
-)
 from frappe.utils import get_datetime, getdate, get_time
 
 
@@ -60,13 +54,14 @@ def _build_event_body(doc):
 		) + (f"Special Requirements: {doc.special_requirements}\n" if doc.special_requirements else ""),
 		"location": doc.event_location or "",
 	}
-	body.update(
-		format_date_according_to_google_calendar(
-			False,   # not all-day — Event Bookings always have a time
-			start_dt,
-			end_dt,
+	try:
+		from frappe.integrations.doctype.google_calendar.google_calendar import (
+			format_date_according_to_google_calendar,
 		)
-	)
+		body.update(format_date_according_to_google_calendar(False, start_dt, end_dt))
+	except ImportError:
+		body["start"] = {"dateTime": start_dt.isoformat(), "timeZone": frappe.utils.get_time_zone()}
+		body["end"] = {"dateTime": end_dt.isoformat(), "timeZone": frappe.utils.get_time_zone()}
 	return body
 
 
@@ -88,6 +83,16 @@ def push_to_google_calendar(doc, method=None):
 
 
 def _insert_event(doc):
+	try:
+		from googleapiclient.errors import HttpError
+		from frappe.integrations.doctype.google_calendar.google_calendar import (
+			format_date_according_to_google_calendar,
+			get_google_calendar_object,
+		)
+	except ImportError:
+		frappe.log_error(title="Google Calendar — missing dependency", message=frappe.get_traceback())
+		return
+
 	try:
 		google_calendar, account = get_google_calendar_object(doc.google_calendar)
 	except Exception:
@@ -134,6 +139,13 @@ def _update_event(doc):
 		return
 
 	try:
+		from googleapiclient.errors import HttpError
+		from frappe.integrations.doctype.google_calendar.google_calendar import get_google_calendar_object
+	except ImportError:
+		frappe.log_error(title="Google Calendar — missing dependency", message=frappe.get_traceback())
+		return
+
+	try:
 		google_calendar, account = get_google_calendar_object(doc.google_calendar)
 	except Exception:
 		frappe.log_error(
@@ -165,6 +177,13 @@ def _update_event(doc):
 def delete_from_google_calendar(doc, method=None):
 	"""Set the Google Calendar event status to 'cancelled' when the booking is deleted."""
 	if not doc.google_calendar_event_id or not doc.google_calendar:
+		return
+
+	try:
+		from googleapiclient.errors import HttpError
+		from frappe.integrations.doctype.google_calendar.google_calendar import get_google_calendar_object
+	except ImportError:
+		frappe.log_error(title="Google Calendar — missing dependency", message=frappe.get_traceback())
 		return
 
 	try:

@@ -37,8 +37,9 @@ def _get_sentry_client():
 		)
 		return None
 
-	# Re-init only when needed; sentry_sdk tracks its own Hub state.
-	if not sentry_sdk.Hub.current.client:
+	# Re-init only when needed.  get_client() returns a NullClient when
+	# Sentry is uninitialised; a NullClient has no .dsn attribute set.
+	if not getattr(sentry_sdk.get_client(), "dsn", None):
 		sentry_sdk.init(
 			dsn=dsn,
 			environment=frappe.get_conf().get("sentry_environment", "production"),
@@ -53,7 +54,7 @@ def capture_event(event: str, context: dict | None = None, level: str = "info"):
 
 	client = _get_sentry_client()
 	if client:
-		with client.push_scope() as scope:
+		with client.new_scope() as scope:
 			for key, value in ctx.items():
 				scope.set_extra(key, value)
 			scope.set_tag("event", event)
@@ -82,7 +83,7 @@ def capture_exception(
 
 	client = _get_sentry_client()
 	if client:
-		with client.push_scope() as scope:
+		with client.new_scope() as scope:
 			for key, value in ctx.items():
 				scope.set_extra(key, value)
 			scope.set_tag("event", event)

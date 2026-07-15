@@ -24,6 +24,25 @@ def get_or_create_test_party():
         return "Individual", "Test Event Individual"
 
 
+def get_or_create_test_customer(name="Test Event Customer"):
+    """Return a Customer name, creating the record if needed.
+
+    Only meaningful when ERPNext is installed. Tests that call this function
+    should be skipped on plain-Frappe sites via skipUnless or a conditional.
+    """
+    if not frappe.db.exists("DocType", "Customer"):
+        frappe.throw("ERPNext is required for customer-based tests.")
+    if not frappe.db.exists("Customer", name):
+        frappe.get_doc(
+            {
+                "doctype": "Customer",
+                "customer_name": name,
+                "customer_type": "Individual",
+            }
+        ).insert(ignore_permissions=True)
+    return name
+
+
 def get_or_create_test_event_type(name="Test Event"):
     """Return a test Event Type, creating it if needed."""
     if not frappe.db.exists("Event Type", name):

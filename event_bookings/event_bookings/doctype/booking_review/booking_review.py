@@ -97,11 +97,10 @@ def submit_review(event_booking, rating=None, review_text=None):
 	# Rate limiting per customer+event — atomic INCR so concurrent submits cannot
 	# both read a stale count and slip past the cap (check-then-set race).
 	_cache_key = f"event_booking_review_limit:{customer}:{event_booking}"
-	_redis = frappe.cache()
-	_count = _redis.incr(_cache_key)
+	_count = frappe.cache.incr(_cache_key)
 	if _count == 1:
 		# First hit in this window — arm the TTL.
-		_redis.expire(_cache_key, _RATE_LIMIT_WINDOW)
+		frappe.cache.expire(_cache_key, _RATE_LIMIT_WINDOW)
 	if _count > _MAX_REVIEWS_PER_WINDOW:
 		frappe.throw(_("Rate limit exceeded. Please try again later."))
 
