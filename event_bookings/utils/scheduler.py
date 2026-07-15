@@ -28,6 +28,10 @@ def daily():
 
 def sync_invoice_payment_status():
 	"""Transition Invoiced → Paid when linked Sales Invoice is paid."""
+	from event_bookings.utils.erpnext_bridge import is_erpnext_installed
+	if not is_erpnext_installed():
+		return
+
 	events = frappe.get_all(
 		"Event Booking",
 		filters={"booking_status": "Invoiced", "sales_invoice": ("is", "set"), "docstatus": 1},
