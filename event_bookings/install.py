@@ -1,3 +1,5 @@
+import json
+
 import frappe
 from frappe.utils import cstr
 
@@ -33,6 +35,8 @@ def after_migrate():
 	and creates missing Event Booking Settings records for companies added after install.
 	"""
 	migrate_workspace_charts()
+	cleanup_legacy_dashboard_name()
+	patch_upcoming_events_number_card()
 	if is_erpnext_installed():
 		create_default_settings()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
@@ -209,6 +213,52 @@ def migrate_workspace_charts():
 		ws.save(ignore_permissions=True)
 		frappe.db.commit()
 		frappe.logger().info("event_bookings: workspace charts patched successfully")
+
+
+def cleanup_legacy_dashboard_name():
+	"""Remove duplicate dashboards, keeping the canonical 'Event Bookings' record.
+	Fixtures create the dashboard as 'Event Bookings'; older records named
+	'Event Booking' or 'Event Booking Dashboard' are deleted if present.
+	"""
+	canonical = "Event Bookings"
+	duplicates = {"Event Booking", "Event Booking Dashboard"}
+
+	if not frappe.db.exists("Dashboard", canonical):
+		# Keep the existing record under a duplicate name until migrate creates the canonical one.
+		return
+
+	for name in duplicates:
+		if frappe.db.exists("Dashboard", name):
+			_safe_delete("Dashboard", name)
+			frappe.logger().info(f"event_bookings: removed duplicate dashboard '{name}'")
+
+	frappe.db.commit()
+
+
+def patch_upcoming_events_number_card():
+	"""Ensure the Upcoming Events number card counts future events that have
+	advanced past negotiation (i.e. not Cancelled, New, Quoted or Negotiating).
+	"""
+	name = "Upcoming Events"
+	if not frappe.db.exists("Number Card", name):
+		return
+
+	# Dynamic filter value is a JS expression eval'd client-side (see
+	# frappe/public/js/frappe/utils/dashboard_utils.js get_all_filters).
+	dynamic_filters = [["Event Booking", "event_date", ">=", "frappe.datetime.get_today()", False]]
+	static_filters = [["Event Booking", "booking_status", "not in", "Cancelled,New,Quoted,Negotiating", False]]
+
+	changed = False
+	if frappe.db.get_value("Number Card", name, "filters_json") != json.dumps(static_filters):
+		frappe.db.set_value("Number Card", name, "filters_json", json.dumps(static_filters))
+		changed = True
+	if frappe.db.get_value("Number Card", name, "dynamic_filters_json") != json.dumps(dynamic_filters):
+		frappe.db.set_value("Number Card", name, "dynamic_filters_json", json.dumps(dynamic_filters))
+		changed = True
+
+	if changed:
+		frappe.db.commit()
+		frappe.logger().info("event_bookings: patched 'Upcoming Events' number card filters")
 
 
 def _fix_chart_filters_json():

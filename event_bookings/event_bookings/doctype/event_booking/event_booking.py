@@ -28,30 +28,14 @@ class EventBooking(Document):
             self._validate_status_transition()
             self.handle_status_transition()
 
-    VALID_STATUS_TRANSITIONS = {
-        "New":            {"Quoted", "Cancelled"},
-        "Quoted":         {"Negotiating", "Cancelled"},
-        "Negotiating":    {"Confirmed", "Cancelled"},
-        "Confirmed":      {"In Preparation", "Cancelled"},
-        "In Preparation": {"Executed", "Cancelled"},
-        "Executed":       {"Invoiced", "Cancelled"},
-        "Invoiced":       {"Paid", "Cancelled"},
-        "Paid":           {"Cancelled"},
-        "Cancelled":      set(),
-    }
-
     def _validate_status_transition(self):
         if self.is_new():
             return
         old_status = self._cached_old_status
         if old_status is None or old_status == self.booking_status:
             return
-        allowed = self.VALID_STATUS_TRANSITIONS.get(old_status, set())
-        if self.booking_status not in allowed:
-            frappe.throw(
-                f"Invalid status transition: '{old_status}' → '{self.booking_status}'. "
-                f"Allowed transitions from '{old_status}': {', '.join(sorted(allowed)) or 'none'}."
-            )
+        # All status transitions are allowed; validation still runs so the
+        # transition hook (notifications, linked-doc cancellation) fires reliably.
 
     # -----------------------------------------------------------------
     # Validations
@@ -154,6 +138,22 @@ class EventBooking(Document):
 
     def get_settings(self):
         return frappe.get_cached_doc("Event Booking Settings")
+
+    @staticmethod
+    def get_indicator(doc):
+        """Return colored indicator for booking_status in list views."""
+        status_colors = {
+            "New": "blue",
+            "Quoted": "blue",
+            "Negotiating": "orange",
+            "Confirmed": "blue",
+            "In Preparation": "blue",
+            "Executed": "gray",
+            "Invoiced": "green",
+            "Paid": "green",
+            "Cancelled": "red",
+        }
+        return [doc.booking_status, status_colors.get(doc.booking_status, "gray")]
 
 
 # ---------------------------------------------------------------------------

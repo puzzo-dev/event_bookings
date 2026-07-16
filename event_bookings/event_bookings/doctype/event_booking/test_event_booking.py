@@ -33,10 +33,10 @@ class TestEventBooking(FrappeTestCase):
 		doc.save()
 		self.assertEqual(doc.booking_status, "Quoted")
 
-	def test_invalid_status_transition(self):
-		"""Invalid transitions (New → Paid) should be rejected."""
+	def test_any_status_transition_allowed(self):
+		"""Any transition (e.g. New → Paid) should now be allowed."""
 		doc = frappe.new_doc("Event Booking")
-		doc.event_name = "Test Invalid Transition"
+		doc.event_name = "Test Any Transition"
 		doc.booking_status = "New"
 		doc.party_type = "Individual"
 		doc.party_name = "Test Party"
@@ -47,5 +47,5 @@ class TestEventBooking(FrappeTestCase):
 		doc.insert()
 
 		doc.booking_status = "Paid"
-		with self.assertRaises(frappe.ValidationError):
-			doc.save()
+		doc.save()
+		self.assertEqual(doc.booking_status, "Paid")
