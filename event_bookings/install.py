@@ -289,6 +289,11 @@ def _fix_chart_filters_json():
 		except (ValueError, TypeError):
 			stored = {}
 
+		# Defensive: legacy/corrupt filters_json can be a list; reset it so the
+		# dict operations below don't raise AttributeError during migrate.
+		if not isinstance(stored, dict):
+			stored = {}
+
 		changed = False
 
 		# Fix date_field on trend charts
