@@ -139,21 +139,6 @@ class EventBooking(Document):
     def get_settings(self):
         return frappe.get_cached_doc("Event Booking Settings")
 
-    @staticmethod
-    def get_indicator(doc):
-        """Return colored indicator for booking_status in list views."""
-        status_colors = {
-            "New": "blue",
-            "Quoted": "blue",
-            "Negotiating": "orange",
-            "Confirmed": "blue",
-            "In Preparation": "blue",
-            "Executed": "gray",
-            "Invoiced": "green",
-            "Paid": "green",
-            "Cancelled": "red",
-        }
-        return [doc.booking_status, status_colors.get(doc.booking_status, "gray")]
 
 
 # ---------------------------------------------------------------------------
