@@ -10,6 +10,21 @@ maintenance branches share one monotonic line: `version-15` ships this release
 as `2.0.0`, `version-16` ships the same feature set plus v16 compatibility as
 `2.1.0`.
 
+## [2.1.1] - 2026-08-06
+
+### Fixed
+- Removing the settings DocType in 2.1.0 left an orphaned `Onboarding Step Map`
+  row, so the onboarding showed a dead first step. Swept in the patch and on
+  every migrate.
+- Code-backed records (workspace, module onboarding) were never re-imported:
+  `import_file_by_path` skips a file whose `modified` is older than the DB row.
+  Timestamps bumped so edits actually reach the database.
+
+### Added
+- Onboarding steps "Review your Event Alerts" (opens the Notification list,
+  now the only place event alerts are configured) and "Track your Booking
+  Pipeline" (opens the Event Booking Pipeline report).
+
 ## [2.1.0] - 2026-08-06
 
 Same feature set as `2.0.0` (see below), plus the Frappe v16 compatibility work
