@@ -13,6 +13,7 @@
   "booking_date",
   "party_type",
   "party_name",
+  "contact_phone",
   "col_type",
   "event_type",
   "event_planner",
@@ -72,21 +73,30 @@
    "search_index": 1
   },
   {
-   "default": "Individual",
+   "default": "Lead",
    "fieldname": "party_type",
    "fieldtype": "Select",
    "in_list_view": 1,
    "label": "Party Type",
-   "options": "Individual\nOrganization\nCustomer\nLead",
+   "options": "Customer\nLead",
    "reqd": 1
   },
   {
+   "bold": 1,
    "fieldname": "party_name",
-   "fieldtype": "Data",
+   "fieldtype": "Dynamic Link",
    "in_list_view": 1,
-   "label": "Party Name",
+   "in_standard_filter": 1,
+   "label": "Party",
+   "options": "party_type",
    "reqd": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone",
+   "read_only": 1
   },
   {
    "fieldname": "col_type",
@@ -306,6 +316,7 @@
  "permissions": [
   {
    "create": 1,
+   "delete": 1,
    "email": 1,
    "export": 1,
    "print": 1,

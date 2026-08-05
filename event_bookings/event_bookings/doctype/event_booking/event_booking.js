@@ -6,60 +6,23 @@ frappe.ui.form.on("Event Booking", {
         if (frm.fields_dict.special_requirements && frm.fields_dict.special_requirements.$input) {
             frm.fields_dict.special_requirements.$input.css('height', '100px');
         }
+        _render_items_html(frm);
         if (!frm.is_new()) {
-            // Convert Lead to Customer — only when party is a Lead
-            if (frm.doc.party_type === "Lead") {
-                frm.add_custom_button(__('Convert Lead to Customer'), function() {
-                    frappe.db.get_value("Customer", { lead_name: frm.doc.party_name }, "name").then(r => {
-                        if (r && r.message && r.message.name) {
-                            // Already a Customer — just link silently
-                            _do_convert(frm, null);
-                        } else {
-                            frappe.confirm(
-                                __('Convert Lead <b>{0}</b> to a Customer and update this booking?',
-                                    [frm.doc.party_name]),
-                                () => _do_convert(frm, null)
-                            );
-                        }
+            if (!frm.doc.quotation && !frm.doc.sales_order) {
+                frm.add_custom_button(__('Create Quotation'), function() {
+                    frappe.model.open_mapped_doc({
+                        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_quotation",
+                        frm: frm
                     });
                 }, __('Actions'));
             }
 
-            if (!frm.doc.quotation && !frm.doc.sales_order) {
-                frm.add_custom_button(__('Create Quotation'), function() {
-                    if (frm.doc.party_type === "Lead") {
-                        _prompt_lead_conversion(frm, function() {
-                            frappe.model.open_mapped_doc({
-                                method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_quotation",
-                                frm: frm
-                            });
-                        });
-                    } else {
-                        frappe.model.open_mapped_doc({
-                            method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_quotation",
-                            frm: frm
-                        });
-                    }
-                }, __('Actions'));
-            }
-
-            if (frm.doc.quotation && !frm.doc.sales_order) {
+            if (!frm.doc.sales_order) {
                 frm.add_custom_button(__('Create Sales Order'), function() {
-                    if (frm.doc.party_type === "Lead") {
-                        _prompt_lead_conversion(frm, function() {
-                            frappe.model.open_mapped_doc({
-                                method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
-                                source_name: frm.doc.quotation,
-                                frm: frm
-                            });
-                        });
-                    } else {
-                        frappe.model.open_mapped_doc({
-                            method: "erpnext.selling.doctype.quotation.quotation.make_sales_order",
-                            source_name: frm.doc.quotation,
-                            frm: frm
-                        });
-                    }
+                    frappe.model.open_mapped_doc({
+                        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_sales_order",
+                        frm: frm
+                    });
                 }, __('Actions'));
             }
 
@@ -79,58 +42,51 @@ frappe.ui.form.on("Event Booking", {
     },
 });
 
-function _prompt_lead_conversion(frm, on_skip) {
-    // Check if this Lead already has a Customer in the system — skip the dialog if so
-    frappe.db.get_value("Customer", { lead_name: frm.doc.party_name }, "name").then(r => {
-        if (r && r.message && r.message.name) {
-            // Lead is already a Customer — silently link and proceed
-            _do_convert(frm, on_skip);
-        } else {
-            _show_conversion_dialog(frm, on_skip);
-        }
-    });
-}
+function _render_items_html(frm) {
+    const field = frm.get_field("items_html");
+    if (!field || !field.wrapper) return;
 
-function _do_convert(frm, on_skip) {
+    const source = frm.doc.sales_order || frm.doc.quotation;
+    const $wrapper = $(field.wrapper);
+
+    if (!source) {
+        $wrapper.empty();
+        return;
+    }
+
+    const method = frm.doc.sales_order
+        ? "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_sales_order"
+        : "event_bookings.event_bookings.doctype.event_booking.event_booking.get_items_from_quotation";
+
+    const args = frm.doc.sales_order
+        ? { sales_order_name: source }
+        : { quotation_name: source };
+
     frappe.call({
-        method: "event_bookings.event_bookings.doctype.event_booking.event_booking.convert_lead_and_update_booking",
-        args: { booking_name: frm.doc.name },
-        freeze: true,
-        freeze_message: __("Linking Customer..."),
+        method: method,
+        args: args,
         callback(r) {
-            if (r.message) {
-                const msg = r.message.already_existed
-                    ? __("Booking linked to existing Customer: {0}", [r.message.customer])
-                    : __("Lead converted to Customer: {0}", [r.message.customer]);
-                frappe.show_alert({ message: msg, indicator: "green" }, 5);
-                frm.reload_doc().then(() => on_skip && on_skip());
+            if (!r.message || !r.message.length) {
+                $wrapper.html("<p class='text-muted small'>" + __("No items found.") + "</p>");
+                return;
             }
+            let html = "<table class='table table-bordered table-sm'>"
+                + "<thead><tr>"
+                + "<th>" + __("Item") + "</th>"
+                + "<th class='text-right'>" + __("Qty") + "</th>"
+                + "<th class='text-right'>" + __("Rate") + "</th>"
+                + "<th class='text-right'>" + __("Amount") + "</th>"
+                + "</tr></thead><tbody>";
+            for (const item of r.message) {
+                html += "<tr>"
+                    + "<td>" + (item.item_name || item.item_code || "") + "</td>"
+                    + "<td class='text-right'>" + (item.qty || 0) + "</td>"
+                    + "<td class='text-right'>" + frappe.format(item.rate, {fieldtype: "Currency"}) + "</td>"
+                    + "<td class='text-right'>" + frappe.format(item.amount, {fieldtype: "Currency"}) + "</td>"
+                    + "</tr>";
+            }
+            html += "</tbody></table>";
+            $wrapper.html(html);
         }
     });
-}
-
-function _show_conversion_dialog(frm, on_skip) {
-    const d = new frappe.ui.Dialog({
-        title: __("Lead Detected"),
-        fields: [
-            {
-                fieldtype: "HTML",
-                options: `<div class="alert alert-warning" style="margin-bottom:0">
-                    <b>${__("Party is a Lead, not a Customer.")}</b><br>
-                    ${__("Sales Orders and Invoices require a Customer. Would you like to convert <b>{0}</b> to a Customer now, or proceed with the Lead?", [frm.doc.party_name])}
-                </div>`
-            }
-        ],
-        primary_action_label: __("Convert to Customer & Proceed"),
-        primary_action() {
-            d.hide();
-            _do_convert(frm, on_skip);
-        },
-        secondary_action_label: __("Proceed as Lead"),
-        secondary_action() {
-            d.hide();
-            on_skip && on_skip();
-        }
-    });
-    d.show();
 }

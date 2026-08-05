@@ -353,7 +353,14 @@ def _insert_notification_logs(notifications):
 		)
 		frappe.db.commit()
 	except Exception:
-		frappe.log_error(title="Bulk notification log insert failed — retrying individually")
+		frappe.log_error(
+			title="Bulk notification log insert failed — falling back to individual inserts",
+			message=frappe.get_traceback(),
+		)
+		frappe.logger("event_bookings").warning(
+			"Notification Log bulk_insert failed — falling back to individual inserts. "
+			"This may indicate a schema change in Notification Log; update the field list in _insert_notification_logs."
+		)
 		for n in notifications:
 			try:
 				frappe.get_doc({
