@@ -37,6 +37,7 @@ def after_migrate():
 	migrate_workspace_charts()
 	cleanup_legacy_dashboard_name()
 	patch_upcoming_events_number_card()
+	patch_events_this_month_number_card()
 	if is_erpnext_installed():
 		create_default_settings()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
@@ -96,6 +97,9 @@ def before_uninstall():
 	for role in ("Event Manager", "Event Assistant"):
 		if frappe.db.exists("Role", role):
 			_safe_delete("Role", role)
+	# App-created COA accounts.  These have no module link to Event Bookings,
+	# so Frappe's module-based uninstall never removes them.
+	_remove_event_coa_accounts()
 	frappe.db.commit()
 
 
@@ -121,6 +125,18 @@ def _remove_custom_field(doctype, fieldname):
 	name = f"{doctype}-{fieldname}"
 	if frappe.db.exists("Custom Field", name):
 		_safe_delete("Custom Field", name)
+
+
+def _remove_event_coa_accounts():
+	"""Delete the Event Revenue, Event COGS, and Event Damages Expenses accounts
+	created by ``create_event_coa_accounts``.  These are normal ledger accounts
+	with no module link, so Frappe's module-based uninstall leaves them behind.
+	"""
+	if not frappe.db.exists("DocType", "Account"):
+		return
+	for account_name in ("Event Revenue", "Event COGS", "Event Damages Expenses"):
+		for name in frappe.get_all("Account", filters={"account_name": account_name}, pluck="name"):
+			_safe_delete("Account", name)
 
 
 def _safe_delete(doctype, name):
@@ -259,6 +275,34 @@ def patch_upcoming_events_number_card():
 	if changed:
 		frappe.db.commit()
 		frappe.logger().info("event_bookings: patched 'Upcoming Events' number card filters")
+
+
+def patch_events_this_month_number_card():
+	"""Fix the 'Events This Month' number card: replace the non-existent
+	'event_timing' field with 'event_date' in filters_json.
+	"""
+	name = "Events This Month"
+	if not frappe.db.exists("Number Card", name):
+		return
+
+	raw = frappe.db.get_value("Number Card", name, "filters_json") or "[]"
+	if "event_timing" not in raw:
+		return
+
+	try:
+		filters = json.loads(raw)
+	except (ValueError, TypeError):
+		filters = []
+
+	fixed = []
+	for row in filters:
+		if isinstance(row, list) and len(row) >= 3 and row[1] == "event_timing":
+			row[1] = "event_date"
+		fixed.append(row)
+
+	frappe.db.set_value("Number Card", name, "filters_json", json.dumps(fixed))
+	frappe.db.commit()
+	frappe.logger().info("event_bookings: patched 'Events This Month' number card — event_timing → event_date")
 
 
 def _fix_chart_filters_json():

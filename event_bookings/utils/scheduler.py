@@ -357,7 +357,10 @@ def _insert_notification_logs(notifications):
 		)
 		frappe.db.commit()
 	except Exception:
-		frappe.log_error(title="Bulk notification log insert failed — retrying individually")
+		frappe.logger("event_bookings").warning(
+			"Bulk notification log insert failed — retrying individually",
+			exc_info=True,
+		)
 		for n in notifications:
 			try:
 				frappe.get_doc({
