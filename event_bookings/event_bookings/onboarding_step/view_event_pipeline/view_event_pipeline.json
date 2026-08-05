@@ -1,0 +1,23 @@
+{
+ "action": "View Report",
+ "creation": "2026-08-06 00:00:00.000000",
+ "description": "See every booking grouped by stage \u2014 from first enquiry through Quoted, Confirmed and Invoiced \u2014 so you can spot deals that have stalled.\n\nThe Event Bookings workspace also carries a Count Trends chart broken down by event type, plus number cards for upcoming events and pending invoices.",
+ "docstatus": 0,
+ "doctype": "Onboarding Step",
+ "idx": 0,
+ "is_complete": 0,
+ "is_single": 0,
+ "is_skipped": 0,
+ "modified": "2026-08-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "View Event Booking Pipeline",
+ "owner": "Administrator",
+ "reference_report": "Event Booking Pipeline",
+ "report_description": "Track every booking by stage",
+ "report_reference_doctype": "Event Booking",
+ "report_type": "Script Report",
+ "show_form_tour": 0,
+ "show_full_form": 0,
+ "title": "Track your Booking Pipeline",
+ "validate_action": 0
+}

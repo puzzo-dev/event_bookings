@@ -1,0 +1,20 @@
+{
+ "action": "Go to Page",
+ "creation": "2026-08-06 00:00:00.000000",
+ "description": "Event Bookings ships three ready-made alerts: a reminder 3 days before an event, another 1 day before, and an under-staffed warning.\n\nOpen the Notification list to review recipients, tweak the wording, or disable any you do not want. This is where **all** event alerts are configured \u2014 the app has no settings page of its own. For WhatsApp, create a **WhatsApp Notification** instead.",
+ "docstatus": 0,
+ "doctype": "Onboarding Step",
+ "idx": 0,
+ "is_complete": 0,
+ "is_single": 0,
+ "is_skipped": 0,
+ "modified": "2026-08-06 00:00:00.000000",
+ "modified_by": "Administrator",
+ "name": "Review Event Notifications",
+ "owner": "Administrator",
+ "path": "List/Notification",
+ "show_form_tour": 0,
+ "show_full_form": 0,
+ "title": "Review your Event Alerts",
+ "validate_action": 0
+}

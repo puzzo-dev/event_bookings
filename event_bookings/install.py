@@ -34,6 +34,8 @@ def after_migrate():
 	"""
 	migrate_workspace_charts()
 	cleanup_legacy_dashboard_name()
+	from event_bookings.patches.drop_event_booking_settings import drop_orphan_onboarding_steps
+	drop_orphan_onboarding_steps()
 	patch_upcoming_events_number_card()
 	repair_event_booking_dashboard_metadata()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
