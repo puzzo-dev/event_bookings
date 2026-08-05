@@ -27,7 +27,7 @@
   "custom_options": "{\"type\": \"line\", \"tooltipOptions\": {}, \"lineOptions\": {\"regionFill\": 1}}",
   "docstatus": 0,
   "doctype": "Dashboard Chart",
-  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"booking_date\", \"fiscal_year\": null}",
+  "filters_json": "{\"period\": \"Monthly\", \"based_on\": \"Count\", \"date_field\": \"booking_date\", \"fiscal_year\": null, \"group_by\": \"Event Type\"}",
   "is_public": 1,
   "is_standard": 0,
   "module": "Event Bookings",

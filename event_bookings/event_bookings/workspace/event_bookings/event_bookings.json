@@ -5,7 +5,7 @@
    "label": "Event Booking Count Trends"
   }
  ],
- "content": "[{\"id\": \"onboard01\", \"type\": \"onboarding\", \"data\": {\"onboarding_name\": \"Event Bookings Onboarding\", \"col\": 12}}, {\"id\": \"cnt_chart01\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Count Trends\", \"col\": 12}}, {\"id\": \"nc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"nc01\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Upcoming Events\", \"col\": 3}}, {\"id\": \"nc02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Events This Month\", \"col\": 3}}, {\"id\": \"nc03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Invoices\", \"col\": 3}}, {\"id\": \"nc04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Revenue\", \"col\": 3}}, {\"id\": \"sc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"sc01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 3}}, {\"id\": \"sc02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 3}}, {\"id\": \"sc03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 3}}, {\"id\": \"sc04\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Booking Settings\", \"col\": 3}}, {\"id\": \"sc05\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 3}}, {\"id\": \"lk_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"id\": \"lk01\", \"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"id\": \"lk02\", \"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"id\": \"lk03\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
+ "content": "[{\"id\": \"onboard01\", \"type\": \"onboarding\", \"data\": {\"onboarding_name\": \"Event Bookings Onboarding\", \"col\": 12}}, {\"id\": \"cnt_chart01\", \"type\": \"chart\", \"data\": {\"chart_name\": \"Event Booking Count Trends\", \"col\": 12}}, {\"id\": \"nc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Key Metrics</b></span>\", \"col\": 12}}, {\"id\": \"nc01\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Upcoming Events\", \"col\": 3}}, {\"id\": \"nc02\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Events This Month\", \"col\": 3}}, {\"id\": \"nc03\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Pending Invoices\", \"col\": 3}}, {\"id\": \"nc04\", \"type\": \"number_card\", \"data\": {\"number_card_name\": \"Total Revenue\", \"col\": 3}}, {\"id\": \"sc_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Shortcuts</b></span>\", \"col\": 12}}, {\"id\": \"sc01\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"New Event Booking\", \"col\": 3}}, {\"id\": \"sc02\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings List\", \"col\": 3}}, {\"id\": \"sc03\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Types\", \"col\": 3}}, {\"id\": \"sc05\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Booking Review\", \"col\": 3}}, {\"id\": \"sc06\", \"type\": \"shortcut\", \"data\": {\"shortcut_name\": \"Event Bookings Dashboard\", \"col\": 3}}, {\"id\": \"lk_header01\", \"type\": \"header\", \"data\": {\"text\": \"<span class=\\\"h4\\\"><b>Links</b></span>\", \"col\": 12}}, {\"id\": \"lk01\", \"type\": \"card\", \"data\": {\"card_name\": \"Sales / Selling\", \"col\": 4}}, {\"id\": \"lk02\", \"type\": \"card\", \"data\": {\"card_name\": \"Buying / Purchase\", \"col\": 4}}, {\"id\": \"lk03\", \"type\": \"card\", \"data\": {\"card_name\": \"Reports\", \"col\": 4}}]",
  "creation": "2026-06-25 16:09:40.727463",
  "custom_blocks": [],
  "docstatus": 0,
@@ -196,16 +196,6 @@
    "type": "DocType"
   },
   {
-   "color": "grey",
-   "doc_view": "",
-   "format": "",
-   "icon": "settings",
-   "label": "Event Booking Settings",
-   "link_to": "Event Booking Settings",
-   "stats_filter": "",
-   "type": "DocType"
-  },
-  {
    "color": "pink",
    "doc_view": "List",
    "format": "",
@@ -214,7 +204,18 @@
    "link_to": "Booking Review",
    "stats_filter": "",
    "type": "DocType"
+  },
+  {
+   "color": "blue",
+   "doc_view": "",
+   "format": "",
+   "icon": "dashboard",
+   "label": "Event Bookings Dashboard",
+   "link_to": "Event Bookings",
+   "stats_filter": "",
+   "type": "Dashboard"
   }
  ],
- "title": "Event Bookings"
+ "title": "Event Bookings",
+ "type": "Workspace"
 }

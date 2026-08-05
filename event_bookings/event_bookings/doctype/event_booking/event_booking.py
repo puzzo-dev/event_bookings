@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
 
+from event_bookings.utils.erpnext_bridge import make_customer_from_lead
 from event_bookings.utils.helpers import erpnext_installed
 
 
@@ -19,6 +20,8 @@ _ITEMS_TABLE = {
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
+        self.validate_party()
+        self._fetch_contact_phone()
 
     def before_save(self):
         self.calculate_totals()
@@ -80,9 +83,55 @@ class EventBooking(Document):
         }, update_modified=False)
 
     def validate_dates(self):
-        if self.event_date and getdate(self.event_date) < getdate(today()):
-            if not self.is_new():
-                frappe.throw("Event Date cannot be moved to a past date on an existing booking.")
+        if self.event_date and not self.is_new():
+            if self.has_value_changed("event_date"):
+                if getdate(self.event_date) < getdate(today()):
+                    frappe.throw(_("Event Date cannot be moved to a past date on an existing booking."))
+
+    def validate_party(self):
+        if self.party_type in ("Customer", "Lead") and self.party_name:
+            if not frappe.db.exists(self.party_type, self.party_name):
+                frappe.throw(
+                    _("{0} '{1}' does not exist. Please select a valid {0}.").format(
+                        self.party_type, self.party_name
+                    )
+                )
+
+    def _fetch_contact_phone(self):
+        """Auto-populate contact_phone from the linked Lead or Customer.
+
+        For Lead: reads mobile_no / whatsapp_no / phone directly.
+        For Customer: reads from the primary Contact linked via Dynamic Link.
+        """
+        if not self.party_type or not self.party_name:
+            self.contact_phone = None
+            return
+
+        if self.party_type == "Lead":
+            self.contact_phone = (
+                frappe.db.get_value("Lead", self.party_name, "whatsapp_no")
+                or frappe.db.get_value("Lead", self.party_name, "mobile_no")
+                or frappe.db.get_value("Lead", self.party_name, "phone")
+            )
+        elif self.party_type == "Customer":
+            contact_name = frappe.get_all(
+                "Dynamic Link",
+                filters={
+                    "link_doctype": "Customer",
+                    "link_name": self.party_name,
+                    "parenttype": "Contact",
+                },
+                fields=["parent"],
+                order_by="idx asc",
+                limit=1,
+            )
+            if contact_name:
+                self.contact_phone = (
+                    frappe.db.get_value("Contact", contact_name[0]["parent"], "mobile_no")
+                    or frappe.db.get_value("Contact", contact_name[0]["parent"], "phone")
+                )
+            else:
+                self.contact_phone = None
 
     # -----------------------------------------------------------------
     # Status Transition Hook
@@ -159,8 +208,7 @@ class EventBooking(Document):
         # Quotation.quotation_to only accepts "Customer" or "Lead" (ERPNext values).
         if self.party_type not in ("Customer", "Lead"):
             frappe.throw(
-                f"Cannot create a Quotation for party type '{self.party_type}'. "
-                "Set Party Type to Customer or Lead first."
+                _("Cannot create a Quotation for party type '{0}'. Set Party Type to Customer or Lead first.").format(self.party_type)
             )
         qt = frappe.get_doc({
             "doctype": "Quotation",
@@ -169,17 +217,12 @@ class EventBooking(Document):
             "event_booking": self.name,
             "cost_center": self.cost_center,
         })
+        if self.event_planner:
+            qt.referral_sales_partner = self.event_planner
         if not frappe.has_permission("Quotation", "create"):
-            frappe.throw("You do not have permission to create a Quotation.")
-        qt.insert(ignore_permissions=True)
+            frappe.throw(_("You do not have permission to create a Quotation."))
+        qt.insert()
         self.quotation = qt.name
-
-    # -----------------------------------------------------------------
-    # Utilities
-    # -----------------------------------------------------------------
-
-    def get_settings(self):
-        return frappe.get_cached_doc("Event Booking Settings")
 
 
 # ---------------------------------------------------------------------------
@@ -364,22 +407,70 @@ def convert_lead_and_update_booking(booking_name):
                 _("You do not have permission to create a Customer."),
                 frappe.PermissionError,
             )
-        from erpnext.crm.doctype.lead.lead import make_customer
-
-        customer_doc = make_customer(lead)
+        # Route through the bridge: it resolves the v15/v16 make_customer
+        # location AND backfills customer_group / territory, without which
+        # customer.insert() raises MandatoryError.
+        customer_doc = make_customer_from_lead(lead)
         customer_doc.insert(ignore_permissions=True)
         customer_name = customer_doc.name
         already_existed = False
 
-    # Repoint the booking via set_value so the (possibly past-dated) booking's
-    # validate() date guard cannot block a legitimate party conversion.
-    frappe.db.set_value(
-        "Event Booking",
-        booking_name,
-        {"party_type": "Customer", "party_name": customer_name},
-    )
+    booking = frappe.get_doc("Event Booking", booking_name)
+    booking.party_type = "Customer"
+    booking.party_name = customer_name
+    booking.save(ignore_permissions=True)
 
     return {"customer": customer_name, "already_existed": already_existed}
+
+
+@frappe.whitelist()
+def make_sales_order(source_name, target_doc=None):
+    if not frappe.has_permission("Event Booking", "read", source_name):
+        frappe.throw(_("You do not have permission to read this Event Booking."))
+    if not erpnext_installed():
+        frappe.throw(_("ERPNext is required to create a Sales Order."))
+
+    booking = frappe.get_doc("Event Booking", source_name)
+
+    # Auto-convert Lead to Customer if needed — Sales Order requires a Customer.
+    if booking.party_type == "Lead":
+        existing = frappe.db.get_value("Customer", {"lead_name": booking.party_name}, "name")
+        if existing:
+            customer_name = existing
+        else:
+            # Bridge handles the v15/v16 API move and the mandatory-field
+            # backfill, so this silent conversion never surfaces a dialog.
+            customer_doc = make_customer_from_lead(booking.party_name)
+            customer_doc.insert(ignore_permissions=True)
+            customer_name = customer_doc.name
+        booking.party_type = "Customer"
+        booking.party_name = customer_name
+        booking.save(ignore_permissions=True)
+
+    if booking.party_type != "Customer":
+        frappe.throw(_("Sales Order requires a Customer. Convert the Lead first."))
+
+    def set_missing_values(source, target):
+        target.customer = source.party_name
+        target.event_booking = source.name
+        if source.event_planner:
+            target.sales_partner = source.event_planner
+
+    return get_mapped_doc(
+        "Event Booking",
+        source_name,
+        {
+            "Event Booking": {
+                "doctype": "Sales Order",
+                "field_map": {
+                    "cost_center": "cost_center",
+                    "company": "company",
+                },
+            }
+        },
+        target_doc,
+        set_missing_values,
+    )
 
 
 @frappe.whitelist()
@@ -482,7 +573,12 @@ def get_calendar_events(start, end, filters=None):
             filters = json.loads(filters)
         # Whitelist filter keys — prevents arbitrary filter injection from the client.
         _ALLOWED_FILTERS = {"booking_status", "event_type", "event_planner"}
-        conditions.update({k: v for k, v in filters.items() if k in _ALLOWED_FILTERS})
+        if isinstance(filters, dict):
+            conditions.update({k: v for k, v in filters.items() if k in _ALLOWED_FILTERS})
+        elif isinstance(filters, list):
+            for row in filters:
+                if isinstance(row, list) and len(row) >= 4 and row[1] in _ALLOWED_FILTERS:
+                    conditions[row[1]] = row[3]
 
     # frappe.get_list respects user permissions; frappe.get_all would bypass them.
     events = frappe.get_list(

@@ -45,7 +45,6 @@ This document describes the end-to-end workflow for planning, executing, and clo
 - **Status update**: move Booking Status to **Negotiating** → **Confirmed**.
 
 ### 5. Project & Cost Center Setup (optional)
-- If **Event Booking Settings** has "Auto-Create Cost Center Per Event" enabled, a Cost Center is auto-created on confirmation.
 - Otherwise, manually create a Cost Center for this event.
 - Link the Cost Center and optionally a **Project** to the Event Booking.
 - Use the Project to track tasks, timelines, and milestones.

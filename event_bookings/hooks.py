@@ -4,6 +4,9 @@ app_publisher = "I-Varse Technologies NG"
 app_description = "Event Management"
 app_email = "dev@itechnologies.ng"
 app_license = "mit"
+app_icon = "/assets/event_bookings/images/logo.svg"
+app_logo_url = "/assets/event_bookings/images/logo.svg"
+favicon = "/assets/event_bookings/images/logo.png"
 
 # Apps
 # ------------------
@@ -12,23 +15,28 @@ app_license = "mit"
 # Shift Assignment management respectively.  The app works on plain Frappe.
 # required_apps = ["erpnext", "hrms"]
 
-# Each item in the list will be shown as an app in the apps page
-# add_to_apps_screen = [
-# 	{
-# 		"name": "event_bookings",
-# 		"logo": "/assets/event_bookings/logo.png",
-# 		"title": "Event Bookings",
-# 		"route": "/event_bookings",
-# 		"has_permission": "event_bookings.api.permission.has_app_permission"
-# 	}
-# ]
+# Each item in the list will be shown as an app in the apps page.
+# NOTE: v16 moved Desk from /app to /desk, so the route differs from the v15
+# branch (which uses "/app").  Keep them in sync when porting between benches.
+add_to_apps_screen = [
+	{
+		"name": "event_bookings",
+		"logo": "/assets/event_bookings/images/logo.svg",
+		"title": "Event Bookings",
+		"route": "/desk",
+		"has_permission": "event_bookings.api.permission.has_app_permission"
+	}
+]
 
 # Includes in <head>
 # ------------------
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
+app_include_js = [
+    "/assets/event_bookings/js/workspace_conditional.js",
+    "/assets/event_bookings/js/workspace_charts.js",
+]
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"
@@ -86,6 +94,7 @@ app_include_js = "/assets/event_bookings/js/workspace_conditional.js"
 
 # before_install = "event_bookings.install.before_install"
 after_install = "event_bookings.install.after_install"
+after_migrate = "event_bookings.install.after_migrate"
 
 # Uninstallation
 # ------------
@@ -166,6 +175,11 @@ doc_events = {
 	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+	},
+	# Keeps ERPNext's implicit Lead -> Customer conversion (Quotation -> Sales
+	# Order / Sales Invoice) from raising a blocking "Mandatory Missing" dialog.
+	"Customer": {
+		"before_insert": "event_bookings.utils.erpnext_hooks.on_customer_before_insert",
 	},
 }
 
@@ -256,12 +270,22 @@ fixtures = [
         "Shift Assignment", "Cost Center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event Assistant"]]]},
-    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
+    # NOTE: "Workspace" is deliberately NOT a fixture.  The workspace is shipped
+    # code-backed at event_bookings/event_bookings/workspace/event_bookings/ and
+    # synced by `bench migrate`.  Shipping it as a fixture as well meant the
+    # fixture (which carried an empty `number_cards` list) overwrote the
+    # code-backed definition on every migrate and wiped the four number cards.
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",
         "Deals Completed", "Deals Pending", "Deals Lost", "New Inquiries", "Leads Booked",
     ]]]},
     {"dt": "Dashboard", "filters": [["name", "=", "Event Bookings"]]},
+    # Dashboard Chart Sources are shipped as fixtures (records) + a .js config
+    # read off disk by dashboard_chart_source.get_config, which names the
+    # whitelisted method in utils/dashboard_charts.py.  No .py get_data is
+    # involved — the .js IS the server-side contract, so all three pieces must
+    # stay in sync: this filter, fixtures/dashboard_chart_source.json, and
+    # event_bookings/dashboard_chart_source/<name>/<name>.js
     {"dt": "Dashboard Chart Source", "filters": [["name", "in", [
         "Monthly Events", "Event Revenue Trend",
         "Event Deals Completed", "Event Deals Lost",

@@ -23,9 +23,6 @@
  "owner": "Administrator",
  "steps": [
   {
-   "step": "Configure Event Booking Settings"
-  },
-  {
    "step": "Create Event Type"
   },
   {
