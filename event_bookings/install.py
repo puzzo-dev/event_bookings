@@ -32,6 +32,8 @@ def after_migrate():
 	"""
 	migrate_workspace_charts()
 	cleanup_legacy_dashboard_name()
+	from event_bookings.patches.drop_event_booking_settings import drop_orphan_onboarding_steps
+	drop_orphan_onboarding_steps()
 	_fix_chart_filters_json()
 	repair_event_booking_dashboard_metadata()
 	if is_erpnext_installed():

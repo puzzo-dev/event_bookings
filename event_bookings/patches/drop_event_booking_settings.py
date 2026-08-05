@@ -48,3 +48,31 @@ def execute():
 	for name in ("Configure Event Booking Settings", "Configure Event Settings"):
 		if frappe.db.exists("Onboarding Step", name):
 			frappe.delete_doc("Onboarding Step", name, force=True, ignore_permissions=True)
+
+	drop_orphan_onboarding_steps()
+
+
+def drop_orphan_onboarding_steps():
+	"""Remove Onboarding Step Map rows whose Onboarding Step no longer exists.
+
+	Deleting the Onboarding Step record does not remove the child row that
+	references it, and the Module Onboarding JSON that would have rebuilt the
+	child table is hash-gated on re-import.  A dangling row renders as a dead
+	step in the onboarding widget.  Idempotent.
+	"""
+	orphans = frappe.db.sql(
+		"""
+		SELECT m.name
+		FROM `tabOnboarding Step Map` m
+		LEFT JOIN `tabOnboarding Step` s ON s.name = m.step
+		WHERE m.parent = %s AND s.name IS NULL
+		""",
+		("Event Bookings Onboarding",),
+		pluck=True,
+	)
+	if not orphans:
+		return
+	frappe.db.delete("Onboarding Step Map", {"name": ("in", orphans)})
+	frappe.logger().info(
+		f"event_bookings: removed {len(orphans)} orphaned Onboarding Step Map row(s)"
+	)

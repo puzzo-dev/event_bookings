@@ -13,10 +13,10 @@
  "creation": "2026-06-13 22:48:37.610980",
  "docstatus": 0,
  "doctype": "Module Onboarding",
- "documentation_url": "https://docs.erpnext.com",
+ "documentation_url": "https://github.com/puzzo-dev/event_bookings",
  "idx": 0,
  "is_complete": 0,
- "modified": "2026-06-13 22:48:37.610980",
+ "modified": "2026-08-06 03:13:47.751081",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Bookings Onboarding",
@@ -27,9 +27,15 @@
   },
   {
    "step": "Create Event Booking"
+  },
+  {
+   "step": "Review Event Notifications"
+  },
+  {
+   "step": "View Event Booking Pipeline"
   }
  ],
- "subtitle": "Get Started with Event Bookings",
- "success_message": "Awesome! You are all set to manage Event Bookings.",
+ "subtitle": "Set up event types, log a booking, and tune your alerts",
+ "success_message": "You are all set. Create bookings from the Event Bookings workspace.",
  "title": "Event Bookings Onboarding"
 }
