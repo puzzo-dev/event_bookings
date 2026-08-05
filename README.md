@@ -24,7 +24,6 @@ bench --site your-site.local install-app event_bookings
 ### DocTypes
 - **Event Booking** — Central operational document for every event
 - **Event Type** — Dynamic classification (Wedding, Corporate, etc.)
-- **Event Settings** — Global defaults (items, warehouse, cost center, COA accounts)
 - **Event Service Item** — Child table for line items
 - **Event Staff Requirement** — Roles needed vs assigned
 - **Event Assigned Staff** — Read-only view of assigned employees
@@ -43,9 +42,12 @@ bench --site your-site.local install-app event_bookings
 
 ## Configuration
 
-1. Open **Event Settings** after installation
-2. Set default warehouse, cost center, and COA accounts
-3. Configure notification email and WhatsApp settings
+The app ships with no settings DocType — there is nothing to configure after
+install. Notifications are configured per-doctype from the Desk:
+
+1. **Email** — Settings > Notification (e.g. *Days Before* on `event_date`)
+2. **WhatsApp** — WhatsApp Notification (frappe_whatsapp), same per-doctype model
+3. Seeded **Event Types** can be edited under the Event Bookings workspace
 
 ## License
 

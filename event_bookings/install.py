@@ -22,7 +22,6 @@ def after_install():
 		create_event_coa_accounts()    # requires Account + Company DocTypes
 		create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
 		create_custom_fields()         # creates remaining app custom fields
-		create_default_settings()      # one Event Booking Settings record per company
 	upgrade_designation_for_hrms()  # Link(Designation) when HRMS present, Data otherwise
 	migrate_workspace_charts()     # ensure workspace references current charts
 
@@ -32,14 +31,11 @@ def after_migrate():
 	Hook executed after every bench migrate.
 	Cleans up any legacy is_standard charts that fixtures cannot delete,
 	ensures the workspace content block always references the current charts,
-	and creates missing Event Booking Settings records for companies added after install.
 	"""
 	migrate_workspace_charts()
 	cleanup_legacy_dashboard_name()
 	patch_upcoming_events_number_card()
-	patch_events_this_month_number_card()
-	if is_erpnext_installed():
-		create_default_settings()
+	repair_event_booking_dashboard_metadata()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
 
 
@@ -56,7 +52,6 @@ def after_app_install(app_name):
 		create_event_coa_accounts()
 		create_accounting_dimension()
 		create_custom_fields()
-		create_default_settings()
 	elif app_name == "hrms" and is_hrms_installed():
 		create_custom_fields()          # (re)create Shift Assignment.event_booking
 		upgrade_designation_for_hrms()
@@ -225,10 +220,175 @@ def migrate_workspace_charts():
 		ws.append("charts", {"chart_name": desired_chart, "label": desired_chart})
 		updated = True
 
+	# Sync the number cards.  These cannot be left to the code-backed workspace
+	# JSON alone: frappe.model.sync imports that file through import_file_by_path,
+	# which is hash-gated, so an unchanged file is skipped on every later migrate.
+	# A site whose workspace was previously flattened (the old Workspace fixture
+	# shipped number_cards: []) would therefore never get its cards back.
+	if _sync_workspace_number_cards(ws, content):
+		updated = True
+
+	# Same story for shortcuts — the hash gate means a site can sit forever
+	# without the Dashboard shortcut, and can keep rendering a block for a
+	# shortcut that no longer exists.
+	if _sync_workspace_shortcuts(ws, content):
+		updated = True
+
+	# v16 made `type` mandatory on Workspace (Workspace / Link / URL).  Sites whose
+	# workspace row predates v16 carry NULL there, so the first ws.save() that ever
+	# runs dies with MandatoryError — regardless of what changed.  Backfill it.
+	if ws.meta.has_field("type") and not ws.get("type"):
+		ws.type = "Workspace"
+		updated = True
+
 	if updated:
+		ws.content = json.dumps(content)
 		ws.save(ignore_permissions=True)
 		frappe.db.commit()
-		frappe.logger().info("event_bookings: workspace charts patched successfully")
+		frappe.logger().info("event_bookings: workspace charts and number cards patched successfully")
+
+
+DESIRED_NUMBER_CARDS = (
+	"Upcoming Events",
+	"Events This Month",
+	"Pending Invoices",
+	"Total Revenue",
+)
+
+
+def _sync_workspace_number_cards(ws, content):
+	"""Ensure the four Key Metrics cards are on the workspace and in its content.
+
+	Mutates *content* in place and returns True when anything changed.
+	Cards whose Number Card record does not exist are skipped rather than
+	appended, since a dangling reference renders as an empty widget.
+	"""
+	changed = False
+
+	present = {c.number_card_name for c in ws.number_cards}
+	for card in DESIRED_NUMBER_CARDS:
+		if card in present or not frappe.db.exists("Number Card", card):
+			continue
+		ws.append("number_cards", {"number_card_name": card, "label": card})
+		changed = True
+
+	blocks = {
+		b.get("data", {}).get("number_card_name")
+		for b in content
+		if b.get("type") == "number_card"
+	}
+	missing = [
+		c for c in DESIRED_NUMBER_CARDS
+		if c not in blocks and frappe.db.exists("Number Card", c)
+	]
+	if missing:
+		# Place the cards after a "Key Metrics" header, mirroring the layout in
+		# the code-backed workspace JSON.
+		for i, b in enumerate(content):
+			if b.get("type") == "header" and "Key Metrics" in str(b.get("data", {}).get("text", "")):
+				insert_at = i + 1
+				break
+		else:
+			# No header yet — add one directly after the chart block.
+			chart_idx = next(
+				(i for i, b in enumerate(content) if b.get("type") == "chart"), len(content) - 1
+			)
+			content.insert(chart_idx + 1, {
+				"type": "header",
+				"data": {"text": '<span class="h4"><b>Key Metrics</b></span>', "col": 12},
+			})
+			insert_at = chart_idx + 2
+
+		for offset, card in enumerate(missing):
+			content.insert(insert_at + offset, {
+				"type": "number_card",
+				"data": {"number_card_name": card, "col": 3},
+			})
+		changed = True
+
+	return changed
+
+
+# (label, type, link_to, doc_view, color) — the full desired shortcut set.
+# Anything else on the workspace is legacy and gets removed.
+DESIRED_SHORTCUTS = (
+	("New Event Booking",        "DocType",   "Event Booking",  "New",  "blue"),
+	("Event Bookings List",      "DocType",   "Event Booking",  "List", "green"),
+	("Event Types",              "DocType",   "Event Type",     "List", "orange"),
+	("Booking Review",           "DocType",   "Booking Review", "List", "pink"),
+	("Event Bookings Dashboard", "Dashboard", "Event Bookings", "",     "blue"),
+)
+
+
+def _shortcut_target_exists(link_type, link_to):
+	"""A shortcut pointing at a missing target renders as a dead tile."""
+	if link_type == "DocType":
+		return bool(frappe.db.exists("DocType", link_to))
+	if link_type == "Dashboard":
+		return bool(frappe.db.exists("Dashboard", link_to))
+	return True
+
+
+def _sync_workspace_shortcuts(ws, content):
+	"""Ensure the workspace carries exactly the desired shortcuts, in order.
+
+	Mutates *content* in place and returns True when anything changed.
+	"""
+	changed = False
+	wanted = [s for s in DESIRED_SHORTCUTS if _shortcut_target_exists(s[1], s[2])]
+	wanted_labels = [s[0] for s in wanted]
+
+	# Drop legacy child rows (e.g. the removed Event Booking Settings shortcut).
+	kept = [r for r in ws.shortcuts if r.label in wanted_labels]
+	if len(kept) != len(ws.shortcuts):
+		ws.shortcuts = kept
+		changed = True
+
+	present = {r.label for r in ws.shortcuts}
+	for label, link_type, link_to, doc_view, color in wanted:
+		if label in present:
+			continue
+		ws.append("shortcuts", {
+			"label": label,
+			"type": link_type,
+			"link_to": link_to,
+			"doc_view": doc_view,
+			"color": color,
+		})
+		changed = True
+
+	# Drop content blocks for shortcuts that no longer exist.
+	stale = [
+		b for b in content
+		if b.get("type") == "shortcut"
+		and b.get("data", {}).get("shortcut_name") not in wanted_labels
+	]
+	for b in stale:
+		content.remove(b)
+		changed = True
+
+	blocks = {
+		b.get("data", {}).get("shortcut_name")
+		for b in content if b.get("type") == "shortcut"
+	}
+	missing = [l for l in wanted_labels if l not in blocks]
+	if missing:
+		# Append after the last existing shortcut block, else after the
+		# "Shortcuts" header, else at the end.
+		insert_at = len(content)
+		for i, b in enumerate(content):
+			if b.get("type") == "shortcut":
+				insert_at = i + 1
+			elif b.get("type") == "header" and "Shortcuts" in str(b.get("data", {}).get("text", "")):
+				insert_at = max(insert_at, i + 1)
+		for offset, label in enumerate(missing):
+			content.insert(insert_at + offset, {
+				"type": "shortcut",
+				"data": {"shortcut_name": label, "col": 3},
+			})
+		changed = True
+
+	return changed
 
 
 def cleanup_legacy_dashboard_name():
@@ -277,32 +437,104 @@ def patch_upcoming_events_number_card():
 		frappe.logger().info("event_bookings: patched 'Upcoming Events' number card filters")
 
 
-def patch_events_this_month_number_card():
-	"""Fix the 'Events This Month' number card: replace the non-existent
-	'event_timing' field with 'event_date' in filters_json.
+FALLBACK_DATE_FIELD = "event_date"
+
+
+def repair_event_booking_dashboard_metadata():
+	"""Repair Dashboard Charts / Number Cards that name a dead Event Booking field.
+
+	``dashboard_chart.get`` builds its WHERE clause from ``Dashboard Chart.based_on``
+	and from the fieldnames inside ``filters_json``.  If any of them no longer
+	exists on the DocType, MariaDB raises "Unknown column" and the request 500s —
+	which takes down the WHOLE dashboard, not just the offending widget.
+
+	This supersedes the old per-card ``event_timing`` → ``event_date`` rewrite:
+	it is driven by the DocType meta rather than a hardcoded field/name list, so
+	it also covers any future rename.  Idempotent; safe to run on every migrate.
 	"""
-	name = "Events This Month"
-	if not frappe.db.exists("Number Card", name):
+	if not frappe.db.exists("DocType", "Event Booking"):
 		return
 
-	raw = frappe.db.get_value("Number Card", name, "filters_json") or "[]"
-	if "event_timing" not in raw:
-		return
+	# Real DB columns only.  get_valid_columns() = default_fields + data fields,
+	# which is exactly the right test: both `based_on` and the filter fieldnames
+	# end up as columns in the generated SQL.
+	valid = set(frappe.get_meta("Event Booking").get_valid_columns())
 
-	try:
-		filters = json.loads(raw)
-	except (ValueError, TypeError):
-		filters = []
+	# ── Dashboard Chart.based_on ──────────────────────────────────────────
+	for name, based_on in frappe.get_all(
+		"Dashboard Chart",
+		filters={"document_type": "Event Booking"},
+		fields=["name", "based_on"],
+		as_list=True,
+	):
+		if based_on and based_on not in valid:
+			frappe.db.set_value(
+				"Dashboard Chart", name, "based_on", FALLBACK_DATE_FIELD,
+				update_modified=False,
+			)
+			frappe.logger().info(
+				f"event_bookings: Dashboard Chart {name}: based_on "
+				f"{based_on!r} -> {FALLBACK_DATE_FIELD!r}"
+			)
 
-	fixed = []
-	for row in filters:
-		if isinstance(row, list) and len(row) >= 3 and row[1] == "event_timing":
-			row[1] = "event_date"
-		fixed.append(row)
+	# ── list-shaped filters_json on both Charts and Cards ─────────────────
+	for doctype in ("Dashboard Chart", "Number Card"):
+		for name, raw in frappe.get_all(
+			doctype,
+			filters={"document_type": "Event Booking"},
+			fields=["name", "filters_json"],
+			as_list=True,
+		):
+			cleaned = _drop_unknown_filter_fields(raw, valid)
+			if cleaned is not None:
+				frappe.db.set_value(
+					doctype, name, "filters_json", cleaned, update_modified=False,
+				)
+				frappe.logger().info(
+					f"event_bookings: {doctype} {name}: dropped filters on removed fields"
+				)
 
-	frappe.db.set_value("Number Card", name, "filters_json", json.dumps(fixed))
+	# ── Number Card.aggregate_function_based_on ───────────────────────────
+	for name, agg in frappe.get_all(
+		"Number Card",
+		filters={"document_type": "Event Booking"},
+		fields=["name", "aggregate_function_based_on"],
+		as_list=True,
+	):
+		if agg and agg not in valid:
+			frappe.db.set_value(
+				"Number Card", name, "aggregate_function_based_on", "name",
+				update_modified=False,
+			)
+			frappe.logger().info(
+				f"event_bookings: Number Card {name}: aggregate_function_based_on "
+				f"{agg!r} -> 'name'"
+			)
+
 	frappe.db.commit()
-	frappe.logger().info("event_bookings: patched 'Events This Month' number card — event_timing → event_date")
+
+
+def _drop_unknown_filter_fields(raw, valid):
+	"""Return the cleaned ``filters_json`` string, or None when nothing changed.
+
+	Only the list-of-lists schema (``[[doctype, fieldname, operator, value, ...]]``)
+	used by Document Type charts and Number Cards is touched.  Report charts store
+	a dict of report-filter names, which are not DocType fieldnames — those are
+	handled separately by ``_fix_chart_filters_json``.
+	"""
+	try:
+		stored = json.loads(raw or "[]")
+	except (ValueError, TypeError):
+		return None
+
+	if not isinstance(stored, list):
+		return None
+
+	kept = [
+		row for row in stored
+		if not (isinstance(row, list) and len(row) >= 2 and row[1] not in valid)
+	]
+	return json.dumps(kept) if len(kept) != len(stored) else None
 
 
 def _fix_chart_filters_json():
@@ -419,16 +651,6 @@ def upgrade_designation_for_hrms():
 		"event_bookings: upgraded Event Staff Requirement.designation "
 		"to Link(Designation) — HRMS is installed"
 	)
-
-
-def create_default_settings():
-	"""Ensure the Event Booking Settings Single doctype exists with defaults.
-	The Single record is auto-created by Frappe on first save — this just
-	seeds sensible defaults if the record doesn't exist yet.
-	"""
-	if not frappe.db.exists("Event Booking Settings", "Event Booking Settings"):
-		frappe.get_doc({"doctype": "Event Booking Settings"}).insert(ignore_permissions=True)
-		frappe.db.commit()
 
 
 def create_custom_fields():

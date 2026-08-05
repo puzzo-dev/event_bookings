@@ -58,7 +58,10 @@ frappe.provide("event_bookings.workspace");
 	// which is more reliable than the page-change + setTimeout(300) pattern.
 	frappe.router.on("change", function () {
 		var route = frappe.get_route ? frappe.get_route() : [];
-		if (route[0] === "workspace") {
+		// v15 routes workspaces as "Workspaces"; v16+ uses lowercase "workspace".
+		// Accept both so this runs on either bench.
+		var route_name = String(route[0] || "").toLowerCase();
+		if (route_name === "workspaces" || route_name === "workspace") {
 			// requestAnimationFrame defers until the browser has painted the
 			// workspace — avoids querying elements before they exist.
 			requestAnimationFrame(apply_conditions);

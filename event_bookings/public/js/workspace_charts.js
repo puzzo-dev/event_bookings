@@ -38,8 +38,12 @@ const CHART_CONFIG = {
 function init_chart_filters() {
 	const route = frappe.get_route && frappe.get_route();
 	if (!route || !route.length) return;
-	if (route[0] !== 'workspace') return;
-	if (route[1] !== 'event-bookings') return;
+	// Core routes workspaces as ["Workspaces", <workspace name>] on both v15 and
+	// v16+ — route[0] is capitalised and route[1] is the human name, not a slug.
+	// The previous checks ('workspace' / 'event-bookings') never matched, so the
+	// Filter button was never injected on either bench.
+	if (String(route[0]).toLowerCase() !== 'workspaces') return;
+	if (frappe.router.slug(String(route[1] || '')) !== 'event-bookings') return;
 
 	// Wait for widgets to render
 	setTimeout(() => {

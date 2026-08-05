@@ -5,7 +5,6 @@ from unittest.mock import MagicMock, patch
 from event_bookings.utils.scheduler import (
 	daily,
 	notify_managers_upcoming_events,
-	send_pre_event_reminders,
 	send_unstaffed_alerts,
 	sync_invoice_payment_status,
 )
@@ -72,30 +71,6 @@ class TestSyncInvoicePaymentStatus(unittest.TestCase):
 		mock_frappe.db.set_value.assert_called_once_with("Event Booking", "EVT-A", "booking_status", "Paid")
 
 
-@patch("event_bookings.utils.scheduler.frappe")
-@patch("event_bookings.utils.scheduler.add_days")
-@patch("event_bookings.utils.scheduler.today", return_value="2026-07-10")
-class TestSendPreEventReminders(unittest.TestCase):
-	def test_queries_events_at_target_date(self, _today, mock_add_days, mock_frappe):
-		mock_add_days.return_value = "2026-07-13"
-		mock_frappe.get_all.return_value = []
-
-		send_pre_event_reminders(days=3)
-
-		mock_add_days.assert_called_once_with("2026-07-10", 3)
-		mock_frappe.get_all.assert_called_once()
-		call_kwargs = mock_frappe.get_all.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["event_date"], "2026-07-13")
-
-	def test_custom_days_parameter(self, _today, mock_add_days, mock_frappe):
-		mock_add_days.return_value = "2026-07-11"
-		mock_frappe.get_all.return_value = []
-
-		send_pre_event_reminders(days=1)
-
-		mock_add_days.assert_called_once_with("2026-07-10", 1)
-
-
 @patch("event_bookings.utils.scheduler._get_manager_emails", return_value=["mgr@example.com"])
 @patch("event_bookings.utils.scheduler._", side_effect=lambda x, *a: x.format(*a) if a else x)
 @patch("event_bookings.utils.scheduler.today", return_value="2026-07-10")
@@ -133,17 +108,13 @@ class TestSendUnstaffedAlerts(unittest.TestCase):
 
 @patch("event_bookings.utils.scheduler.notify_managers_upcoming_events")
 @patch("event_bookings.utils.scheduler.send_unstaffed_alerts")
-@patch("event_bookings.utils.scheduler.send_pre_event_reminders")
 @patch("event_bookings.utils.scheduler.sync_invoice_payment_status")
 @patch("event_bookings.utils.scheduler.frappe")
 class TestDaily(unittest.TestCase):
-	def test_calls_all_subtasks(self, mock_frappe, mock_sync, mock_remind, mock_alert, mock_notify):
-		settings = SimpleNamespace(pre_event_reminder_days=3, enable_whatsapp=False)
-		mock_frappe.get_single.return_value = settings
+	def test_calls_all_subtasks(self, mock_frappe, mock_sync, mock_alert, mock_notify):
 
 		daily()
 
 		mock_sync.assert_called_once()
-		mock_remind.assert_called_once_with(days=3, enable_whatsapp=False)
 		mock_alert.assert_called_once()
 		mock_notify.assert_called_once()

@@ -14,6 +14,12 @@ def update_chart_filters(chart_name, filters):
 		import json
 		filters = json.loads(filters)
 
+	# A list-shaped payload (the legacy filters_json schema, or any hand-rolled
+	# caller) would reach .items() below and raise
+	# "AttributeError: 'list' object has no attribute 'items'" as a raw 500.
+	if not isinstance(filters, dict):
+		frappe.throw(_("Chart filters must be a JSON object of fieldname/value pairs."))
+
 	# Authorisation check — require write permission on Dashboard Chart or
 	# an elevated role. Role membership is checked only to avoid forcing
 	# a full "write" permission grant on a core doctype just for filter edits.

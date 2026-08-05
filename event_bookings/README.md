@@ -56,14 +56,7 @@ bench --site your-site.local migrate
 
 ## Post-Install Setup
 
-1. Open **Event Booking Settings** (Event Bookings module) and configure:
-   - **Default Warehouse** — for Material Issue
-   - **Events Warehouse** — for Material Transfer
-   - **Default Cost Center** — required if *Auto-Create Cost Center per Event* is enabled
-   - **Auto-Create Cost Center per Event** — toggles per-event cost center generation
-   - **Require Review Before Invoicing** — enforces an approved Booking Review before status can move to *Invoiced*
-
-2. Review seeded **Event Types** (Wedding, Corporate, Birthday, Conference, Private Party). Add or customize as needed.
+1. Review seeded **Event Types** (Wedding, Corporate, Birthday, Conference, Private Party). Add or customize as needed.
 
 3. Assign the **Event Manager** and **Event User** roles to appropriate users.
 
@@ -76,7 +69,6 @@ event_bookings/
 ├── event_bookings/
 │   ├── doctype/
 │   │   ├── event_booking/         # Core booking document
-│   │   ├── event_booking_settings/  # Global configuration
 │   │   ├── event_type/            # Event classification
 │   │   ├── event_staff_requirement/ # Child table for staffing
 │   │   └── booking_review/        # Post-event customer reviews
@@ -120,11 +112,10 @@ event_bookings/
 3. On submission, the Stock Entry is linked to the Event Booking.
 4. On cancellation, the link is automatically cleared.
 
-### Cost Center Flow (optional)
-1. Enable **Auto-Create Cost Center per Event** in Event Booking Settings.
-2. Set a **Default Cost Center** as the parent.
-3. When an Event Booking moves to `Confirmed`, a child Cost Center is created.
-4. The Cost Center is automatically used in linked Quotations and mapped documents.
+### Cost Center Flow
+Set `cost_center` on the Event Booking; it is carried into linked Quotations and
+mapped documents. (Automatic per-event cost center generation was removed — see
+patch `remove_cost_center_auto_create_field`.)
 
 ### Review Flow
 1. Event executes and moves to `Executed` / `Invoiced` / `Paid`.
@@ -140,7 +131,6 @@ Daily tasks are registered in `hooks.py` and run automatically:
 | Task | Description |
 |------|-------------|
 | `sync_invoice_payment_status` | Moves `Invoiced` bookings to `Paid` when the linked Sales Invoice is paid |
-| `send_pre_event_reminders` | Emails customers N days before their event (configurable) |
 | `send_unstaffed_alerts` | Emails Event Managers about staffing shortfalls |
 | `notify_managers_upcoming_events` | Posts Notification Logs for Event Managers about events in the next 7 days |
 
@@ -179,9 +169,6 @@ bench --site your-site.local run-tests --module event_bookings.tests.test_schedu
 
 ## Troubleshooting
 
-### Event Booking Settings missing
-Run `bench --site your-site.local migrate` to sync fixtures and single doctypes.
-
 ### Custom Fields not appearing
 Ensure `bench export-fixtures` was run after installation, then `bench migrate`.
 
@@ -190,11 +177,10 @@ Ensure `bench export-fixtures` was run after installation, then `bench migrate`.
 2. Ensure the `daily` job is registered in `hooks.py`.
 3. Check `bench doctor` for worker health.
 
-### Cost Center not auto-creating
-Verify that:
-1. `auto_create_cost_center_per_event` is checked in Event Booking Settings.
-2. `default_cost_center` is populated.
-3. The Event Booking status changed to `Confirmed` (not just set in the form before save).
+### Pre-event reminders not sending
+Reminders are Frappe **Notification** records, not app code. Check
+Settings > Notification > *Event Pre-Event Reminder 3 Days* / *1 Day* is enabled,
+and that the scheduler is running (`bench doctor`).
 
 ---
 

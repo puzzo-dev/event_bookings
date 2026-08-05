@@ -15,16 +15,6 @@ def daily():
 		except (frappe.DatabaseError, frappe.ValidationError):
 			frappe.log_error(title=f"Event Bookings daily task failed: {task_name}")
 
-	# Send pre-event reminders using global settings
-	try:
-		cs = frappe.get_single("Event Booking Settings")
-		send_pre_event_reminders(
-			days=cs.pre_event_reminder_days or 3,
-			enable_whatsapp=cs.enable_whatsapp,
-		)
-	except (frappe.DatabaseError, frappe.ValidationError):
-		frappe.log_error(title="Pre-event reminders failed")
-
 
 def sync_invoice_payment_status():
 	"""Transition Invoiced → Paid when linked Sales Invoice is paid."""
@@ -59,102 +49,6 @@ def sync_invoice_payment_status():
 				frappe.db.set_value("Event Booking", eb.name, "booking_status", "Paid")
 		except (frappe.DatabaseError, frappe.ValidationError):
 			frappe.log_error(title=f"Failed to sync payment status for {eb.name}")
-
-
-def send_pre_event_reminders(days=3, company=None, enable_whatsapp=False):
-	"""Send email reminders T-{days} days before the event, optionally scoped to one company."""
-	target_date = add_days(today(), days)
-	filters = {
-		"event_date": target_date,
-		"booking_status": ("in", ["In Preparation", "Confirmed"]),
-	}
-	if company:
-		filters["company"] = company
-	events = frappe.get_all(
-		"Event Booking",
-		filters=filters,
-		fields=["name", "event_name", "event_date", "event_time", "party_type", "party_name"],
-		limit_page_length=0,
-	)
-	if not events:
-		return
-
-	# --- batch resolve party emails (Customer via Contact, Lead directly) ---
-	customer_names = [ev.party_name for ev in events if ev.party_type == "Customer" and ev.party_name]
-	customer_emails = _customer_emails(customer_names)
-
-	lead_names = list({ev.party_name for ev in events if ev.party_type == "Lead" and ev.party_name})
-	lead_emails = {}
-	if lead_names:
-		lead_emails = {
-			r.name: r.email_id
-			for r in frappe.get_all("Lead", filters={"name": ("in", lead_names)}, fields=["name", "email_id"])
-		}
-
-	for ev in events:
-		try:
-			recipients = _build_event_recipients(ev, customer_emails, lead_emails)
-			if not recipients:
-				continue
-			message = (
-				"<p>Hello,</p>"
-				"<p>This is a friendly reminder that the event <strong>{0}</strong> "
-				"is scheduled for <strong>{1}</strong>.</p>"
-				"<p>Please confirm all arrangements are in place.</p>"
-			).format(ev.event_name, frappe.utils.formatdate(ev.event_date))
-			_enqueue_email(
-				recipients=recipients,
-				subject=_("Reminder: Upcoming Event – {0}").format(ev.event_name),
-				message=message,
-				reference_doctype="Event Booking",
-				reference_name=ev.name,
-			)
-			if enable_whatsapp:
-				_send_whatsapp_notification(ev, message)
-		except (frappe.DatabaseError, frappe.ValidationError):
-			frappe.log_error(title=_("Pre-event reminder failed for {0}").format(ev.name))
-
-
-def _customer_emails(customer_names):
-	"""Batch-resolve Customer → email via the primary linked Contact (single query).
-
-	Customer has no email column of its own in ERPNext; the address book lives on
-	Contact linked through Dynamic Link.  Primary contacts are preferred.
-	"""
-	names = list({c for c in customer_names if c})
-	if not names:
-		return {}
-	rows = frappe.db.sql(
-		"""
-		SELECT dl.link_name AS customer, c.email_id AS email
-		FROM `tabDynamic Link` dl
-		INNER JOIN `tabContact` c ON c.name = dl.parent
-		WHERE dl.parenttype = 'Contact'
-		  AND dl.link_doctype = 'Customer'
-		  AND dl.link_name IN %(names)s
-		  AND IFNULL(c.email_id, '') != ''
-		ORDER BY c.is_primary_contact DESC, c.creation ASC
-		""",
-		{"names": tuple(names)},
-		as_dict=True,
-	)
-	out = {}
-	for r in rows:
-		out.setdefault(r.customer, r.email)  # first (primary) contact wins
-	return out
-
-
-def _build_event_recipients(ev, customer_emails, lead_emails):
-	"""Resolve the recipient email for an event from its party (Customer or Lead)."""
-	if not ev.party_name:
-		return []
-	if ev.party_type == "Lead":
-		email = lead_emails.get(ev.party_name)
-	else:
-		email = customer_emails.get(ev.party_name)
-	return [email] if email else []
-
-
 
 
 def _get_manager_emails():
@@ -370,74 +264,6 @@ def _insert_notification_logs(notifications):
 				}).insert(ignore_permissions=True)
 			except (frappe.DatabaseError, frappe.ValidationError):
 				frappe.log_error(title=_("Manager notification failed"))
-
-
-def _send_whatsapp_notification(ev, message):
-	"""Fire the ``event_booking_whatsapp_reminder`` hook for registered WhatsApp providers.
-
-	This function is intentionally provider-agnostic.  It owns only the
-	Frappe-native work (resolving the customer's mobile number from Contact)
-	and then delegates delivery entirely to whatever WhatsApp app is installed
-	on this site via the custom hook ``event_booking_whatsapp_reminder``.
-
-	Any WhatsApp integration app (frappe_whatsapp, frappe_whatsapp_openwa, or a
-	custom build) registers its handler in its own ``hooks.py``::
-
-	    event_booking_whatsapp_reminder = [
-	        "my_whatsapp_app.handlers.send_event_booking_reminder"
-	    ]
-
-	The handler receives ``(booking_name, phone)`` as keyword arguments::
-
-	    def send_event_booking_reminder(booking_name, phone):
-	        ...
-
-	When no handler is registered (no WhatsApp app installed) this function is a
-	complete no-op — event_bookings has zero dependency on any WhatsApp provider.
-
-	The ``enable_whatsapp`` flag on ``Event Booking Settings`` is the per-company
-	on/off gate and is checked by the caller before this function is invoked.
-	"""
-	try:
-		if ev.party_type != "Customer" or not ev.party_name:
-			return
-
-		handlers = frappe.get_hooks("event_booking_whatsapp_reminder")
-		if not handlers:
-			return
-
-		# Resolve mobile from primary Contact.
-		# ``is_primary_contact`` lives on tabContact, not tabDynamic Link,
-		# so a JOIN is required — cannot use a simple get_value filter.
-		result = frappe.db.sql(
-			"""
-			SELECT dl.parent
-			FROM `tabDynamic Link` dl
-			INNER JOIN `tabContact` c ON c.name = dl.parent
-			WHERE dl.parenttype = 'Contact'
-			  AND dl.link_doctype = 'Customer'
-			  AND dl.link_name = %s
-			ORDER BY c.is_primary_contact DESC, dl.creation DESC
-			LIMIT 1
-			""",
-			(ev.party_name,),
-		)
-		contact = result[0][0] if result else None
-		if not contact:
-			return
-		phone = frappe.db.get_value("Contact", contact, "mobile_no")
-		if not phone:
-			return
-
-		for handler in handlers:
-			try:
-				frappe.call(handler, booking_name=ev.name, phone=phone)
-			except Exception:
-				frappe.log_error(
-					title=_("WhatsApp handler failed for {0}: {1}").format(ev.name, handler)
-				)
-	except (frappe.DatabaseError, frappe.ValidationError):
-		frappe.log_error(title=_("WhatsApp notification failed for {0}").format(ev.name))
 
 
 def _enqueue_email(recipients, subject, message, reference_doctype, reference_name):

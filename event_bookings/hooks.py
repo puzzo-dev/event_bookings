@@ -174,6 +174,11 @@ doc_events = {
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 	},
+	# Keeps ERPNext's implicit Lead -> Customer conversion (Quotation -> Sales
+	# Order / Sales Invoice) from raising a blocking "Mandatory Missing" dialog.
+	"Customer": {
+		"before_insert": "event_bookings.utils.erpnext_hooks.on_customer_before_insert",
+	},
 }
 
 # Scheduled Tasks
@@ -263,12 +268,22 @@ fixtures = [
         "Shift Assignment", "Cost Center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event Assistant"]]]},
-    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
+    # NOTE: "Workspace" is deliberately NOT a fixture.  The workspace is shipped
+    # code-backed at event_bookings/event_bookings/workspace/event_bookings/ and
+    # synced by `bench migrate`.  Shipping it as a fixture as well meant the
+    # fixture (which carried an empty `number_cards` list) overwrote the
+    # code-backed definition on every migrate and wiped the four number cards.
     {"dt": "Number Card", "filters": [["name", "in", [
         "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",
         "Deals Completed", "Deals Pending", "Deals Lost", "New Inquiries", "Leads Booked",
     ]]]},
     {"dt": "Dashboard", "filters": [["name", "=", "Event Bookings"]]},
+    # Dashboard Chart Sources are shipped as fixtures (records) + a .js config
+    # read off disk by dashboard_chart_source.get_config, which names the
+    # whitelisted method in utils/dashboard_charts.py.  No .py get_data is
+    # involved — the .js IS the server-side contract, so all three pieces must
+    # stay in sync: this filter, fixtures/dashboard_chart_source.json, and
+    # event_bookings/dashboard_chart_source/<name>/<name>.js
     {"dt": "Dashboard Chart Source", "filters": [["name", "in", [
         "Monthly Events", "Event Revenue Trend",
         "Event Deals Completed", "Event Deals Lost",

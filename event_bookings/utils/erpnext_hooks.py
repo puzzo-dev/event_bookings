@@ -1,5 +1,27 @@
 import frappe
 
+from event_bookings.utils.erpnext_bridge import default_non_group
+
+
+def on_customer_before_insert(doc, method=None):
+	"""Fill blank Customer Group / Territory so auto-created Customers insert cleanly.
+
+	ERPNext creates a Customer implicitly whenever a Lead-addressed Quotation is
+	converted to a Sales Order or Sales Invoice
+	(``selling/doctype/quotation/quotation.py::_make_customer``).  If the site
+	makes customer_group or territory mandatory — commonly via a Property Setter
+	— and the Lead supplies neither, that insert raises MandatoryError and
+	ERPNext surfaces a blocking "Mandatory Missing" dialog telling the user to go
+	create the Customer by hand.  That dialog is the lead-conversion popup we
+	want gone: the conversion is supposed to be silent.
+
+	Only ever fills blanks, so an explicit choice on the form is never overridden.
+	"""
+	if not doc.get("customer_group"):
+		doc.customer_group = default_non_group("Customer Group", "customer_group")
+	if not doc.get("territory"):
+		doc.territory = default_non_group("Territory", "territory")
+
 
 def _update_linked_event_booking(doc, callback=None, **field_updates):
 	"""Fetch the linked Event Booking and apply field updates.

@@ -179,14 +179,6 @@ class EventBooking(Document):
     # Document Creation Helpers
     # -----------------------------------------------------------------
 
-    # -----------------------------------------------------------------
-    # Utilities
-    # -----------------------------------------------------------------
-
-    def get_settings(self):
-        return frappe.get_cached_doc("Event Booking Settings")
-
-
 
 # ---------------------------------------------------------------------------
 # Background worker — cancellation (runs via frappe.enqueue)
