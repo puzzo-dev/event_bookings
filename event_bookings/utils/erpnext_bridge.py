@@ -154,34 +154,50 @@ def make_customer_from_lead(lead_name: str):
 			_("Customer management is not available. ERPNext must be installed to convert a Lead to a Customer.")
 		)
 
-	# Preferred: delegate to ERPNext's official CRM converter
+	# Preferred: delegate to ERPNext's official CRM converter.
+	# v16+ relocated make_customer from crm.doctype.lead.lead to
+	# crm.doctype.lead.mapper, so try the v16 path first and fall back to v15.
+	# Without this the v15 import raises ImportError on a v16/v17 bench and the
+	# caller silently degrades to the field-copy path, losing the address and
+	# contact linking that ERPNext's mapper performs.
 	if is_erpnext_installed():
 		try:
-			from erpnext.crm.doctype.lead.lead import make_customer
+			try:
+				from erpnext.crm.doctype.lead.mapper import make_customer  # v16+
+			except ImportError:
+				from erpnext.crm.doctype.lead.lead import make_customer  # v15
 
 			customer_doc = make_customer(lead_name)
 		except (ImportError, AttributeError):
-			# ERPNext API changed — degrade gracefully
+			# ERPNext API changed again — degrade gracefully
 			customer_doc = _build_customer_from_lead_fields(lead_name)
 	else:
 		customer_doc = _build_customer_from_lead_fields(lead_name)
 
 	# Ensure ERPNext mandatory fields always have safe defaults
 	if not getattr(customer_doc, "customer_group", None):
-		customer_doc.customer_group = (
-			frappe.db.get_default("customer_group")
-			or frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
-			or "All Customer Groups"
-		)
+		customer_doc.customer_group = default_non_group("Customer Group", "customer_group")
 
 	if not getattr(customer_doc, "territory", None):
-		customer_doc.territory = (
-			frappe.db.get_default("territory")
-			or frappe.db.get_value("Territory", {"is_group": 0}, "name")
-			or "All Territories"
-		)
+		customer_doc.territory = default_non_group("Territory", "territory")
 
 	return customer_doc
+
+
+def default_non_group(doctype: str, default_key: str):
+	"""Return a usable non-group node for *doctype*, or None.
+
+	Customer.validate rejects group nodes outright ("Cannot select a Group type
+	Customer Group"), so the site default is only usable when it is a leaf —
+	the old ``or "All Customer Groups"`` fallback named a group node and would
+	have swapped one blocking dialog for another.  Returning None when no leaf
+	exists is deliberate: leaving the field blank is better than setting a
+	value ERPNext will refuse.
+	"""
+	default = frappe.db.get_default(default_key)
+	if default and not frappe.db.get_value(doctype, default, "is_group"):
+		return default
+	return frappe.db.get_value(doctype, {"is_group": 0}, "name")
 
 
 def _build_customer_from_lead_fields(lead_name: str):

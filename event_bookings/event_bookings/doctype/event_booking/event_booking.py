@@ -4,6 +4,7 @@ from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
 
+from event_bookings.utils.erpnext_bridge import make_customer_from_lead
 from event_bookings.utils.helpers import erpnext_installed
 
 
@@ -223,13 +224,6 @@ class EventBooking(Document):
         qt.insert()
         self.quotation = qt.name
 
-    # -----------------------------------------------------------------
-    # Utilities
-    # -----------------------------------------------------------------
-
-    def get_settings(self):
-        return frappe.get_cached_doc("Event Booking Settings")
-
 
 # ---------------------------------------------------------------------------
 # Background worker — cancellation (runs via frappe.enqueue)
@@ -413,9 +407,10 @@ def convert_lead_and_update_booking(booking_name):
                 _("You do not have permission to create a Customer."),
                 frappe.PermissionError,
             )
-        from erpnext.crm.doctype.lead.lead import make_customer
-
-        customer_doc = make_customer(lead)
+        # Route through the bridge: it resolves the v15/v16 make_customer
+        # location AND backfills customer_group / territory, without which
+        # customer.insert() raises MandatoryError.
+        customer_doc = make_customer_from_lead(lead)
         customer_doc.insert(ignore_permissions=True)
         customer_name = customer_doc.name
         already_existed = False
@@ -443,8 +438,9 @@ def make_sales_order(source_name, target_doc=None):
         if existing:
             customer_name = existing
         else:
-            from erpnext.crm.doctype.lead.lead import make_customer
-            customer_doc = make_customer(booking.party_name)
+            # Bridge handles the v15/v16 API move and the mandatory-field
+            # backfill, so this silent conversion never surfaces a dialog.
+            customer_doc = make_customer_from_lead(booking.party_name)
             customer_doc.insert(ignore_permissions=True)
             customer_name = customer_doc.name
         booking.party_type = "Customer"

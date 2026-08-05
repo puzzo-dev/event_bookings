@@ -82,7 +82,6 @@ Client accepts the quote.
 
 **System behaviour (automatic):**
 - `handle_status_transition()` calls `ensure_event_cost_center()`
-- If `auto_create_cost_center_per_event` is enabled in Event Settings, a dedicated Cost Center `EVT-2026-0001 - Ahmed & Fatima Wedding - ABC` is created under the default parent
 - The Cost Center is linked to the booking for accurate P&L tracking per event
 
 ---
