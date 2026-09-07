@@ -193,6 +193,17 @@ doc_events = {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_invoice_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
+	# Stock Entry is the document that actually moves goods for an event, so the
+	# booking's Service Items table is rebuilt from it rather than typed. Tagging
+	# Event Booking on the entry is the whole interface — it does not matter
+	# whether the entry came from the booking's own button or was raised by hand
+	# in the warehouse.
+	"Stock Entry": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_change",
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_stock_entry_change",
+		"on_trash": "event_bookings.utils.erpnext_hooks.on_stock_entry_change",
+		"on_update_after_submit": "event_bookings.utils.erpnext_hooks.on_stock_entry_change",
+	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
 		# qty_assigned is a full recount of *submitted* Shift Assignments, so it

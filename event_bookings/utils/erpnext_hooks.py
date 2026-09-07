@@ -470,3 +470,47 @@ def on_shift_assignment_update(doc, method=None):
 		""",
 		params,
 	)
+
+
+def on_stock_entry_change(doc, method=None):
+	"""Rebuild the Service Items table for whichever booking this entry touches.
+
+	Fires on submit, cancel, trash and post-submit edits, because each of those
+	changes what has actually moved. The booking's table is a projection of
+	submitted Stock Entries, so it is rebuilt wholesale rather than patched —
+	there is no partial state to reconcile.
+
+	The tag can also be changed on a submitted entry (event_booking is an
+	accounting dimension and stays editable), so the booking it pointed at
+	*before* the change is resynced too. Without that, moving an entry from one
+	booking to another would leave the rows behind on the old one.
+	"""
+	from event_bookings.utils.stock_movements import sync_booking
+
+	bookings = set()
+
+	current = getattr(doc, "event_booking", None)
+	if current:
+		bookings.add(current)
+
+	# Line-level tags: ERPNext puts the dimension on the child table too, and
+	# warehouse staff sometimes set it there instead of on the header.
+	for row in (doc.get("items") or []):
+		row_booking = row.get("event_booking") if hasattr(row, "get") else None
+		if row_booking:
+			bookings.add(row_booking)
+
+	before = doc.get_doc_before_save() if hasattr(doc, "get_doc_before_save") else None
+	if before and getattr(before, "event_booking", None):
+		bookings.add(before.event_booking)
+
+	for booking in bookings:
+		try:
+			sync_booking(booking)
+		except Exception:
+			# A stock entry must never fail to submit because a booking's
+			# display table could not be rebuilt.
+			frappe.log_error(
+				title=f"Event Bookings: stock movement sync failed for {booking}",
+				message=frappe.get_traceback(),
+			)

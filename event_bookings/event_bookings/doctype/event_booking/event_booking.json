@@ -247,7 +247,8 @@
   {
    "fieldname": "items_html",
    "fieldtype": "HTML",
-   "label": "Items"
+   "label": "Ordered Items",
+   "description": "What the customer ordered, from the linked Quotation or Sales Order."
   },
   {
    "fieldname": "total_actual",
@@ -268,8 +269,11 @@
   {
    "fieldname": "event_items",
    "fieldtype": "Table",
-   "label": "Service Items",
-   "options": "Service Item"
+   "label": "Items Used",
+   "options": "Service Item",
+   "read_only": 1,
+   "allow_on_submit": 1,
+   "description": "What was actually used to deliver this event, from submitted Stock Entries tagged to this booking. Issue what is consumed, transfer what comes back — both count as used. To add a row, make a Stock Entry and set Event Booking on it."
   },
   {
    "fieldname": "tab_staffing",
