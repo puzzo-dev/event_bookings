@@ -1,4 +1,4 @@
-# Event Bookings
+# Events Management
 
 A standalone Frappe app for managing event lifecycles, integrated with **ERPNext** and **HRMS**.
 
@@ -30,7 +30,7 @@ bench --site your-site.local install-app event_bookings
 - **Event Assigned Staff** — Read-only view of assigned employees
 
 ### Workflow
-9-state workflow: New → Quoted → Negotiating → Confirmed → In Preparation → Executed → Invoiced → Paid → Cancelled
+6-state workflow: New → Quoted → Invoiced → Confirmed → Paid → Executed (+ Cancelled). Status advances automatically from linked ERPNext documents.
 
 ### Integration
 - **ERPNext**: Quotations, Sales Orders, Sales Invoices, Material Requests, Stock Entries

@@ -2,14 +2,23 @@
 # For license information, please see license.txt
 
 import frappe
+
+from event_bookings.permissions import validate_company_filter
 from frappe import _
-from frappe.utils import add_months, get_first_day, nowdate
+from frappe.utils import nowdate
 
 from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, get_fiscal_year_dates_safe
+
+# Resolve each Currency column against the row's own company, so a
+# multi-company site shows the right symbol (ERPNext report convention).
+CURRENCY_OPTIONS = "Company:company:default_currency"
 
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
+	# Query Reports run raw SQL, so User Permissions do not apply to them.
+	# Confine the company filter before any query is built.
+	validate_company_filter(filters)
 	validate_filters(filters)
 
 	columns = get_columns(filters)
@@ -49,9 +58,10 @@ def get_columns(filters):
 			"width": 140,
 		},
 		{
-			"label": _("Value"),
+			"label": _("Revenue") if based_on == "Revenue" else _("Events"),
 			"fieldname": "value",
 			"fieldtype": "Currency" if based_on == "Revenue" else "Int",
+			"options": CURRENCY_OPTIONS if based_on == "Revenue" else None,
 			"width": 120,
 		}
 	]
@@ -77,6 +87,7 @@ def get_data(filters):
 				SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0))) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
+			  AND booking_status != 'Cancelled'
 			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type
@@ -89,6 +100,7 @@ def get_data(filters):
 				COUNT(name) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
+			  AND booking_status != 'Cancelled'
 			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type
@@ -96,6 +108,14 @@ def get_data(filters):
 		"""
 
 	result = frappe.db.sql(sql, tuple(values), as_dict=1)
+
+	# Carry company so the Currency column's link option can resolve, and
+	# label bookings with no event type rather than showing a blank row.
+	for row in result:
+		row["company"] = company
+		if not row.get("event_type"):
+			row["event_type"] = None
+
 	return result
 
 

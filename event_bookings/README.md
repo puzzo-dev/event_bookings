@@ -1,4 +1,4 @@
-# Event Bookings
+# Events Management
 
 **Version:** 0.0.1  
 **License:** MIT  
@@ -10,7 +10,7 @@ A Frappe/ERPNext application for end-to-end event management — from initial in
 
 ## Features
 
-- **Event Booking Lifecycle** — Track events through a structured status pipeline: `New → Quoted → Negotiating → Confirmed → In Preparation → Executed → Invoiced → Paid → Cancelled`.
+- **Event Booking Lifecycle** — Track events through a structured status pipeline: `New → Quoted → Invoiced → Confirmed → Paid → Executed` (+ `Cancelled`). Status advances automatically from linked ERPNext documents (Quotation, Sales Order, Sales Invoice, Payment Entry).
 - **ERPNext Integration** — Seamlessly linked with Quotation, Sales Order, Sales Invoice, Stock Entry, and Material Request.
 - **Profitability Reporting** — Built-in Event Booking Profitability report with revenue, COGS, and margin analysis (Redis-cached for performance).
 - **Pipeline Dashboard** — Event Booking Pipeline report tracks upcoming events, days until event, and staffing requirements.
@@ -56,7 +56,7 @@ bench --site your-site.local migrate
 
 ## Post-Install Setup
 
-1. Open **Event Booking Settings** (Event Bookings module) and configure:
+1. Open **Event Booking Settings** (Events Management module) and configure:
    - **Default Warehouse** — for Material Issue
    - **Events Warehouse** — for Material Transfer
    - **Default Cost Center** — required if *Auto-Create Cost Center per Event* is enabled

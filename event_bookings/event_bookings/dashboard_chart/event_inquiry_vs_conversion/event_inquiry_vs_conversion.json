@@ -1,0 +1,17 @@
+{
+ "chart_name": "Event Inquiry vs Conversion",
+ "chart_type": "Report",
+ "color": "#2490ef",
+ "doctype": "Dashboard Chart",
+ "filters_json": "{\"period\": \"Monthly\"}",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "Event Bookings",
+ "name": "Event Inquiry vs Conversion",
+ "report_name": "Event Inquiry vs Conversion",
+ "timeseries": 0,
+ "type": "Line",
+ "use_report_chart": 1,
+ "y_axis": [],
+ "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+}

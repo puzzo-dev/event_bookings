@@ -1,12 +1,21 @@
 import frappe
+
+from event_bookings.permissions import validate_company_filter
 from frappe import _
 from frappe.utils import getdate, add_months, add_days, add_years, nowdate, get_first_day, get_last_day
 
 from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, get_fiscal_year_dates_safe
 
+# Resolve each Currency column against the row's own company, so a
+# multi-company site shows the right symbol (ERPNext report convention).
+CURRENCY_OPTIONS = "Company:company:default_currency"
+
 
 def execute(filters=None):
 	filters = frappe._dict(filters or {})
+	# Query Reports run raw SQL, so User Permissions do not apply to them.
+	# Confine the company filter before any query is built.
+	validate_company_filter(filters)
 	validate_filters(filters)
 
 	period_list = get_period_list(filters)
@@ -14,7 +23,11 @@ def execute(filters=None):
 	data = get_data(filters, period_list)
 	chart = get_chart_data(filters, period_list, data)
 
-	return columns, data, None, chart
+	# Without Group By there is exactly one row, so a total row would just
+	# repeat it. Frappe's 6th return value suppresses it in that case.
+	skip_total_row = 0 if filters.get("group_by") else 1
+
+	return columns, data, None, chart, None, skip_total_row
 
 
 def validate_filters(filters):
@@ -98,28 +111,43 @@ def get_columns(filters, period_list=None):
 	if period_list is None:
 		period_list = get_period_list(filters)
 	based_on = filters.get("based_on", "Revenue")
+	group_by = filters.get("group_by")
+	value_fieldtype = "Currency" if based_on == "Revenue" else "Int"
 
-	columns = [
-		{
+	if group_by:
+		first_column = {
+			"label": _(group_by),
+			"fieldname": "metric",
+			"fieldtype": "Link",
+			"options": group_by,
+			"width": 160,
+		}
+	else:
+		first_column = {
 			"label": _("Metric"),
 			"fieldname": "metric",
 			"fieldtype": "Data",
 			"width": 140,
 		}
-	]
+
+	columns = [first_column]
+
+	currency_options = CURRENCY_OPTIONS if value_fieldtype == "Currency" else None
 
 	for p in period_list:
 		columns.append({
 			"label": p["label"],
 			"fieldname": "period_" + p["label"].replace(" ", "_"),
-			"fieldtype": "Currency" if based_on == "Revenue" else "Int",
+			"fieldtype": value_fieldtype,
+			"options": currency_options,
 			"width": 120,
 		})
 
 	columns.append({
 		"label": _("Total"),
 		"fieldname": "total",
-		"fieldtype": "Currency" if based_on == "Revenue" else "Int",
+		"fieldtype": value_fieldtype,
+		"options": currency_options,
 		"width": 120,
 	})
 
@@ -127,75 +155,129 @@ def get_columns(filters, period_list=None):
 
 
 def get_data(filters, period_list=None):
+	"""One row per series.
+
+	Without ``group_by`` that is a single "Total Revenue" / "Total Count" row.
+	With ``group_by`` it is one row per dimension value — the same shape
+	ERPNext's Sales Order Trends uses to drive a multi-series trend chart.
+	"""
 	if period_list is None:
 		period_list = get_period_list(filters)
+	if not period_list:
+		return []
+
 	based_on = filters.get("based_on", "Revenue")
 	date_field = get_date_field(filters.get("date_field", "booking_date"))
+	group_by = get_group_by_field(filters.get("group_by"))
+
+	rows = get_raw_values(
+		based_on=based_on,
+		date_field=date_field,
+		group_by=group_by,
+		from_date=period_list[0]["from_date"],
+		to_date=period_list[-1]["to_date"],
+		company=filters.get("company"),
+	)
+
+	metric_label = _("Total Revenue") if based_on == "Revenue" else _("Total Count")
+
+	series = {}
+	for row in rows:
+		key = (row.get("series") or _("Not Set")) if group_by else metric_label
+		index = get_period_index(period_list, row.get("bucket_date"))
+		if index is None:
+			continue
+		buckets = series.setdefault(key, {})
+		buckets[index] = buckets.get(index, 0) + (row.get("value") or 0)
+
+	# Always emit the single row, even with no data, so the report renders.
+	if not group_by:
+		series.setdefault(metric_label, {})
 
 	company = filters.get("company")
-	metric_label = _("Total Revenue") if based_on == "Revenue" else _("Total Count")
-	row = {"metric": metric_label}
-	total = 0
+	data = []
+	for key, buckets in sorted(series.items(), key=lambda kv: (-sum(kv[1].values()), kv[0])):
+		row = {"metric": key, "company": company}
+		total = 0
+		for index, p in enumerate(period_list):
+			value = buckets.get(index, 0)
+			row["period_" + p["label"].replace(" ", "_")] = value
+			total += value
+		row["total"] = total
+		data.append(row)
 
-	for p in period_list:
-		key = "period_" + p["label"].replace(" ", "_")
-		value = get_period_value(
-			based_on=based_on,
-			date_field=date_field,
-			from_date=p["from_date"],
-			to_date=p["to_date"],
-			company=company
-		)
-		row[key] = value
-		total += value or 0
-
-	row["total"] = total
-	return [row]
+	return data
 
 
-def get_period_value(based_on, date_field, from_date, to_date, company):
+def get_raw_values(based_on, date_field, group_by, from_date, to_date, company):
+	"""Single grouped query over the whole range.
+
+	Replaces the previous one-query-per-period loop, which became
+	periods x dimension-values queries once grouping was added.
+	"""
 	conditions = ""
 	values = [f"{from_date} 00:00:00", f"{to_date} 23:59:59"]
-	
+
 	if company:
 		conditions += " AND company = %s"
 		values.append(company)
 
 	if based_on == "Revenue":
-		result = frappe.db.sql(
-			f"""
-			SELECT SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0)))
-			FROM `tabEvent Booking`
-			WHERE docstatus < 2
-			  AND {date_field} >= %s AND {date_field} <= %s
-			  {conditions}
-			""",
-			tuple(values),
-		)
+		value_expr = "SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0)))"
 	else:
-		result = frappe.db.sql(
-			f"""
-			SELECT COUNT(name)
-			FROM `tabEvent Booking`
-			WHERE docstatus < 2
-			  AND {date_field} >= %s AND {date_field} <= %s
-			  {conditions}
-			""",
-			tuple(values),
-		)
+		value_expr = "COUNT(name)"
 
-	return (result[0][0] or 0) if result else 0
+	# date_field and group_by are allowlisted below before reaching SQL.
+	series_expr = f"`{group_by}`" if group_by else "NULL"
+
+	return frappe.db.sql(
+		f"""
+		SELECT
+			{series_expr}  AS series,
+			{date_field}   AS bucket_date,
+			{value_expr}   AS value
+		FROM `tabEvent Booking`
+		WHERE docstatus < 2
+		  AND booking_status != 'Cancelled'
+		  AND {date_field} >= %s AND {date_field} <= %s
+		  {conditions}
+		GROUP BY series, bucket_date
+		""",
+		tuple(values),
+		as_dict=True,
+	)
 
 
-# Explicit allowlist — values are used directly in SQL column positions.
+def get_period_index(period_list, value):
+	"""Index of the period ``value`` falls in, or None when out of range."""
+	if not value:
+		return None
+	value = getdate(value)
+	for index, p in enumerate(period_list):
+		if getdate(p["from_date"]) <= value <= getdate(p["to_date"]):
+			return index
+	return None
+
+
+# Explicit allowlists — values are interpolated into SQL column positions.
 # frappe.throw ensures no unlisted value ever reaches the query.
 _SAFE_DATE_FIELDS = frozenset({"booking_date", "event_date"})
+_SAFE_GROUP_BY = {"Event Type": "event_type"}
 
 
 def get_date_field(field_key):
 	if field_key not in _SAFE_DATE_FIELDS:
 		frappe.throw(_("Invalid date field: {0}").format(field_key))
 	return field_key
+
+
+def get_group_by_field(label):
+	"""Map the user-facing Group By label to an allowlisted column, or None."""
+	if not label:
+		return None
+	if label not in _SAFE_GROUP_BY:
+		frappe.throw(_("Invalid Group By: {0}").format(label))
+	return _SAFE_GROUP_BY[label]
 
 
 def get_chart_data(filters, period_list, data):
@@ -214,11 +296,17 @@ def get_chart_data(filters, period_list, data):
 
 	based_on = filters.get("based_on", "Revenue")
 
-	return {
+	chart = {
 		"data": {"labels": labels, "datasets": datasets},
 		"type": "line",
-		"colors": ["#48BB78"] if based_on == "Revenue" else ["#449CF0"],
 		"fieldtype": "Currency" if based_on == "Revenue" else "Int",
 		"lineOptions": {"regionFill": 1},
 	}
+
+	# Only pin a colour for the single-series case; a grouped chart needs
+	# Frappe's own palette so each series stays distinguishable.
+	if len(datasets) == 1:
+		chart["colors"] = ["#48BB78"] if based_on == "Revenue" else ["#449CF0"]
+
+	return chart
 

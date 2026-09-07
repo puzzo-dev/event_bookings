@@ -28,8 +28,7 @@ class TestEventCostCenter(FrappeTestCase):
         defaults = {
             "doctype": "Event Booking",
             "event_name": "Cost Center Test Event",
-            "party_type": "Customer",
-            "party_name": self.customer,
+            "customer": self.customer,
             "event_type": self.event_type,
             "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
             "event_time": "18:00:00",

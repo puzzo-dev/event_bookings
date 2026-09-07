@@ -1,0 +1,17 @@
+{
+ "chart_name": "Event Lead Conversion Funnel",
+ "chart_type": "Report",
+ "color": "#f4a835",
+ "doctype": "Dashboard Chart",
+ "filters_json": "{\"period\": \"Monthly\"}",
+ "is_public": 1,
+ "is_standard": 1,
+ "module": "Event Bookings",
+ "name": "Event Lead Conversion Funnel",
+ "report_name": "Event Lead Conversion Funnel",
+ "timeseries": 0,
+ "type": "Bar",
+ "use_report_chart": 1,
+ "y_axis": [],
+ "dynamic_filters_json": "{\"company\": \"frappe.defaults.get_user_default(\\\"Company\\\")\"}"
+}

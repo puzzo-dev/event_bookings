@@ -2,6 +2,10 @@ import frappe
 from frappe import _
 from frappe.utils import flt
 
+# Resolve each Currency column against the row's own company, so a
+# multi-company site shows the right symbol (ERPNext report convention).
+CURRENCY_OPTIONS = "Company:company:default_currency"
+
 
 def execute(filters=None):
 	if not filters:
@@ -9,23 +13,52 @@ def execute(filters=None):
 
 	columns = get_columns()
 	data = get_data(filters)
-	return columns, data
+	report_summary = get_report_summary(data)
+	return columns, data, None, None, report_summary
+
+
+def get_report_summary(data):
+	"""Number tiles above the table.
+
+	Margin is computed on the summed revenue and profit — a true blended
+	margin, which the averaged Margin % in the total row cannot express.
+	"""
+	if not data:
+		return []
+
+	revenue = sum(flt(row.get("total_actual") or row.get("total_estimated")) for row in data)
+	cogs = sum(flt(row.get("cogs")) for row in data)
+	damages = sum(flt(row.get("damages_cost")) for row in data)
+	net_profit = sum(flt(row.get("net_profit")) for row in data)
+	margin = (net_profit / revenue * 100) if revenue > 0 else 0
+
+	return [
+		{"label": _("Events"), "value": len(data), "datatype": "Int", "indicator": "Blue"},
+		{"label": _("Total Revenue"), "value": revenue, "datatype": "Currency", "indicator": "Blue"},
+		{"label": _("Total COGS"), "value": cogs, "datatype": "Currency", "indicator": "Orange"},
+		{"label": _("Damages / Losses"), "value": damages, "datatype": "Currency", "indicator": "Red"},
+		{"label": _("Net Profit"), "value": net_profit, "datatype": "Currency",
+		 "indicator": "Green" if net_profit >= 0 else "Red"},
+		{"label": _("Blended Margin %"), "value": margin, "datatype": "Percent",
+		 "indicator": "Green" if margin >= 0 else "Red"},
+	]
 
 
 def get_columns():
 	return [
 		{"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
-		{"fieldname": "party_type", "label": _("Party Type"), "fieldtype": "Data", "width": 100},
-		{"fieldname": "party_name", "label": _("Party"), "fieldtype": "Dynamic Link", "options": "party_type", "width": 160},
+		{"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 160},
 		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 110},
 		{"fieldname": "event_time", "label": _("Event Time"), "fieldtype": "Time", "width": 90},
 		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
-		{"fieldname": "total_estimated", "label": _("Estimated Revenue"), "fieldtype": "Currency", "width": 140},
-		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
-		{"fieldname": "cogs", "label": _("COGS"), "fieldtype": "Currency", "width": 120},
-		{"fieldname": "damages_cost", "label": _("Damages / Losses"), "fieldtype": "Currency", "width": 120},
-		{"fieldname": "net_profit", "label": _("Net Profit"), "fieldtype": "Currency", "width": 140},
-		{"fieldname": "margin_pct", "label": _("Margin %"), "fieldtype": "Float", "width": 100},
+		{"fieldname": "total_estimated", "label": _("Estimated Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
+		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
+		{"fieldname": "cogs", "label": _("COGS"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 120},
+		{"fieldname": "damages_cost", "label": _("Damages / Losses"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 120},
+		{"fieldname": "net_profit", "label": _("Net Profit"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
+		# Percent (not Float) so Frappe's total row averages the margin rather
+		# than summing every row's percentage together.
+		{"fieldname": "margin_pct", "label": _("Margin %"), "fieldtype": "Percent", "width": 100},
 		{"fieldname": "revenue_type", "label": _("Revenue Basis"), "fieldtype": "Data", "width": 110},
 	]
 
@@ -82,22 +115,26 @@ def _get_damages_map(event_names):
 
 
 def get_data(filters):
-	conditions = {"docstatus": ["!=", 2]}
+	# Cancelled bookings never appear, matching how ERPNext reports treat
+	# cancelled documents: every one of them pins `docstatus = 1`, which drops
+	# cancelled rows entirely rather than filtering them by status
+	# (see erpnext sales_order_analysis / sales_register). This app cancels by
+	# status as well as by docstatus, so both are excluded. "Cancelled" is
+	# therefore not offered in the Status filter — it could never match.
+	conditions = {"docstatus": ["!=", 2], "booking_status": ["!=", "Cancelled"]}
 	if filters.get("from_date") and filters.get("to_date"):
 		conditions["event_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	elif filters.get("from_date"):
 		conditions["event_date"] = [">=", filters["from_date"]]
 	elif filters.get("to_date"):
 		conditions["event_date"] = ["<=", filters["to_date"]]
-	if filters.get("party_type"):
-		conditions["party_type"] = filters["party_type"]
-	if filters.get("party_name"):
-		conditions["party_name"] = filters["party_name"]
+	if filters.get("customer"):
+		conditions["customer"] = filters["customer"]
 	if filters.get("company"):
 		conditions["company"] = filters["company"]
 	if filters.get("event_type"):
 		conditions["event_type"] = filters["event_type"]
-	if filters.get("booking_status"):
+	if filters.get("booking_status") and filters["booking_status"] != "Cancelled":
 		conditions["booking_status"] = filters["booking_status"]
 
 	# get_list (not get_all) so the report honours role permissions and the
@@ -106,7 +143,7 @@ def get_data(filters):
 		"Event Booking",
 		filters=conditions,
 		fields=[
-			"name as event_name", "party_type", "party_name", "event_date", "event_time",
+			"name as event_name", "customer", "company", "event_date", "event_time",
 			"booking_status", "total_estimated", "total_actual"
 		],
 		order_by="event_date desc, event_time desc",

@@ -1,5 +1,5 @@
 app_name = "event_bookings"
-app_title = "Event Bookings"
+app_title = "Events Management"
 app_publisher = "I-Varse Technologies NG"
 app_description = "Event Management"
 app_email = "dev@itechnologies.ng"
@@ -20,7 +20,7 @@ add_to_apps_screen = [
 	{
 		"name": "event_bookings",
 		"logo": "/assets/event_bookings/images/logo.svg",
-		"title": "Event Bookings",
+		"title": "Events Management",
 		"route": "/app",
 		"has_permission": "event_bookings.api.permission.has_app_permission"
 	}
@@ -31,10 +31,7 @@ add_to_apps_screen = [
 
 # include js, css files in header of desk.html
 # app_include_css = "/assets/event_bookings/css/event_bookings.css"
-app_include_js = [
-    "/assets/event_bookings/js/workspace_conditional.js",
-    "/assets/event_bookings/js/workspace_charts.js",
-]
+# app_include_js = "/assets/event_bookings/js/event_bookings.js"
 
 # include js, css files in header of web template
 # web_include_css = "/assets/event_bookings/css/event_bookings.css"
@@ -51,7 +48,10 @@ app_include_js = [
 # page_js = {"page" : "public/js/file.js"}
 
 # include js in doctype views
-# doctype_js = {"doctype" : "public/js/doctype.js"}
+# Quotation-first flow: adds Create → Event Booking to the Quotation form.
+doctype_js = {
+    "Quotation": "public/js/quotation.js",
+}
 # doctype_list_js = {"doctype" : "public/js/doctype_list.js"}
 # doctype_tree_js = {"doctype" : "public/js/doctype_tree.js"}
 # doctype_calendar_js = {"doctype" : "public/js/doctype_calendar.js"}
@@ -135,6 +135,13 @@ permission_query_conditions = {
 	"Event Booking": "event_bookings.permissions.get_event_booking_query",
 }
 
+# permission_query_conditions governs list/report queries only. Without the
+# matching has_permission hook the planner partition was list-only, and any
+# booking could still be fetched by name over /api/resource.
+has_permission = {
+	"Event Booking": "event_bookings.permissions.has_event_booking_permission",
+}
+
 # has_permission = {
 # 	"Event": "frappe.desk.doctype.event.event.has_permission",
 # }
@@ -154,25 +161,62 @@ permission_query_conditions = {
 doc_events = {
 	"Event Booking": {
 		"on_update": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
+		# Frappe runs on_update_after_submit — NOT on_update — once a document is
+		# submitted (frappe/model/document.py: run_post_save_methods). booking_status
+		# is the only meaningfully editable field after submit and it appears in the
+		# calendar event body, so without this the Google Calendar entry froze at the
+		# status the booking had when it was submitted, cancellations included.
+		"on_update_after_submit": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
+		# on_cancel fires on docstatus 1→2. Frappe does NOT run on_update or
+		# on_update_after_submit on cancel, so without this the Google Calendar
+		# event remained active indefinitely after a booking was cancelled.
+		"on_cancel": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		"on_trash": "event_bookings.utils.google_calendar_sync.delete_from_google_calendar",
 	},
 	"Quotation": {
+		"validate": "event_bookings.utils.erpnext_hooks.validate_event_booking_link",
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_quotation_submit",
 		"on_update": "event_bookings.utils.erpnext_hooks.on_quotation_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_quotation_cancel",
 	},
 	"Sales Order": {
+		"validate": "event_bookings.utils.erpnext_hooks.validate_event_booking_link",
+		"before_save": "event_bookings.utils.erpnext_hooks.on_sales_order_before_save",
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_order_submit",
 		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_order_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_order_cancel",
 	},
 	"Sales Invoice": {
+		"validate": "event_bookings.utils.erpnext_hooks.validate_event_booking_link",
+		"before_save": "event_bookings.utils.erpnext_hooks.on_sales_invoice_before_save",
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_sales_invoice_submit",
 		"on_update": "event_bookings.utils.erpnext_hooks.on_sales_invoice_update",
 		"on_cancel": "event_bookings.utils.erpnext_hooks.on_sales_invoice_cancel",
 	},
 	"Shift Assignment": {
 		"on_update": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+		# qty_assigned is a full recount of *submitted* Shift Assignments, so it
+		# has to run whenever one leaves that set. Frappe dispatches on_cancel —
+		# not on_update — for docstatus 1->2 (run_post_save_methods), so without
+		# this a cancelled assignment left the booking reading as fully staffed.
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+		# on_trash is belt-and-braces: Frappe refuses to delete a submitted
+		# record, so the row is already cancelled (and already excluded) by the
+		# time this runs. Kept so the recount stays correct if the docstatus
+		# filter above is ever widened.
+		"on_trash": "event_bookings.utils.erpnext_hooks.on_shift_assignment_update",
+	},
+	"Payment Entry": {
+		"validate": "event_bookings.utils.erpnext_hooks.validate_event_booking_link",
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_payment_entry_submit",
+	},
+	# Journal Entries settle invoices without creating a Payment Entry, so the
+	# Payment Entry hook alone leaves those bookings stuck at Invoiced.
+	"Journal Entry": {
+		"on_submit": "event_bookings.utils.erpnext_hooks.on_journal_entry_submit",
+	},
+	"Accounting Dimension": {
+		"on_update": "event_bookings.utils.erpnext_hooks.on_accounting_dimension_update",
 	},
 }
 
@@ -181,7 +225,8 @@ doc_events = {
 
 scheduler_events = {
 	"daily": [
-		"event_bookings.utils.scheduler.daily"
+		"event_bookings.utils.scheduler.auto_execute_passed_events",
+		"event_bookings.utils.scheduler.send_unstaffed_alerts",
 	],
 }
 
@@ -229,8 +274,8 @@ scheduler_events = {
 user_data_fields = [
 	{
 		"doctype": "Event Booking",
-		"filter_by": "party_name",
-		"redact_fields": ["party_name", "special_requirements"],
+		"filter_by": "customer",
+		"redact_fields": ["customer", "special_requirements"],
 		"partial": 1,
 	},
 ]
@@ -257,31 +302,20 @@ user_data_fields = [
 # Fixtures
 # --------
 fixtures = [
+    # Only records Frappe cannot sync from module folders belong here.
+    #
+    # Workspace, Dashboard Chart Source, Notification, Report, Print Format,
+    # Onboarding Step and Module Onboarding are synced from
+    # event_bookings/event_bookings/<doctype>/ by frappe.model.sync
+    # (IMPORTABLE_DOCTYPES); Dashboard, Dashboard Chart and Number Card are
+    # synced from event_bookings/event_bookings/{dashboard_chart,number_card,
+    # event_bookings_dashboard}/ by frappe.utils.dashboard.sync_dashboards.
+    # Shipping any of them as fixtures too gives two sources of truth that
+    # silently overwrite each other on every migrate.
     {"dt": "Custom Field", "filters": [["dt", "in", [
         "Quotation", "Sales Order", "Sales Invoice",
         "Material Request", "Stock Entry",
         "Shift Assignment", "Cost Center"
     ]]]},
     {"dt": "Role", "filters": [["name", "in", ["Event Manager", "Event Assistant"]]]},
-    {"dt": "Workspace", "filters": [["name", "=", "Event Bookings"]]},
-    {"dt": "Number Card", "filters": [["name", "in", [
-        "Upcoming Events", "Events This Month", "Pending Invoices", "Total Revenue",
-        "Deals Completed", "Deals Pending", "Deals Lost", "New Inquiries", "Leads Booked",
-    ]]]},
-    {"dt": "Dashboard", "filters": [["name", "=", "Event Bookings"]]},
-    {"dt": "Dashboard Chart Source", "filters": [["name", "in", [
-        "Monthly Events", "Event Revenue Trend",
-        "Event Deals Completed", "Event Deals Lost",
-        "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
-    ]]]},
-    {"dt": "Dashboard Chart", "filters": [["name", "in", [
-        "Monthly Events", "Event Revenue Trend",
-        "Event Deals Completed", "Event Deals Lost",
-        "Event Inquiry vs Conversion", "Event Lead Conversion Funnel",
-    ]]]},
-    {"dt": "Notification", "filters": [["name", "in", [
-        "Event Pre-Event Reminder 3 Days",
-        "Event Pre-Event Reminder 1 Day",
-        "Event Under-Staffed Alert",
-    ]]]},
 ]

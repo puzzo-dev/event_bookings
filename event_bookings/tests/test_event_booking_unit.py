@@ -23,8 +23,7 @@ def _new_booking(**overrides):
 	eb.sales_invoice = None
 	eb.material_request = None
 	eb.booking_status = "New"
-	eb.party_type = "Customer"
-	eb.party_name = "Test Customer"
+	eb.customer = "Test Customer"
 	eb.event_planner = None
 	eb.event_name = "Test Event"
 	eb.event_date = "2026-08-01"
@@ -67,17 +66,30 @@ class TestCalculateTotals(unittest.TestCase):
 		self.assertEqual(eb.total_estimated, 2500.0)
 		self.assertEqual(eb.total_actual, 3000.0)
 
-	def test_from_sales_invoice_when_no_so(self, mock_total):
-		mock_total.side_effect = lambda dt, name: 4500.0 if dt == "Sales Invoice" else 0.0
+	@patch("frappe.db.get_value", return_value=4500.0)
+	def test_from_sales_invoice_when_no_so(self, mock_get_value, mock_total):
+		mock_total.side_effect = lambda dt, name: 0.0
 		eb = _new_booking(sales_invoice="SI-001")
 		eb.calculate_totals()
 		self.assertEqual(eb.total_estimated, 0.0)
 		self.assertEqual(eb.total_actual, 4500.0)
 
+	@patch("frappe.db.get_value", return_value=13650.0)
+	def test_si_grand_total_preferred_over_so(self, mock_get_value, mock_total):
+		# When both SO and SI are linked, total_actual should be the SI grand_total
+		mock_total.side_effect = lambda dt, name: {"Quotation": 2500.0, "Sales Order": 3000.0}.get(dt, 0.0)
+		eb = _new_booking(quotation="QTN-001", sales_order="SO-001", sales_invoice="SI-001")
+		eb.calculate_totals()
+		self.assertEqual(eb.total_estimated, 2500.0)
+		self.assertEqual(eb.total_actual, 13650.0)
+
 
 # ── validate_dates ──────────────────────────────────────────────────
-# Rule: an EXISTING booking may not be moved to a past event_date; a NEW
-# booking with a past date is allowed (e.g. backdated record entry).
+# Contract (P1-7):
+# - a NEW booking may be back-dated (no throw)
+# - an EXISTING booking cannot be MOVED to a past event_date (throw)
+# - an EXISTING past-dated booking saves freely while the date is unchanged
+#   (legacy bookings must stay editable/submittable/cancellable)
 
 _PAST = "2020-01-01"
 _FUTURE = "2099-08-01"
@@ -86,27 +98,35 @@ _FUTURE = "2099-08-01"
 @patch(f"{_MODULE}.today", return_value="2026-07-10")
 @patch(f"{_MODULE}.frappe")
 class TestValidateDates(unittest.TestCase):
-	def test_past_date_existing_booking_throws(self, mock_frappe, _today):
+	def test_past_date_existing_booking_moved_throws(self, mock_frappe, _today):
 		eb = _new_booking(event_date=_PAST)
-		eb.is_new = lambda: False
+		mock_frappe.db.exists.return_value = True
+		mock_frappe.db.get_value.return_value = "2026-08-01"  # stored differs → moved
 		eb.validate_dates()
 		mock_frappe.throw.assert_called_once()
 
 	def test_past_date_new_booking_no_throw(self, mock_frappe, _today):
 		eb = _new_booking(event_date=_PAST)
-		eb.is_new = lambda: True
+		# Not yet in the table: the single get_value that validate_dates makes
+		# returns None, which is how a new row is distinguished from a moved one.
+		mock_frappe.db.get_value.return_value = None
+		eb.validate_dates()
+		mock_frappe.throw.assert_not_called()
+
+	def test_legacy_past_date_unchanged_no_throw(self, mock_frappe, _today):
+		eb = _new_booking(event_date=_PAST)
+		mock_frappe.db.exists.return_value = True
+		mock_frappe.db.get_value.return_value = _PAST  # same date → unchanged
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
 	def test_future_date_no_throw(self, mock_frappe, _today):
 		eb = _new_booking(event_date=_FUTURE)
-		eb.is_new = lambda: False
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 
 	def test_none_date_no_throw(self, mock_frappe, _today):
 		eb = _new_booking(event_date=None)
-		eb.is_new = lambda: True
 		eb.validate_dates()
 		mock_frappe.throw.assert_not_called()
 

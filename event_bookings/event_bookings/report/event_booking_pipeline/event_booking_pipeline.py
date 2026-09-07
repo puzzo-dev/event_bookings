@@ -1,5 +1,10 @@
 import frappe
 from frappe import _
+from frappe.utils import cstr, flt
+
+# Resolve each Currency column against the row's own company, so a
+# multi-company site shows the right symbol (ERPNext report convention).
+CURRENCY_OPTIONS = "Company:company:default_currency"
 
 
 def execute(filters=None):
@@ -9,30 +14,42 @@ def execute(filters=None):
 	columns = get_columns()
 	data = get_data(filters)
 	
-	total_est = sum(row.get("total_estimated", 0) for row in data)
-	total_act = sum(row.get("total_actual", 0) for row in data)
-	
+	total_est = sum(flt(row.get("total_estimated")) for row in data)
+	total_act = sum(flt(row.get("total_actual")) for row in data)
+	staff_required = sum(flt(row.get("staff_required")) for row in data)
+	staff_assigned = sum(flt(row.get("staff_assigned")) for row in data)
+	understaffed = sum(
+		1 for row in data if flt(row.get("staff_assigned")) < flt(row.get("staff_required"))
+	)
+
 	report_summary = [
 		{"value": len(data), "indicator": "Blue", "label": _("Total Events"), "datatype": "Int"},
 		{"value": total_est, "indicator": "Green", "label": _("Total Estimated Revenue"), "datatype": "Currency"},
 		{"value": total_act, "indicator": "Green", "label": _("Total Actual Revenue"), "datatype": "Currency"},
+		{"value": staff_assigned, "indicator": "Blue", "label": _("Staff Assigned"), "datatype": "Int"},
+		{"value": staff_required, "indicator": "Blue", "label": _("Staff Required"), "datatype": "Int"},
+		{"value": understaffed, "indicator": "Red" if understaffed else "Green",
+		 "label": _("Under-staffed Events"), "datatype": "Int"},
 	]
-	
+
 	return columns, data, None, None, report_summary
 
 
 def get_columns():
 	return [
 		{"fieldname": "event_name", "label": _("Event Booking"), "fieldtype": "Link", "options": "Event Booking", "width": 180},
-		{"fieldname": "party_type", "label": _("Party Type"), "fieldtype": "Data", "width": 100},
-		{"fieldname": "party_name", "label": _("Party"), "fieldtype": "Dynamic Link", "options": "party_type", "width": 160},
+		{"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 160},
 		{"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
 		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 110},
 		{"fieldname": "event_time", "label": _("Event Time"), "fieldtype": "Time", "width": 90},
 		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
-		{"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Int", "width": 100},
-		{"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "width": 140},
-		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "width": 140},
+		# Data (not Int) deliberately: frappe.desk.query_report.add_total_row sums
+		# every Int column with no opt-out, and a total of "days until event"
+		# is meaningless. align keeps it right-aligned like a number.
+		{"fieldname": "days_until_event", "label": _("Days Until"), "fieldtype": "Data",
+		 "align": "right", "width": 100},
+		{"fieldname": "total_estimated", "label": _("Est. Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
+		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
 		{"fieldname": "staff_required", "label": _("Staff Required"), "fieldtype": "Int", "width": 120},
 		{"fieldname": "staff_assigned", "label": _("Staff Assigned"), "fieldtype": "Int", "width": 120},
 		{"fieldname": "quotation", "label": _("Quotation"), "fieldtype": "Link", "options": "Quotation", "width": 130},
@@ -41,22 +58,26 @@ def get_columns():
 
 
 def get_data(filters):
-	conditions = {"docstatus": ["!=", 2]}
+	# Cancelled bookings never appear, matching how ERPNext reports treat
+	# cancelled documents: every one of them pins `docstatus = 1`, which drops
+	# cancelled rows entirely rather than filtering them by status
+	# (see erpnext sales_order_analysis / sales_register). This app cancels by
+	# status as well as by docstatus, so both are excluded. "Cancelled" is
+	# therefore not offered in the Status filter — it could never match.
+	conditions = {"docstatus": ["!=", 2], "booking_status": ["!=", "Cancelled"]}
 	if filters.get("from_date") and filters.get("to_date"):
 		conditions["event_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	elif filters.get("from_date"):
 		conditions["event_date"] = [">=", filters["from_date"]]
 	elif filters.get("to_date"):
 		conditions["event_date"] = ["<=", filters["to_date"]]
-	if filters.get("party_type"):
-		conditions["party_type"] = filters["party_type"]
-	if filters.get("party_name"):
-		conditions["party_name"] = filters["party_name"]
+	if filters.get("customer"):
+		conditions["customer"] = filters["customer"]
 	if filters.get("company"):
 		conditions["company"] = filters["company"]
 	if filters.get("event_type"):
 		conditions["event_type"] = filters["event_type"]
-	if filters.get("booking_status"):
+	if filters.get("booking_status") and filters["booking_status"] != "Cancelled":
 		conditions["booking_status"] = filters["booking_status"]
 
 	# get_list (not get_all) so the report honours role permissions and the
@@ -66,8 +87,8 @@ def get_data(filters):
 		filters=conditions,
 		fields=[
 			"name as event_name",
-			"party_type",
-			"party_name",
+			"customer",
+			"company",
 			"event_type",
 			"event_date",
 			"event_time",
@@ -92,13 +113,13 @@ def get_data(filters):
 
 		data.append({
 			"event_name": eb.event_name,
-			"party_type": eb.party_type,
-			"party_name": eb.party_name,
+			"customer": eb.customer,
+			"company": eb.company,
 			"event_type": eb.event_type,
 			"event_date": eb.event_date,
 			"event_time": eb.event_time,
 			"booking_status": eb.booking_status,
-			"days_until_event": days_until,
+			"days_until_event": cstr(days_until),
 			"total_estimated": eb.total_estimated or 0,
 			"total_actual": eb.total_actual or 0,
 			"staff_required": staff_required,

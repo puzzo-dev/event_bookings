@@ -1,0 +1,82 @@
+{
+ "cards": [
+  {
+   "card": "Upcoming Events"
+  },
+  {
+   "card": "Events This Month"
+  },
+  {
+   "card": "Pending Invoices"
+  },
+  {
+   "card": "Total Revenue"
+  },
+  {
+   "card": "Deals Completed"
+  },
+  {
+   "card": "Deals Pending"
+  },
+  {
+   "card": "Deals Lost"
+  },
+  {
+   "card": "New Inquiries"
+  },
+  {
+   "card": "Leads Booked"
+  }
+ ],
+ "chart_options": "",
+ "charts": [
+  {
+   "chart": "Event Booking Revenue Trends",
+   "width": "Full"
+  },
+  {
+   "chart": "Event Booking Count Trends",
+   "width": "Half"
+  },
+  {
+   "chart": "Monthly Events",
+   "width": "Half"
+  },
+  {
+   "chart": "Events By Event Type",
+   "width": "Half"
+  },
+  {
+   "chart": "Event Revenue Trend by Event Type",
+   "width": "Half"
+  },
+  {
+   "chart": "Event Deals Completed",
+   "width": "Half"
+  },
+  {
+   "chart": "Event Deals Lost",
+   "width": "Half"
+  },
+  {
+   "chart": "Event Inquiry vs Conversion",
+   "width": "Full"
+  },
+  {
+   "chart": "Event Lead Conversion Funnel",
+   "width": "Full"
+  }
+ ],
+ "creation": "2026-06-13 05:54:07.090378",
+ "dashboard_name": "Event Bookings",
+ "docstatus": 0,
+ "doctype": "Dashboard",
+ "idx": 0,
+ "is_default": 0,
+ "is_standard": 1,
+ "modified": "2026-09-06 10:51:44.590580",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Bookings",
+ "owner": "Administrator"
+}

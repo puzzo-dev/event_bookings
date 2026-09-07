@@ -1,6 +1,16 @@
 import frappe
 
 
+def _leaf_group(doctype):
+    """First non-group node of a tree doctype (Customer Group / Territory).
+
+    ERPNext party validation rejects group-type Customer Group / Territory,
+    and sites without a Selling Settings default fall back to the root
+    (group) node — so test customers must pin leaf nodes explicitly.
+    """
+    return frappe.db.get_value(doctype, {"is_group": 0}, "name", order_by="lft asc")
+
+
 def get_or_create_test_party():
     """
     Return (party_type, party_name) for use in Event Booking test fixtures.
@@ -17,6 +27,8 @@ def get_or_create_test_party():
                     "doctype": "Customer",
                     "customer_name": name,
                     "customer_type": "Individual",
+                    "customer_group": _leaf_group("Customer Group"),
+                    "territory": _leaf_group("Territory"),
                 }
             ).insert(ignore_permissions=True)
         return "Customer", name
@@ -38,9 +50,41 @@ def get_or_create_test_customer(name="Test Event Customer"):
                 "doctype": "Customer",
                 "customer_name": name,
                 "customer_type": "Individual",
+                "customer_group": _leaf_group("Customer Group"),
+                "territory": _leaf_group("Territory"),
             }
         ).insert(ignore_permissions=True)
     return name
+
+
+def ensure_test_customer_leaf_details(name="Test Event Customer"):
+	"""Pin the test Customer to leaf Customer Group / Territory nodes.
+
+	ERPNext party-details resolution (run on Quotation validate) rejects
+	group-type Customer Group / Territory, and sites without a default fall
+	back to the root (group) node — test customers must be pinned explicitly.
+	"""
+	if not frappe.db.exists("DocType", "Customer"):
+		return
+	if not frappe.db.exists("Customer", name):
+		get_or_create_test_customer(name)
+		return
+	customer = frappe.get_doc("Customer", name)
+	changed = False
+	if not customer.customer_group or frappe.db.get_value(
+		"Customer Group", customer.customer_group, "is_group"
+	):
+		customer.customer_group = frappe.db.get_value(
+			"Customer Group", {"is_group": 0}, "name"
+		)
+		changed = True
+	if not customer.territory or frappe.db.get_value(
+		"Territory", customer.territory, "is_group"
+	):
+		customer.territory = frappe.db.get_value("Territory", {"is_group": 0}, "name")
+		changed = True
+	if changed:
+		customer.save(ignore_permissions=True)
 
 
 def get_or_create_test_event_type(name="Test Event"):

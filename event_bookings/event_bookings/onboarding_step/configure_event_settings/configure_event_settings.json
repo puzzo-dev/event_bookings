@@ -3,7 +3,7 @@
  "field": "pre_event_reminder_days",
  "value_to_validate": "%",
  "creation": "2026-06-13 22:48:37.437224",
- "description": "Set your global preferences: configure how many days before an event reminders are sent, whether post-event reviews are required, and whether WhatsApp notifications are enabled.",
+ "description": "Set your global preferences: default customer group, default warehouse, and other event booking settings.",
  "docstatus": 0,
  "doctype": "Onboarding Step",
  "idx": 0,

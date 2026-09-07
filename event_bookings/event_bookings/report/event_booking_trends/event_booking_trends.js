@@ -38,6 +38,13 @@ frappe.query_reports["Event Booking Trends"] = {
 			"reqd": 1
 		},
 		{
+			"fieldname": "group_by",
+			"label": __("Group By"),
+			"fieldtype": "Select",
+			"options": "\nEvent Type",
+			"default": ""
+		},
+		{
 			"fieldname": "date_field",
 			"label": __("Date Field"),
 			"fieldtype": "Select",

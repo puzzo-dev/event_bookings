@@ -3,8 +3,10 @@ from frappe import _
 from frappe.model.document import Document
 from frappe.model.mapper import get_mapped_doc
 from frappe.utils import today, getdate, flt
+from frappe.utils.data import escape_html
 
 from event_bookings.utils.erpnext_bridge import is_erpnext_installed, make_customer_from_lead
+from event_bookings.utils.status import CANCELLED
 
 
 # Whitelisted table-to-doctype mapping for SQL totals.
@@ -19,14 +21,90 @@ _ITEMS_TABLE = {
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
+        # Quotation-first flow: new bookings always carry a Customer
+        # (legacy rows are exempt — the party model is retired, not frozen).
+        if self.is_new() and not self.customer:
+            frappe.throw(
+                "Customer is required — an Event Booking is created from an "
+                "accepted Quotation (Quotation → Create → Event Booking)."
+            )
 
     def before_save(self):
         self.calculate_totals()
+        # Idempotent and cheap: only writes a blank field, so it is safe to run
+        # on every save. Must NOT be gated on has_status_changed() — that is
+        # False when a booking is *created* already Confirmed or Cancelled.
+        self.stamp_lifecycle_dates()
         # has_status_changed() fetches and caches old_status once.
         # _validate_status_transition() reuses the cache — avoids a second DB hit.
         if self.has_status_changed():
             self._validate_status_transition()
             self.handle_status_transition()
+
+    def before_update_after_submit(self):
+        """Frappe runs a different hook chain once a document is submitted.
+
+        For docstatus 1, run_before_save_methods() dispatches on
+        _action == "update_after_submit" and runs ONLY this method — neither
+        validate nor before_save fires (frappe/model/document.py). booking_status
+        is allow_on_submit, so it keeps changing after submit; without this the
+        entire status-transition chain was dead on submitted bookings:
+        lifecycle dates were never stamped, staffing alerts never sent, and a
+        status-based cancellation never cascaded to the linked Quotation /
+        Sales Order / Sales Invoice.
+        """
+        self.stamp_lifecycle_dates()
+        if self.has_status_changed():
+            self.handle_status_transition()
+
+    def after_insert(self):
+        """Quotation-first: write the reverse link on the source Quotation so
+        its Connections tab lights up and on_quotation_update keeps totals
+        fresh. One booking per quotation — never overwrite an existing link."""
+        if self.quotation:
+            # One read, not two: get_value returns None both when the Quotation
+            # is missing and when its event_booking is empty, and set_value on a
+            # row that does not exist is a no-op — so the separate exists()
+            # probe added a query without changing any outcome.
+            existing = frappe.db.get_value("Quotation", self.quotation, "event_booking")
+            if not existing:
+                frappe.db.set_value(
+                    "Quotation", self.quotation, "event_booking", self.name,
+                    update_modified=False,
+                )
+
+    def before_cancel(self):
+        # Cancel linked submitted documents SYNCHRONOUSLY, before the
+        # docstatus flip: Frappe's back-link check (check_no_back_links_exist)
+        # runs after on_cancel and raises LinkExistsError while any submitted
+        # Quotation/Sales Order/Sales Invoice/Stock Entry still references
+        # this booking. The status-based Cancelled flow (no docstatus change)
+        # keeps the background-enqueued cascade instead.
+        _cancel_linked_documents(self.name)
+
+    def on_cancel(self):
+        # Linked documents were already cancelled in before_cancel.
+        #
+        # Keep the two cancellation concepts in agreement. ERPNext derives
+        # status from docstatus — see erpnext/controllers/status_updater.py,
+        # ["Cancelled", "eval:self.docstatus==2"] — so a cancelled document can
+        # never read as anything else. This app also has a status-only cancel
+        # (no docstatus change) for draft bookings, which left docstatus-2
+        # bookings sitting at booking_status "Confirmed" with no cancelled_on:
+        # they stayed "converted" in every report and chart forever.
+        #
+        # Set the values in-memory BEFORE writing, so doc_events hooks (e.g.
+        # Google Calendar sync on on_cancel) see the cancelled status —
+        # db_set writes the row but does not update the in-memory object.
+        #
+        # Both columns go out in one statement: db_set accepts a dict, and two
+        # calls meant two UPDATEs and two row locks for a single state change.
+        updates = {"booking_status": CANCELLED}
+        self.booking_status = CANCELLED
+        if not self.cancelled_on:
+            self.cancelled_on = frappe.utils.today()
+            updates["cancelled_on"] = self.cancelled_on
+        self.db_set(updates, update_modified=False)
 
     def _validate_status_transition(self):
         if self.is_new():
@@ -45,11 +123,22 @@ class EventBooking(Document):
         """
         Sum line-item amounts from linked documents via SQL aggregation.
         Avoids loading full Document objects (and child tables) inside validate.
+
+        - total_estimated: Quotation items total (the original quote)
+        - total_actual: Sales Invoice grand_total if linked (the actual
+          invoiced amount including taxes), otherwise Sales Order items total
+          (the agreed amount, which may include items added after quoting)
         """
         self.total_estimated = _sql_items_total("Quotation", self.quotation)
-        self.total_actual = _sql_items_total("Sales Order", self.sales_order)
-        if not self.total_actual and self.sales_invoice:
-            self.total_actual = _sql_items_total("Sales Invoice", self.sales_invoice)
+        if self.sales_invoice:
+            # Use the SI grand_total — the actual invoiced amount (items + taxes + shipping)
+            si_total = frappe.db.get_value("Sales Invoice", self.sales_invoice, "grand_total")
+            self.total_actual = flt(si_total or 0.0)
+        elif self.sales_order:
+            # No invoice yet — use the SO items total
+            self.total_actual = _sql_items_total("Sales Order", self.sales_order)
+        else:
+            self.total_actual = 0.0
 
     def recalculate_totals(self):
         """
@@ -64,9 +153,25 @@ class EventBooking(Document):
         }, update_modified=False)
 
     def validate_dates(self):
-        if self.event_date and getdate(self.event_date) < getdate(today()):
-            if not self.is_new():
-                frappe.throw("Event Date cannot be moved to a past date on an existing booking.")
+        """
+        Past-date guard — tolerant of legacy/back-dated bookings.
+
+        - New bookings may be back-dated (recording events that already ran).
+        - An existing booking cannot be MOVED to a past date.
+        - An existing booking whose event date is already past saves, submits
+          and cancels freely — submit/cancel run the full validate chain, so
+          a stricter guard would freeze historical bookings (P1-7).
+        """
+        if not self.event_date or getdate(self.event_date) >= getdate(today()):
+            return
+        if not self.name:
+            return  # new, unsaved document — back-dating allowed
+        # One read: a document that is not yet in the table returns None here,
+        # which is exactly the "new, back-dating allowed" case the exists()
+        # probe was checking for.
+        stored = frappe.db.get_value("Event Booking", self.name, "event_date")
+        if stored and getdate(stored) != getdate(self.event_date):
+            frappe.throw("Event Date cannot be moved to a past date on an existing booking.")
 
     # -----------------------------------------------------------------
     # Status Transition Hook
@@ -88,15 +193,39 @@ class EventBooking(Document):
     def handle_status_transition(self):
         status = self.booking_status
 
-        if status == "In Preparation":
+        if status == "Confirmed":
             self._notify_staff_requirements()
 
         elif status == "Cancelled":
             self.cancel_linked_documents()
 
+    def stamp_lifecycle_dates(self):
+        """Record when a booking converted and when it was lost.
+
+        Analytics previously dated both events by ``modified``, which is the
+        last edit of *anything* on the booking — so an unrelated edit silently
+        re-dated a historical conversion or loss into the current period.
+        These two fields are written once and never moved.
+
+        ``confirmed_on`` is stamped on reaching Confirmed *or any later state*,
+        because a booking can jump straight from Invoiced to Paid and never
+        pass through Confirmed itself.
+        """
+        from event_bookings.utils.status import STATUS_ORDER, status_index
+
+        today = frappe.utils.today()
+        confirmed_idx = STATUS_ORDER.index("Confirmed")
+        current_idx = status_index(self.booking_status)
+
+        if current_idx is not None and current_idx >= confirmed_idx and not self.confirmed_on:
+            self.confirmed_on = today
+
+        if self.booking_status == CANCELLED and not self.cancelled_on:
+            self.cancelled_on = today
+
     def _notify_staff_requirements(self):
         """
-        When moving to In Preparation, alert managers about outstanding staffing gaps.
+        When moving to Confirmed, alert managers about outstanding staffing gaps.
 
         HRMS Shift Assignment requires a named employee on every record and does not
         support unassigned placeholder slots.  Managers must create Shift Assignments
@@ -106,12 +235,15 @@ class EventBooking(Document):
         for req in self.get("staff_requirements") or []:
             gap = int(req.get("qty_required") or 0) - int(req.get("qty_assigned") or 0)
             if gap > 0:
-                needed.append(f"{req.get('designation')}: {gap} slot(s) required")
+                needed.append(
+                    f"{escape_html(str(req.get('designation') or ''))}: "
+                    f"{gap} slot(s) required"
+                )
         if needed:
             frappe.msgprint(
                 "<b>Staff requirements outstanding.</b><br>"
                 "Please create Shift Assignments in <b>HR &gt; Shift Assignment</b> "
-                f"with the <i>Event Booking</i> field set to <b>{self.name}</b>:<ul>"
+                f"with the <i>Event Booking</i> field set to <b>{escape_html(self.name)}</b>:<ul>"
                 + "".join(f"<li>{n}</li>" for n in needed)
                 + "</ul>",
                 title="Staff Assignment Needed",
@@ -125,7 +257,14 @@ class EventBooking(Document):
             "._cancel_linked_documents_background",
             booking_name=self.name,
             queue="default",
-            now=frappe.in_test,
+            # v15 API: frappe.in_test is v16+. On v15 this raised
+            # AttributeError, so cancelling any booking crashed the save.
+            now=frappe.flags.in_test,
+            # The worker reads this booking's state to decide what to cancel.
+            # Without this it can start before the cancelling transaction has
+            # committed and read the pre-cancel row — or not find it at all.
+            # Ignored when now=True, so tests still run inline.
+            enqueue_after_commit=True,
         )
 
     # -----------------------------------------------------------------
@@ -141,32 +280,51 @@ class EventBooking(Document):
 
     @staticmethod
     def get_indicator(doc):
-        """Return colored indicator for booking_status in list views."""
+        """Return colored indicator for booking_status in list views.
+
+        Colors follow the status order (commercial → operational):
+        deal phases blue/orange, money pending orange, paid green,
+        event phases blue, executed grey, cancelled red.
+        """
         status_colors = {
             "New": "blue",
             "Quoted": "blue",
-            "Negotiating": "orange",
+            "Invoiced": "orange",
             "Confirmed": "blue",
-            "In Preparation": "blue",
-            "Executed": "gray",
-            "Invoiced": "green",
             "Paid": "green",
+            "Executed": "gray",
             "Cancelled": "red",
         }
         return [doc.booking_status, status_colors.get(doc.booking_status, "gray")]
 
 
 # ---------------------------------------------------------------------------
-# Background worker — cancellation (runs via frappe.enqueue)
+# Linked-document cancellation cascade
 # ---------------------------------------------------------------------------
 
 def _cancel_linked_documents_background(booking_name):
     """
-    Cancel submitted documents linked to an Event Booking.
+    Background worker entry point (enqueued by cancel_linked_documents for the
+    status-based Cancelled flow) — delegates to the synchronous core.
+    """
+    _cancel_linked_documents(booking_name)
 
-    Runs in a background worker (enqueued by cancel_linked_documents) so that
-    HTTP requests to external services (doc.cancel() may trigger ERPNext ledger
-    entries) never block the user-facing save request.
+
+def _cancel_linked_documents(booking_name):
+    """
+    Cancel submitted documents linked to an Event Booking (synchronous core).
+
+    Shared by:
+    - before_cancel (docstatus cancel) — MUST complete before Frappe's
+      back-link check runs, so the cancel is not blocked by submitted
+      Quotation / Sales Order / Sales Invoice / Stock Entry references;
+    - the background worker (status-based Cancelled on draft/submitted
+      bookings) so user-facing saves never block on ERPNext ledger work.
+
+    Each cancellation is permission-checked and individually error-logged —
+    one failure never aborts the rest. If a submitted link survives (missing
+    permission or a cancel error), Frappe's back-link check stops the booking
+    cancel with a LinkExistsError naming the blocking document.
     """
     linked = [
         ("quotation",        "Quotation"),
@@ -202,44 +360,46 @@ def _cancel_linked_documents_background(booking_name):
             )
 
     # Cancel linked Stock Entries (reverse link via event_booking custom field on Stock Entry)
-    for entry in frappe.get_all(
-        "Stock Entry", filters={"event_booking": booking_name, "docstatus": 1}
-    ):
-        try:
-            doc = frappe.get_doc("Stock Entry", entry.name)
-            if not frappe.has_permission("Stock Entry", "cancel", doc):
+    if frappe.db.exists("DocType", "Stock Entry"):
+        for entry in frappe.get_all(
+            "Stock Entry", filters={"event_booking": booking_name, "docstatus": 1}
+        ):
+            try:
+                doc = frappe.get_doc("Stock Entry", entry.name)
+                if not frappe.has_permission("Stock Entry", "cancel", doc):
+                    frappe.log_error(
+                        title=f"No cancel permission for Stock Entry {entry.name}",
+                        message=f"Event Booking: {booking_name}",
+                    )
+                    continue
+                doc.cancel()
+            except Exception:
                 frappe.log_error(
-                    title=f"No cancel permission for Stock Entry {entry.name}",
-                    message=f"Event Booking: {booking_name}",
+                    title=f"Failed to cancel Stock Entry {entry.name} "
+                          f"for Event Booking {booking_name}",
+                    message=frappe.get_traceback(),
                 )
-                continue
-            doc.cancel()
-        except Exception:
-            frappe.log_error(
-                title=f"Failed to cancel Stock Entry {entry.name} "
-                      f"for Event Booking {booking_name}",
-                message=frappe.get_traceback(),
-            )
 
     # Cancel linked Shift Assignments (queried by custom field, not a Link field)
-    for shift in frappe.get_all(
-        "Shift Assignment", filters={"event_booking": booking_name, "docstatus": 1}
-    ):
-        try:
-            doc = frappe.get_doc("Shift Assignment", shift.name)
-            if not frappe.has_permission("Shift Assignment", "cancel", doc):
+    if frappe.db.exists("DocType", "Shift Assignment"):
+        for shift in frappe.get_all(
+            "Shift Assignment", filters={"event_booking": booking_name, "docstatus": 1}
+        ):
+            try:
+                doc = frappe.get_doc("Shift Assignment", shift.name)
+                if not frappe.has_permission("Shift Assignment", "cancel", doc):
+                    frappe.log_error(
+                        title=f"No cancel permission for Shift Assignment {shift.name}",
+                        message=f"Event Booking: {booking_name}",
+                    )
+                    continue
+                doc.cancel()
+            except Exception:
                 frappe.log_error(
-                    title=f"No cancel permission for Shift Assignment {shift.name}",
-                    message=f"Event Booking: {booking_name}",
+                    title=f"Failed to cancel Shift Assignment {shift.name} "
+                          f"for Event Booking {booking_name}",
+                    message=frappe.get_traceback(),
                 )
-                continue
-            doc.cancel()
-        except Exception:
-            frappe.log_error(
-                title=f"Failed to cancel Shift Assignment {shift.name} "
-                      f"for Event Booking {booking_name}",
-                message=frappe.get_traceback(),
-            )
 
 
 # ---------------------------------------------------------------------------
@@ -274,25 +434,86 @@ def _sql_items_total(doctype, name):
 # ---------------------------------------------------------------------------
 
 @frappe.whitelist()
-def make_quotation(source_name, target_doc=None):
-    if not frappe.has_permission("Event Booking", "read", source_name):
-        frappe.throw("You do not have permission to read this Event Booking.")
+def make_event_booking(source_name, target_doc=None):
+    """Create an Event Booking FROM an accepted Quotation.
+
+    The quotation-first flow (user-confirmed): a booking only exists after a
+    quotation is accepted. Called by the Quotation form's
+    Create → Event Booking button via frappe.model.open_mapped_doc.
+
+    Customer resolution:
+    - quotation_to == "Customer" → customer = party_name
+    - quotation_to == "Lead"     → convert via make_customer_from_lead
+                                    (reuses an existing Customer when the
+                                    lead was already converted)
+    """
+    if not frappe.has_permission("Quotation", "read", source_name):
+        frappe.throw(
+            "You do not have permission to read this Quotation.",
+            frappe.PermissionError,
+        )
+    if not frappe.has_permission("Event Booking", "create"):
+        frappe.throw(
+            "You do not have permission to create an Event Booking.",
+            frappe.PermissionError,
+        )
     if not is_erpnext_installed():
-        frappe.throw("ERPNext is required to create a Quotation.")
+        frappe.throw("ERPNext is required to create an Event Booking from a Quotation.")
+
+    quotation = frappe.get_doc("Quotation", source_name)
+
+    # Lock the Quotation row to serialize concurrent make_event_booking calls.
+    # Without this, two requests can both pass the duplicate check below and
+    # both create bookings for the same Quotation.
+    frappe.db.get_value("Quotation", source_name, "name", for_update=True)
+
+    # Event Booking can only be created from a submitted Quotation —
+    # same pattern as Quotation → Sales Order in ERPNext.
+    if quotation.docstatus != 1:
+        frappe.throw(
+            "Event Booking can only be created from a submitted Quotation. "
+            f"Quotation {source_name} is {'draft' if quotation.docstatus == 0 else 'cancelled'}.",
+            frappe.ValidationError,
+        )
+
+    # Block creation from expired quotations — same as ERPNext's
+    # make_sales_order check against Selling Settings.
+    from frappe.utils import getdate, nowdate
+    valid_till = quotation.get("valid_till")
+    if valid_till and getdate(valid_till) < getdate(nowdate()):
+        frappe.throw(
+            f"Validity period of Quotation {source_name} has ended. "
+            "Cannot create an Event Booking from an expired quotation.",
+            frappe.ValidationError,
+        )
+
+    # One Event Booking per Quotation — prevent duplicates.
+    existing = frappe.db.get_value("Event Booking", {"quotation": source_name, "docstatus": ("<", 2)})
+    if existing:
+        frappe.throw(
+            f"Quotation {source_name} already has an Event Booking ({existing}). "
+            "One booking per quotation.",
+            frappe.ValidationError,
+        )
+
+    customer = _resolve_customer_from_quotation(quotation)
 
     def set_missing_values(source, target):
-        target.quotation_to = source.party_type
-        target.event_booking = source.name
+        target.customer = customer
+        # Booking status starts at Quoted — a quotation exists and was
+        # accepted (decided with the status-order redesign).
+        target.booking_status = "Quoted"
+        # Read-only field, set server-side; on_quotation_update keeps it fresh.
+        target.quotation = source.name
 
     return get_mapped_doc(
-        "Event Booking",
+        "Quotation",
         source_name,
         {
-            "Event Booking": {
-                "doctype": "Quotation",
+            "Quotation": {
+                "doctype": "Event Booking",
                 "field_map": {
-                    "party_name": "party_name",
-                    "cost_center": "cost_center",
+                    "company": "company",
                 },
             }
         },
@@ -301,70 +522,102 @@ def make_quotation(source_name, target_doc=None):
     )
 
 
-@frappe.whitelist()
-def convert_lead_and_update_booking(booking_name):
-    """Convert the booking's Lead party to a Customer (or link an existing one)
-    and repoint the Event Booking to that Customer.
+def _resolve_customer_from_quotation(quotation):
+    """Resolve the Customer for a quotation→booking mapping.
 
-    Called by the "Convert Lead to Customer" button and the lead-conversion
-    dialog in event_booking.js.  Returns the shape the client expects::
-
-        {"customer": <customer name>, "already_existed": <bool>}
+    Lead quotations are converted (reusing an existing Customer linked to the
+    lead) — bookings always carry a Customer under the quotation-first model.
     """
-    if not frappe.has_permission("Event Booking", "write", booking_name):
-        frappe.throw(
-            _("You do not have permission to modify this Event Booking."),
-            frappe.PermissionError,
-        )
-    if not is_erpnext_installed():
-        frappe.throw(_("ERPNext is required to convert a Lead to a Customer."))
+    party_type = quotation.quotation_to
+    party = quotation.party_name
+    if not party:
+        frappe.throw("The quotation has no party linked.")
 
-    party_type, lead = frappe.db.get_value(
-        "Event Booking", booking_name, ["party_type", "party_name"]
-    )
-    if party_type != "Lead":
-        frappe.throw(_("This booking's party is not a Lead."))
-    if not lead:
-        frappe.throw(_("No Lead is linked to this booking."))
+    if party_type == "Customer":
+        return party
 
-    # Already converted? Reuse the existing Customer linked to this Lead.
-    existing = frappe.db.get_value("Customer", {"lead_name": lead}, "name")
-    if existing:
-        customer_name = existing
-        already_existed = True
-    else:
+    if party_type == "Lead":
         if not frappe.has_permission("Customer", "create"):
             frappe.throw(
                 _("You do not have permission to create a Customer."),
                 frappe.PermissionError,
             )
-        customer_doc = make_customer_from_lead(lead)
+        existing = frappe.db.get_value("Customer", {"lead_name": party}, "name")
+        if existing:
+            return existing
+        customer_doc = make_customer_from_lead(party)
         customer_doc.insert(ignore_permissions=True)
-        customer_name = customer_doc.name
-        already_existed = False
+        return customer_doc.name
 
-    # Repoint the booking via set_value so the (possibly past-dated) booking's
-    # validate() date guard cannot block a legitimate party conversion.
-    frappe.db.set_value(
-        "Event Booking",
-        booking_name,
-        {"party_type": "Customer", "party_name": customer_name},
+    frappe.throw(
+        f"Quotation party type '{party_type}' cannot be linked to an Event "
+        "Booking. Convert the party to a Customer first."
     )
 
-    return {"customer": customer_name, "already_existed": already_existed}
+
+@frappe.whitelist()
+def make_sales_order(source_name, target_doc=None):
+    """Create a Sales Order from an Event Booking.
+
+    Works with or without a linked Quotation:
+    - If a Quotation is linked, items are copied from it (via ERPNext's
+      quotation.make_sales_order mapping).
+    - If no Quotation exists, a blank Sales Order is created with the
+      customer / company / cost_center from the Event Booking.
+
+    The Sales Order's ``event_booking`` custom field is set so the
+    ERPNext doc_events can link it back.
+    """
+    if not frappe.has_permission("Event Booking", "read", source_name):
+        frappe.throw("You do not have permission to read this Event Booking.")
+    if not frappe.has_permission("Sales Order", "create"):
+        frappe.throw(
+            "You do not have permission to create a Sales Order.",
+            frappe.PermissionError,
+        )
+    if not is_erpnext_installed():
+        frappe.throw("ERPNext is required to create a Sales Order.")
+
+    source = frappe.get_doc("Event Booking", source_name)
+
+    # If a quotation is linked, use ERPNext's mapping to copy items.
+    if source.quotation and frappe.db.exists("Quotation", source.quotation):
+        from erpnext.selling.doctype.quotation.quotation import make_sales_order as _qtn_make_so
+
+        target = _qtn_make_so(source.quotation, target_doc=target_doc)
+    else:
+        # No quotation — create a blank Sales Order from the booking.
+        target = frappe.new_doc("Sales Order")
+
+    def set_missing_values(source, target):
+        target.customer = source.customer or target.customer
+        target.company = source.company or target.company
+        if source.cost_center:
+            target.cost_center = source.cost_center
+        target.event_booking = source.name
+        # Delivery date = event date if set
+        if source.event_date:
+            target.delivery_date = source.event_date
+
+    set_missing_values(source, target)
+    return target
 
 
 @frappe.whitelist()
 def make_project(source_name, target_doc=None):
     if not frappe.has_permission("Event Booking", "read", source_name):
         frappe.throw("You do not have permission to read this Event Booking.")
+    if not frappe.has_permission("Project", "create"):
+        frappe.throw(
+            "You do not have permission to create a Project.",
+            frappe.PermissionError,
+        )
     if not is_erpnext_installed():
         frappe.throw("ERPNext is required to create a Project.")
 
     def set_missing_values(source, target):
         target.project_name = source.event_name or source.name
-        # Project.customer links to ERPNext Customer — only set when applicable.
-        target.customer = source.party_name if source.party_type == "Customer" else ""
+        target.customer = source.customer or ""
         target.expected_start_date = source.booking_date or source.event_date
         target.expected_end_date = source.event_date
 
@@ -385,6 +638,53 @@ def make_project(source_name, target_doc=None):
 
 
 @frappe.whitelist()
+def make_stock_entry(booking_name, stock_entry_type="Material Issue"):
+    """Create a new Stock Entry linked to an Event Booking (unsaved — opened in form).
+
+    Prefills event_booking, company, cost_center from the booking, and
+    source/target warehouses from Event Booking Settings.default_warehouse.
+    Returns the new doc dict so frappe.model.open_mapped_doc can open it.
+    """
+    if not frappe.has_permission("Event Booking", "read", booking_name):
+        frappe.throw(
+            "You do not have permission to read this Event Booking.",
+            frappe.PermissionError,
+        )
+    if not is_erpnext_installed():
+        frappe.throw("ERPNext is required to create a Stock Entry.")
+    if not frappe.has_permission("Stock Entry", "create"):
+        frappe.throw(
+            "You do not have permission to create a Stock Entry.",
+            frappe.PermissionError,
+        )
+
+    booking = frappe.get_doc("Event Booking", booking_name)
+
+    se = frappe.new_doc("Stock Entry")
+    se.stock_entry_type = stock_entry_type
+    se.company = booking.company or frappe.defaults.get_user_default("Company")
+    se.event_booking = booking.name
+    if booking.cost_center:
+        se.cost_center = booking.cost_center
+
+    # Prefill warehouses from Event Booking Settings
+    default_warehouse = _get_settings_default_warehouse()
+    if default_warehouse:
+        se.from_warehouse = default_warehouse
+        se.to_warehouse = default_warehouse
+
+    return se.as_dict()
+
+
+def _get_settings_default_warehouse():
+    """Read default_warehouse from Event Booking Settings (Single)."""
+    try:
+        return frappe.db.get_value("Event Booking Settings", None, "default_warehouse")
+    except Exception:
+        return None
+
+
+@frappe.whitelist()
 def get_items_from_quotation(quotation_name):
     if not quotation_name:
         return []
@@ -393,18 +693,17 @@ def get_items_from_quotation(quotation_name):
             "You do not have permission to read this Quotation.",
             frappe.PermissionError,
         )
-    qt = frappe.get_doc("Quotation", quotation_name)
-    return [
-        {
-            "item_code": item.item_code,
-            "item_name": item.item_name,
-            "qty": item.qty,
-            "uom": item.uom,
-            "rate": item.rate,
-            "amount": item.amount,
-        }
-        for item in qt.items
-    ]
+    # get_all on the child table, not get_doc on the parent: get_doc loads the
+    # Quotation plus every one of its child tables (taxes, payment schedule,
+    # pricing rules) to read one of them. Permission was already checked above,
+    # against the parent, which is where it belongs.
+    return frappe.get_all(
+        "Quotation Item",
+        filters={"parent": quotation_name, "parenttype": "Quotation"},
+        fields=["item_code", "item_name", "qty", "uom", "rate", "amount"],
+        order_by="idx asc",
+        limit_page_length=0,
+    )
 
 
 @frappe.whitelist()
@@ -416,18 +715,14 @@ def get_items_from_sales_order(sales_order_name):
             "You do not have permission to read this Sales Order.",
             frappe.PermissionError,
         )
-    so = frappe.get_doc("Sales Order", sales_order_name)
-    return [
-        {
-            "item_code": item.item_code,
-            "item_name": item.item_name,
-            "qty": item.qty,
-            "uom": item.uom,
-            "rate": item.rate,
-            "amount": item.amount,
-        }
-        for item in so.items
-    ]
+    # Child-table read — see get_items_from_quotation for the rationale.
+    return frappe.get_all(
+        "Sales Order Item",
+        filters={"parent": sales_order_name, "parenttype": "Sales Order"},
+        fields=["item_code", "item_name", "qty", "uom", "rate", "amount"],
+        order_by="idx asc",
+        limit_page_length=0,
+    )
 
 
 @frappe.whitelist(allow_guest=False)
@@ -462,17 +757,33 @@ def get_calendar_events(start, end, filters=None):
         filters=conditions,
         fields=[
             "name", "event_name", "event_date", "event_time",
-            "event_end_time", "booking_status", "party_name",
+            "event_end_time", "booking_status", "customer",
         ],
     )
+
+    # Batch-resolve customer display names for calendar titles.
+    customer_names = list({ev.customer for ev in events if ev.customer})
+    customer_display = (
+        dict(frappe.get_all(
+            "Customer",
+            filters={"name": ("in", customer_names)},
+            fields=["name", "customer_name"],
+            as_list=1,
+            limit_page_length=0,
+        ))
+        if customer_names else {}
+    )
+
     out = []
     for ev in events:
+        party = customer_display.get(ev.customer) or ev.customer or ""
+        title = f"{ev.event_name} ({party})" if party else ev.event_name
         date_str = str(ev.event_date)
         if ev.event_time:
             # Timed event — FullCalendar uses dateTime strings.
             entry = {
                 "name": ev.name,
-                "title": f"{ev.event_name} ({ev.party_name})",
+                "title": title,
                 "start": f"{date_str} {ev.event_time}",
                 "end": f"{date_str} {ev.event_end_time or ev.event_time}",
                 "booking_status": ev.booking_status,
@@ -484,7 +795,7 @@ def get_calendar_events(start, end, filters=None):
             # plain date strings (no time component).
             entry = {
                 "name": ev.name,
-                "title": f"{ev.event_name} ({ev.party_name})",
+                "title": title,
                 "start": date_str,
                 "end": date_str,
                 "allDay": True,
@@ -496,14 +807,13 @@ def get_calendar_events(start, end, filters=None):
 
 
 def _calendar_color(status):
+    """Calendar event colors — same semantics as get_indicator."""
     return {
         "New": "#5e64ff",
         "Quoted": "#5e64ff",
-        "Negotiating": "#f4a835",
+        "Invoiced": "#f4a835",
         "Confirmed": "#2490ef",
-        "In Preparation": "#2490ef",
-        "Executed": "#adb5bd",
-        "Invoiced": "#28a745",
         "Paid": "#28a745",
+        "Executed": "#adb5bd",
         "Cancelled": "#e24c4c",
     }.get(status, "#adb5bd")

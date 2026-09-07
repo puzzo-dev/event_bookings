@@ -14,9 +14,17 @@ frappe.query_reports["Event Booking Profitability"] = {
 			fieldtype: "Date",
 		},
 		{
-			fieldname: "party_name",
-			label: __("Party Name"),
-			fieldtype: "Data",
+			fieldname: "company",
+			label: __("Company"),
+			fieldtype: "Link",
+			options: "Company",
+			default: frappe.defaults.get_user_default("Company"),
+		},
+		{
+			fieldname: "customer",
+			label: __("Customer"),
+			fieldtype: "Link",
+			options: "Customer",
 		},
 		{
 			fieldname: "event_type",
@@ -28,7 +36,9 @@ frappe.query_reports["Event Booking Profitability"] = {
 			fieldname: "booking_status",
 			label: __("Status"),
 			fieldtype: "Select",
-			options: "\nNew\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
+			// Cancelled is omitted deliberately: like ERPNext reports, cancelled
+			// bookings are excluded from this report entirely.
+			options: "\nNew\nQuoted\nInvoiced\nConfirmed\nPaid\nExecuted",
 		},
 	]
 };

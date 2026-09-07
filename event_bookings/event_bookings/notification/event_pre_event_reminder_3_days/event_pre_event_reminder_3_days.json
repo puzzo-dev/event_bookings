@@ -1,0 +1,30 @@
+{
+ "attach_print": 0,
+ "channel": "Email",
+ "condition": "doc.booking_status in ('Confirmed', 'Paid')",
+ "creation": "2026-06-13 05:54:07.090378",
+ "date_changed": "event_date",
+ "days_in_advance": 3,
+ "docstatus": 0,
+ "doctype": "Notification",
+ "document_type": "Event Booking",
+ "enabled": 1,
+ "event": "Days Before",
+ "idx": 0,
+ "is_standard": 1,
+ "message": "<p>{{ _(\"This is a 3-day reminder for the event\") }} <b>{{ doc.event_name }}</b> ({{ doc.name }}) {{ _(\"scheduled on\") }} <b>{{ frappe.format_value(doc.event_date) }}</b>.</p><p>{{ _(\"Please ensure all preparations are on track.\") }}</p>",
+ "message_type": "HTML",
+ "modified": "2026-09-06 12:00:00.000000",
+ "modified_by": "Administrator",
+ "module": "Event Bookings",
+ "name": "Event Pre-Event Reminder 3 Days",
+ "owner": "Administrator",
+ "recipients": [
+  {
+   "receiver_by_role": "Event Manager"
+  }
+ ],
+ "send_system_notification": 1,
+ "send_to_all_assignees": 1,
+ "subject": "{{ _(\"Reminder: {0} is on {1}\").format(doc.event_name, frappe.format_value(doc.event_date)) }}"
+}

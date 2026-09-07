@@ -1,8 +1,8 @@
-# Event Bookings — User Story & Workflow Trace
+# Events Management — User Story & Workflow Trace
 
 ## Overview
 
-A corporate event management company uses ERPNext + Event Bookings to handle the full lifecycle from first client inquiry through post-event review and payment reconciliation.
+A corporate event management company uses ERPNext + Events Management to handle the full lifecycle from first client inquiry through post-event review and payment reconciliation.
 
 ---
 
@@ -102,7 +102,7 @@ Event is 3 weeks away. Logistics begin.
 - When Shift Assignments are saved, `on_shift_assignment_update()` increments `qty_assigned` on the matching `Event Staff Requirement` row
 
 **Scheduled (daily):**
-- `send_unstaffed_alerts()` queries bookings in "In Preparation" where `qty_assigned < qty_required` and fires the **Event Under-Staffed Alert** Frappe Notification to Event Managers
+- `send_unstaffed_alerts()` queries Confirmed bookings where `qty_assigned < qty_required` and emails Event Managers a single grouped digest — a per-document Frappe Notification cannot aggregate across bookings, which is why this one stays in the scheduler
 
 ---
 
@@ -194,8 +194,8 @@ Profitability per event = **Revenue** (actual or estimated) − **COGS** − **D
 ## Status Machine
 
 ```
-New → Quoted → Negotiating → Confirmed → In Preparation → Executed → Invoiced → Paid
- └─────────────────────────────────────────────────────────────────────────────→ Cancelled
+New → Quoted → Invoiced → Confirmed → Paid → Executed
+ └────────────────────────────────────────────────────→ Cancelled
 ```
 
 Every transition is validated by `VALID_STATUS_TRANSITIONS`. Forward-only; no backward moves (except Cancelled from any state).

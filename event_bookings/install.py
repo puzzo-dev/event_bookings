@@ -1,9 +1,7 @@
-import json
-
 import frappe
 from frappe.utils import cstr
 
-from event_bookings.utils.erpnext_bridge import get_fiscal_year_safe, is_erpnext_installed, is_hrms_installed
+from event_bookings.utils.erpnext_bridge import is_erpnext_installed, is_hrms_installed
 from event_bookings.utils.seed import seed_event_types
 
 
@@ -24,19 +22,23 @@ def after_install():
 		create_custom_fields()         # creates remaining app custom fields
 		create_default_settings()      # one Event Booking Settings record per company
 	upgrade_designation_for_hrms()  # Link(Designation) when HRMS present, Data otherwise
-	migrate_workspace_charts()     # ensure workspace references current charts
 
 
 def after_migrate():
 	"""
 	Hook executed after every bench migrate.
-	Cleans up any legacy is_standard charts that fixtures cannot delete,
-	ensures the workspace content block always references the current charts,
-	and creates missing Event Booking Settings records for companies added after install.
+
+	Dashboards, Dashboard Charts, Number Cards, Chart Sources, Notifications and
+	the Workspace are deliberately NOT touched here: Frappe syncs them from the
+	module folders (frappe.model.sync.IMPORTABLE_DOCTYPES and
+	frappe.utils.dashboard.sync_dashboards), which are the single source of
+	truth.  One-off repairs for legacy sites belong in event_bookings/patches/,
+	not in a hook that re-runs on every migrate.
+
+	What remains: Event Booking Settings for companies added after install, and
+	the HRMS Designation field upgrade (bench migrate resets it to the JSON
+	baseline before this hook runs).
 	"""
-	migrate_workspace_charts()
-	cleanup_legacy_dashboard_name()
-	patch_upcoming_events_number_card()
 	if is_erpnext_installed():
 		create_default_settings()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
@@ -130,217 +132,6 @@ def _safe_delete(doctype, name):
 		frappe.log_error(title=f"event_bookings uninstall: failed to delete {doctype} {name}")
 
 
-def migrate_workspace_charts():
-	"""
-	Idempotent: ensure the workspace content references the correct Report-based charts
-	and that all Dashboard Chart records have valid filters_json.
-	"""
-	import json
-
-	# ── 1. Fix stale filters_json in Dashboard Chart records ──────────────
-	_fix_chart_filters_json()
-
-	# ── 2. Sync workspace content and charts child table ──────────────────
-	if not frappe.db.exists("Workspace", "Event Bookings"):
-		return
-
-	ws = frappe.get_doc("Workspace", "Event Bookings")
-
-	try:
-		content = json.loads(ws.content or "[]")
-	except (ValueError, TypeError):
-		content = []
-
-	# Replace any legacy chart references in the content blocks
-	chart_map = {
-		"Event Revenue Trend": "Event Booking Revenue Trends",
-		"Monthly Events":      "Event Booking Count Trends",
-	}
-
-	updated = False
-	for block in content:
-		if block.get("type") == "chart":
-			old_name = block.get("data", {}).get("chart_name")
-			if old_name in chart_map:
-				block["data"]["chart_name"] = chart_map[old_name]
-				updated = True
-
-	# Ensure onboarding block at position 0
-	if not any(b.get("type") == "onboarding" for b in content):
-		content.insert(0, {
-			"id": "onboard01",
-			"type": "onboarding",
-			"data": {"onboarding_name": "Event Bookings Onboarding", "col": 12},
-		})
-		updated = True
-
-	# Workspace shows only the Event Booking Count Trends chart (full-width).
-	# Remove any legacy or extra chart blocks from content.
-	desired_chart = "Event Booking Count Trends"
-	non_chart_blocks = [b for b in content if b.get("type") != "chart"]
-	count_block = next(
-		(b for b in content if b.get("type") == "chart" and b.get("data", {}).get("chart_name") == desired_chart),
-		{"id": "cnt_chart01", "type": "chart", "data": {"chart_name": desired_chart, "col": 12}},
-	)
-	# Ensure the single chart block is full-width
-	count_block.setdefault("data", {})["col"] = 12
-	new_content = []
-	for b in non_chart_blocks:
-		new_content.append(b)
-		# Insert chart block right after the onboarding block
-		if b.get("type") == "onboarding" and not any(x.get("type") == "chart" for x in new_content):
-			new_content.append(count_block)
-	if not any(b.get("type") == "chart" for b in new_content):
-		# No onboarding block present — prepend chart
-		new_content.insert(1 if new_content else 0, count_block)
-
-	if json.dumps(new_content) != json.dumps(content):
-		content = new_content
-		updated = True
-
-	if updated:
-		ws.content = json.dumps(content)
-		ws.module_onboarding = "Event Bookings Onboarding"
-
-	# Sync the charts child table — only the single count chart
-	legacy_names = {"Monthly Events", "Event Revenue Trend", "Event Booking Revenue Trends", "Events By Event Type"}
-	ws.charts = [c for c in ws.charts if c.chart_name not in legacy_names and c.chart_name == desired_chart]
-	if not any(c.chart_name == desired_chart for c in ws.charts):
-		ws.append("charts", {"chart_name": desired_chart, "label": desired_chart})
-		updated = True
-
-	if updated:
-		ws.save(ignore_permissions=True)
-		frappe.db.commit()
-		frappe.logger().info("event_bookings: workspace charts patched successfully")
-
-
-def cleanup_legacy_dashboard_name():
-	"""Remove duplicate dashboards, keeping the canonical 'Event Bookings' record.
-	Fixtures create the dashboard as 'Event Bookings'; older records named
-	'Event Booking' or 'Event Booking Dashboard' are deleted if present.
-	"""
-	canonical = "Event Bookings"
-	duplicates = {"Event Booking", "Event Booking Dashboard"}
-
-	if not frappe.db.exists("Dashboard", canonical):
-		# Keep the existing record under a duplicate name until migrate creates the canonical one.
-		return
-
-	for name in duplicates:
-		if frappe.db.exists("Dashboard", name):
-			_safe_delete("Dashboard", name)
-			frappe.logger().info(f"event_bookings: removed duplicate dashboard '{name}'")
-
-	frappe.db.commit()
-
-
-def patch_upcoming_events_number_card():
-	"""Ensure the Upcoming Events number card counts future events that have
-	advanced past negotiation (i.e. not Cancelled, New, Quoted or Negotiating).
-	"""
-	name = "Upcoming Events"
-	if not frappe.db.exists("Number Card", name):
-		return
-
-	# Dynamic filter value is a JS expression eval'd client-side (see
-	# frappe/public/js/frappe/utils/dashboard_utils.js get_all_filters).
-	dynamic_filters = [["Event Booking", "event_date", ">=", "frappe.datetime.get_today()", False]]
-	static_filters = [["Event Booking", "booking_status", "not in", "Cancelled,New,Quoted,Negotiating", False]]
-
-	changed = False
-	if frappe.db.get_value("Number Card", name, "filters_json") != json.dumps(static_filters):
-		frappe.db.set_value("Number Card", name, "filters_json", json.dumps(static_filters))
-		changed = True
-	if frappe.db.get_value("Number Card", name, "dynamic_filters_json") != json.dumps(dynamic_filters):
-		frappe.db.set_value("Number Card", name, "dynamic_filters_json", json.dumps(dynamic_filters))
-		changed = True
-
-	if changed:
-		frappe.db.commit()
-		frappe.logger().info("event_bookings: patched 'Upcoming Events' number card filters")
-
-
-def _fix_chart_filters_json():
-	"""
-	Normalise the date_field on the trend Dashboard Charts to 'booking_date'.
-	Trends are measured by when a booking was made, not the (future) event
-	date. Repairs legacy 'event_timing'/'event_date' values idempotently on
-	every migrate. Also normalises dynamic_filters_json to static company.
-	Replaces user-created from_date/to_date filters with fiscal_year so charts
-	behave like ERPNext system charts and avoid filter hangs outside fiscal years.
-	Run idempotently on every migrate.
-	"""
-	import json
-
-	# Charts that aggregate by date and must use booking_date
-	trend_charts = ["Event Booking Revenue Trends", "Event Booking Count Trends"]
-	all_charts = trend_charts + ["Events By Event Type"]
-	legacy_date_fields = {"event_timing", "event_date"}
-	current_fy = get_fiscal_year_safe()
-
-	for chart_name in all_charts:
-		if not frappe.db.exists("Dashboard Chart", chart_name):
-			continue
-
-		raw = frappe.db.get_value("Dashboard Chart", chart_name, "filters_json") or "{}"
-		try:
-			stored = json.loads(raw)
-		except (ValueError, TypeError):
-			stored = {}
-
-		# Defensive: legacy/corrupt filters_json can be a list; reset it so the
-		# dict operations below don't raise AttributeError during migrate.
-		if not isinstance(stored, dict):
-			stored = {}
-
-		changed = False
-
-		# Fix date_field on trend charts
-		if chart_name in trend_charts and stored.get("date_field") in legacy_date_fields:
-			stored["date_field"] = "booking_date"
-			changed = True
-
-		# Remove any hardcoded company so the report uses the user's default
-		# company instead of locking charts to a single company.
-		if "company" in stored:
-			stored.pop("company", None)
-			changed = True
-
-		# Remove user-defined from_date / to_date to prevent hangs when dates
-		# fall outside any active Fiscal Year.
-		for obsolete in ("from_date", "to_date"):
-			if obsolete in stored:
-				stored.pop(obsolete, None)
-				changed = True
-
-		# Add fiscal_year if missing and ERPNext provides one
-		if "fiscal_year" not in stored and current_fy:
-			stored["fiscal_year"] = current_fy
-			changed = True
-
-		if changed:
-			frappe.db.set_value(
-				"Dashboard Chart", chart_name, "filters_json",
-				json.dumps(stored), update_modified=False,
-			)
-
-		# Strip dynamic JS expression from dynamic_filters_json
-		raw_dyn = frappe.db.get_value("Dashboard Chart", chart_name, "dynamic_filters_json") or "{}"
-		try:
-			dyn = json.loads(raw_dyn)
-		except (ValueError, TypeError):
-			dyn = {}
-
-		if dyn:
-			frappe.db.set_value(
-				"Dashboard Chart", chart_name, "dynamic_filters_json",
-				"{}", update_modified=False,
-			)
-
-	frappe.db.commit()
-
-
 def upgrade_designation_for_hrms():
 	"""Upgrade Event Staff Requirement.designation from Data → Link(Designation) when
 	HRMS is installed so users get full autocomplete from the HRMS Designation list.
@@ -393,15 +184,22 @@ def create_custom_fields():
 	Accounting Dimension auto-generation. Uses frappe.custom.doctype helpers
 	so they are idempotent (safe to run multiple times).
 	Skips any DocType that does not exist on this site.
+
+	Also hides the event_booking field on child tables (auto-created by the
+	Accounting Dimension) — the link belongs on the parent document, not on
+	individual line items.
 	"""
 	from frappe.custom.doctype.custom_field.custom_field import create_custom_field
 
 	fields = [
 		# Doctype, fieldname, insert_after, extra kwargs
-		("Quotation",           "event_booking", "title", {}),
-		("Journal Entry",       "event_booking", "title", {}),
-		("Material Request",    "event_booking", "title", {}),
-		("Stock Reconciliation","event_booking", "title", {}),
+		# Quotation: the event_booking link is the reverse-link write-back target
+		# (set server-side by make_event_booking after_insert). It is hidden and
+		# read-only — the quotation-first flow means users create the booking FROM
+		# the quotation, never the other way around.
+		("Quotation",           "event_booking", "title", {"hidden": 1, "read_only": 1}),
+		("Journal Entry",       "event_booking", "company", {}),
+		("Stock Reconciliation","event_booking", "cost_center", {}),
 		# HRMS Shift Assignment is not an accounting doc, so it is not covered by
 		# the Accounting Dimension auto-field. Needed for staff-count sync and
 		# cancellation cascade. Skipped automatically when HRMS is not installed.
@@ -426,6 +224,144 @@ def create_custom_fields():
 			create_custom_field(dt, df)
 		except (frappe.DuplicateEntryError, frappe.ValidationError):
 			frappe.log_error(title=f"Failed to create custom field {fieldname} on {dt}")
+
+	# Clean up event_booking fields: delete from irrelevant doctypes,
+	# hide on child tables, reposition visible ones after 'project'.
+	_cleanup_event_booking_fields()
+
+
+def _cleanup_event_booking_fields():
+	"""Fix the placement and existence of event_booking custom fields.
+
+	The Accounting Dimension auto-creates event_booking on ~50 doctypes
+	(parents + child tables + tools). Most are irrelevant to the event
+	workflow. This function:
+
+	1. DELETES event_booking from doctypes that have no business linking
+	   to an Event Booking (Material Request, Asset, POS, Subcontracting,
+	   etc.). Gone completely — not hidden.
+	2. Hides event_booking on child tables (line items) — the link
+	   belongs on the parent document, not individual rows. These are kept
+	   (hidden) because the Accounting Dimension needs them for line-item
+	   dimension tracking.
+	3. Repositions the visible parent fields to sit after 'project'
+	   (or 'cost_center' where project doesn't exist), following the
+	   same layout pattern ERPNext uses for dimension fields.
+	"""
+
+	# --- DELETE completely: no business reason to link to Event Booking ---
+	delete_dts = [
+		"Material Request",
+		"Material Request Item",
+		"Advance Taxes and Charges",
+		"Asset",
+		"Asset Capitalization",
+		"Asset Depreciation Schedule",
+		"Asset Movement Item",
+		"Asset Repair",
+		"Asset Value Adjustment",
+		"Budget",
+		"Leave Encashment",
+		"Loyalty Program",
+		"Opening Invoice Creation Tool",
+		"Opening Invoice Creation Tool Item",
+		"Payment Request",
+		"Payroll Entry",
+		"POS Invoice",
+		"POS Invoice Item",
+		"POS Profile",
+		"Shipping Rule",
+		"Subscription",
+		"Subscription Plan",
+		"Supplier Quotation",
+		"Supplier Quotation Item",
+		"Account Closing Balance",
+		"Subcontracting Order",
+		"Subcontracting Order Item",
+		"Subcontracting Receipt",
+		"Subcontracting Receipt Item",
+	]
+
+	# --- HIDE (keep for accounting, not visible on form) ---
+	hide_dts = [
+		"Stock Entry Detail",
+		"Sales Order Item",
+		"Sales Invoice Item",
+		"Purchase Order Item",
+		"Purchase Invoice Item",
+		"Delivery Note Item",
+		"Purchase Receipt Item",
+		"Journal Entry Account",
+		"Expense Claim Detail",
+		"Sales Taxes and Charges",
+		"Purchase Taxes and Charges",
+		"Expense Taxes and Charges",
+		"Landed Cost Item",
+		"Payment Entry Deduction",
+		"Payment Reconciliation Allocation",
+		"GL Entry",
+		"Payment Ledger Entry",
+		"Payment Reconciliation",
+	]
+
+	# --- VISIBLE: reposition after project (ERPNext dimension pattern) ---
+	reposition = {
+		"Stock Entry": "project",
+		"Sales Order": "project",
+		"Sales Invoice": "project",
+		"Payment Entry": "project",
+		"Delivery Note": "project",
+		"Purchase Order": "project",
+		"Purchase Invoice": "project",
+		"Purchase Receipt": "project",
+		"Expense Claim": "project",
+		"Journal Entry": "cost_center",
+		"Stock Reconciliation": "cost_center",
+		"Shift Assignment": "shift_type",
+	}
+
+	# Delete irrelevant
+	for dt in delete_dts:
+		if not frappe.db.exists("DocType", dt):
+			continue
+		cf_name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": "event_booking"})
+		if not cf_name:
+			continue
+		try:
+			frappe.delete_doc("Custom Field", cf_name)
+		except Exception:
+			frappe.log_error(title=f"Failed to delete event_booking on {dt}")
+
+	# Hide child tables and system tables
+	for dt in hide_dts:
+		if not frappe.db.exists("DocType", dt):
+			continue
+		cf_name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": "event_booking"})
+		if not cf_name:
+			continue
+		try:
+			cf = frappe.get_doc("Custom Field", cf_name)
+			if not cf.hidden:
+				cf.hidden = 1
+				cf.save(ignore_permissions=True)
+		except (frappe.DuplicateEntryError, frappe.ValidationError):
+			frappe.log_error(title=f"Failed to hide event_booking on {dt}")
+
+	# Reposition visible
+	for dt, insert_after in reposition.items():
+		if not frappe.db.exists("DocType", dt):
+			continue
+		cf_name = frappe.db.get_value("Custom Field", {"dt": dt, "fieldname": "event_booking"})
+		if not cf_name:
+			continue
+		try:
+			cf = frappe.get_doc("Custom Field", cf_name)
+			cf.insert_after = insert_after
+			cf.hidden = 0
+			cf.read_only = 0
+			cf.save(ignore_permissions=True)
+		except (frappe.DuplicateEntryError, frappe.ValidationError):
+			frappe.log_error(title=f"Failed to reposition event_booking on {dt}")
 
 
 def create_accounting_dimension():

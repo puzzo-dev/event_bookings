@@ -4,12 +4,72 @@
  "doctype": "DocType",
  "editable_grid": 1,
  "field_order": [
+  "sec_automation",
+  "enable_automated_status",
+  "col_automation",
+  "auto_executed_after_event_date",
+  "sec_defaults",
+  "default_customer_group",
+  "col_defaults",
+  "default_warehouse",
+  "sec_notifications",
   "pre_event_reminder_days",
   "col_notifications",
-  "require_review",
-  "enable_whatsapp"
+  "require_review"
  ],
  "fields": [
+  {
+   "fieldname": "sec_automation",
+   "fieldtype": "Section Break",
+   "label": "Status Automation"
+  },
+  {
+   "default": "1",
+   "description": "Advance booking status automatically from linked ERPNext documents (quotation linked → Quoted, invoice submitted → Invoiced, invoice paid → Paid).",
+   "fieldname": "enable_automated_status",
+   "fieldtype": "Check",
+   "label": "Enable Automated Status"
+  },
+  {
+   "fieldname": "col_automation",
+   "fieldtype": "Column Break"
+  },
+  {
+   "default": "1",
+   "description": "Daily job: move Confirmed / Paid bookings to Executed once the event date has passed. Linked Sales Orders are marked Fully Delivered and Sales Invoice status is refreshed.",
+   "fieldname": "auto_executed_after_event_date",
+   "fieldtype": "Check",
+   "label": "Auto-Mark Executed After Event Date"
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_defaults",
+   "fieldtype": "Section Break",
+   "label": "Defaults"
+  },
+  {
+   "fieldname": "default_customer_group",
+   "fieldtype": "Link",
+   "label": "Default Customer Group",
+   "options": "Customer Group"
+  },
+  {
+   "fieldname": "col_defaults",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "default_warehouse",
+   "fieldtype": "Link",
+   "label": "Default Warehouse (for Stock Movement)",
+   "options": "Warehouse",
+   "description": "Prefilled as source/target warehouse when creating Stock Entries from an Event Booking."
+  },
+  {
+   "collapsible": 1,
+   "fieldname": "sec_notifications",
+   "fieldtype": "Section Break",
+   "label": "Notifications"
+  },
   {
    "default": "3",
    "fieldname": "pre_event_reminder_days",
@@ -26,12 +86,6 @@
    "fieldname": "require_review",
    "fieldtype": "Check",
    "label": "Require Post-Event Review"
-  },
-  {
-   "default": "0",
-   "fieldname": "enable_whatsapp",
-   "fieldtype": "Check",
-   "label": "Enable WhatsApp"
   }
  ],
  "issingle": 1,

@@ -12,15 +12,14 @@ from frappe import _dict
 class TestGetColumns(unittest.TestCase):
 	def test_returns_expected_column_count(self):
 		cols = get_columns()
-		self.assertEqual(len(cols), 13)
+		self.assertEqual(len(cols), 12)
 
 	def test_column_fieldnames(self):
 		cols = get_columns()
 		names = [c["fieldname"] for c in cols]
 		expected = [
 			"event_name",
-			"party_type",
-			"party_name",
+			"customer",
 			"event_date",
 			"event_time",
 			"booking_status",
@@ -52,8 +51,7 @@ class TestGetData(unittest.TestCase):
 	def _make_booking(self, **overrides):
 		row = _dict(
 			event_name="EVT-001",
-			party_type="Customer",
-			party_name="Acme",
+			customer="Acme",
 			event_date="2026-07-15",
 			booking_status="Invoiced",
 			total_estimated=50000,
@@ -110,17 +108,11 @@ class TestGetData(unittest.TestCase):
 		data = get_data({})
 		self.assertEqual(data[0]["damages_cost"], 0)
 
-	def test_filter_by_party_name(self, mock_frappe, _mock_cogs, _mock_damages):
+	def test_filter_by_customer(self, mock_frappe, _mock_cogs, _mock_damages):
 		mock_frappe.get_list.return_value = []
-		get_data({"party_name": "Acme"})
+		get_data({"customer": "Acme"})
 		call_kwargs = mock_frappe.get_list.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["party_name"], "Acme")
-
-	def test_filter_by_party_type(self, mock_frappe, _mock_cogs, _mock_damages):
-		mock_frappe.get_list.return_value = []
-		get_data({"party_type": "Customer"})
-		call_kwargs = mock_frappe.get_list.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["party_type"], "Customer")
+		self.assertEqual(call_kwargs[1]["filters"]["customer"], "Acme")
 
 	def test_filter_by_event_type(self, mock_frappe, _mock_cogs, _mock_damages):
 		mock_frappe.get_list.return_value = []
@@ -150,11 +142,35 @@ class TestGetData(unittest.TestCase):
 class TestExecute(unittest.TestCase):
 	def test_returns_columns_and_data(self, mock_frappe):
 		mock_frappe.get_list.return_value = []
-		columns, data = execute()
-		self.assertEqual(len(columns), 13)
+		# execute() returns Frappe's 5-tuple: columns, data, message, chart, report_summary
+		columns, data, _message, _chart, report_summary = execute()
+		self.assertEqual(len(columns), 12)
 		self.assertIsInstance(data, list)
+		# No rows -> no summary tiles.
+		self.assertEqual(report_summary, [])
 
 	def test_none_filters_treated_as_empty(self, mock_frappe):
 		mock_frappe.get_list.return_value = []
-		columns, _data = execute(filters=None)
-		self.assertEqual(len(columns), 13)
+		columns, _data, _message, _chart, _summary = execute(filters=None)
+		self.assertEqual(len(columns), 12)
+
+	def test_report_summary_totals(self, mock_frappe):
+		"""Summary tiles total the rows and blend the margin on the totals."""
+		mock_frappe.get_list.return_value = []
+		with patch(f"{_MODULE}.get_data") as mock_get_data:
+			mock_get_data.return_value = [
+				{"total_actual": 1000, "total_estimated": 0, "cogs": 400,
+				 "damages_cost": 100, "net_profit": 500},
+				{"total_actual": 0, "total_estimated": 1000, "cogs": 250,
+				 "damages_cost": 0, "net_profit": 750},
+			]
+			_columns, _data, _message, _chart, summary = execute()
+
+		tiles = {t["label"]: t["value"] for t in summary}
+		self.assertEqual(tiles["Events"], 2)
+		self.assertEqual(tiles["Total Revenue"], 2000)
+		self.assertEqual(tiles["Total COGS"], 650)
+		self.assertEqual(tiles["Damages / Losses"], 100)
+		self.assertEqual(tiles["Net Profit"], 1250)
+		# Blended on the totals (1250/2000), not the average of per-row margins.
+		self.assertEqual(tiles["Blended Margin %"], 62.5)

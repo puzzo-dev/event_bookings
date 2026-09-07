@@ -11,6 +11,9 @@
   "event_name",
   "booking_status",
   "booking_date",
+  "confirmed_on",
+  "cancelled_on",
+  "customer",
   "party_type",
   "party_name",
   "col_type",
@@ -27,25 +30,33 @@
   "col_loc",
   "event_location",
   "special_requirements",
+  "tab_services",
   "sec_services",
-  "items_html",
-  "total_estimated",
-  "total_actual",
-  "col_fin",
   "quotation",
   "sales_order",
   "sales_invoice",
   "material_request",
+  "col_fin",
+  "total_estimated",
+  "sec_items",
+  "items_html",
+  "total_actual",
+  "tab_service_items",
+  "sec_event_items",
+  "event_items",
+  "tab_staffing",
   "sec_staffing",
   "staff_requirements",
   "assigned_staff",
+  "tab_google_calendar",
   "sec_google_calendar",
   "sync_with_google_calendar",
   "google_calendar",
   "col_google_calendar",
   "google_calendar_id",
   "google_calendar_event_id",
-  "pulled_from_google_calendar"
+  "pulled_from_google_calendar",
+  "connections_tab"
  ],
  "fields": [
   {
@@ -61,31 +72,40 @@
    "reqd": 1
   },
   {
+   "allow_on_submit": 1,
    "default": "New",
    "fieldname": "booking_status",
    "fieldtype": "Select",
    "in_list_view": 1,
    "in_standard_filter": 1,
    "label": "Booking Status",
-   "options": "New\nQuoted\nNegotiating\nConfirmed\nIn Preparation\nExecuted\nInvoiced\nPaid\nCancelled",
+   "options": "New\nQuoted\nInvoiced\nConfirmed\nPaid\nExecuted\nCancelled",
    "reqd": 1,
    "search_index": 1
   },
   {
-   "default": "Individual",
+   "fieldname": "customer",
+   "fieldtype": "Link",
+   "in_list_view": 1,
+   "label": "Customer",
+   "mandatory_depends_on": "eval:doc.__islocal",
+   "options": "Customer",
+   "search_index": 1
+  },
+  {
    "fieldname": "party_type",
    "fieldtype": "Select",
-   "in_list_view": 1,
-   "label": "Party Type",
+   "hidden": 1,
+   "label": "Party Type (Legacy)",
    "options": "Individual\nOrganization\nCustomer\nLead",
-   "reqd": 1
+   "read_only": 1
   },
   {
    "fieldname": "party_name",
    "fieldtype": "Data",
-   "in_list_view": 1,
-   "label": "Party Name",
-   "reqd": 1,
+   "hidden": 1,
+   "label": "Party Name (Legacy)",
+   "read_only": 1,
    "search_index": 1
   },
   {
@@ -171,30 +191,14 @@
    "label": "Special Requirements"
   },
   {
-   "fieldname": "sec_services",
-   "fieldtype": "Section Break",
+   "fieldname": "tab_services",
+   "fieldtype": "Tab Break",
    "label": "Services & Financials"
   },
   {
-   "fieldname": "items_html",
-   "fieldtype": "HTML",
-   "label": "Items"
-  },
-  {
-   "fieldname": "total_estimated",
-   "fieldtype": "Currency",
-   "label": "Total Estimated",
-   "read_only": 1
-  },
-  {
-   "fieldname": "total_actual",
-   "fieldtype": "Currency",
-   "label": "Total Actual",
-   "read_only": 1
-  },
-  {
-   "fieldname": "col_fin",
-   "fieldtype": "Column Break"
+   "fieldname": "sec_services",
+   "fieldtype": "Section Break",
+   "label": "Services & Financials"
   },
   {
    "fieldname": "quotation",
@@ -226,6 +230,53 @@
    "read_only": 1
   },
   {
+   "fieldname": "col_fin",
+   "fieldtype": "Column Break"
+  },
+  {
+   "fieldname": "total_estimated",
+   "fieldtype": "Currency",
+   "label": "Total Estimated",
+   "read_only": 1
+  },
+  {
+   "fieldname": "sec_items",
+   "fieldtype": "Section Break",
+   "label": "Event Order Items"
+  },
+  {
+   "fieldname": "items_html",
+   "fieldtype": "HTML",
+   "label": "Items"
+  },
+  {
+   "fieldname": "total_actual",
+   "fieldtype": "Currency",
+   "label": "Total Actual",
+   "read_only": 1
+  },
+  {
+   "fieldname": "tab_service_items",
+   "fieldtype": "Tab Break",
+   "label": "Service Items"
+  },
+  {
+   "fieldname": "sec_event_items",
+   "fieldtype": "Section Break",
+   "label": "Service Items"
+  },
+  {
+   "fieldname": "event_items",
+   "fieldtype": "Table",
+   "label": "Service Items",
+   "options": "Service Item"
+  },
+  {
+   "fieldname": "tab_staffing",
+   "fieldtype": "Tab Break",
+   "label": "Staffing"
+  },
+  {
    "fieldname": "sec_staffing",
    "fieldtype": "Section Break",
    "label": "Staffing"
@@ -241,6 +292,11 @@
    "fieldtype": "Table",
    "label": "Assigned Staff",
    "options": "Event Assigned Staff"
+  },
+  {
+   "fieldname": "tab_google_calendar",
+   "fieldtype": "Tab Break",
+   "label": "Google Calendar"
   },
   {
    "collapsible": 1,
@@ -292,12 +348,72 @@
    "in_list_view": 1,
    "label": "Booking Date",
    "reqd": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Stamped the first time this booking reaches Confirmed or later. The date basis for conversion analytics.",
+   "fieldname": "confirmed_on",
+   "fieldtype": "Date",
+   "label": "Confirmed On",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "allow_on_submit": 1,
+   "description": "Stamped when this booking is cancelled. The date basis for lost-deal analytics.",
+   "fieldname": "cancelled_on",
+   "fieldtype": "Date",
+   "label": "Cancelled On",
+   "no_copy": 1,
+   "read_only": 1,
+   "search_index": 1
+  },
+  {
+   "fieldname": "connections_tab",
+   "fieldtype": "Tab Break",
+   "label": "Connections",
+   "show_dashboard": 1
   }
  ],
  "grid_page_length": 50,
  "index_web_pages_for_search": 1,
- "links": [],
- "modified": "2026-06-13 15:46:18.824620",
+ "is_submittable": 1,
+ "links": [
+  {
+   "link_doctype": "Quotation",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Sales Order",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Sales Invoice",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Stock Entry",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Stock Reconciliation",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Payment Entry",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Delivery Note",
+   "link_fieldname": "event_booking"
+  },
+  {
+   "link_doctype": "Booking Review",
+   "link_fieldname": "event_booking"
+  }
+ ],
+ "modified": "2026-09-06 14:00:00.000000",
  "modified_by": "Administrator",
  "module": "Event Bookings",
  "name": "Event Booking",
@@ -305,6 +421,8 @@
  "owner": "Administrator",
  "permissions": [
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "email": 1,
    "export": 1,
@@ -313,6 +431,7 @@
    "report": 1,
    "role": "Event Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
@@ -320,6 +439,8 @@
    "role": "Event Assistant"
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "email": 1,
    "export": 1,
@@ -328,9 +449,12 @@
    "report": 1,
    "role": "Sales Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "email": 1,
    "export": 1,
@@ -339,9 +463,11 @@
    "report": 1,
    "role": "Sales User",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "cancel": 1,
    "email": 1,
    "export": 1,
    "print": 1,
@@ -349,9 +475,12 @@
    "report": 1,
    "role": "Accounts User",
    "share": 1,
+   "submit": 1,
    "write": 1
   },
   {
+   "amend": 1,
+   "cancel": 1,
    "create": 1,
    "delete": 1,
    "email": 1,
@@ -361,6 +490,7 @@
    "report": 1,
    "role": "System Manager",
    "share": 1,
+   "submit": 1,
    "write": 1
   }
  ],

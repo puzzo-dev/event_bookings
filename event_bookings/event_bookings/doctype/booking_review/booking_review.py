@@ -64,18 +64,8 @@ def submit_review(event_booking, rating=None, review_text=None):
 			).format(booking_status)
 		)
 
-	# Derive reviewer from Customer — Event Booking uses party_type / party_name
-	party_type, party_name = frappe.db.get_value(
-		"Event Booking", event_booking, ["party_type", "party_name"]
-	)
-	if party_type != "Customer":
-		frappe.throw(
-			_(
-				"Reviews can only be submitted for bookings with a Customer party type. "
-				"Current party type: '{0}'."
-			).format(party_type)
-		)
-	customer = party_name
+	# Derive reviewer from the booking's Customer (quotation-first model)
+	customer = frappe.db.get_value("Event Booking", event_booking, "customer")
 	if not customer:
 		frappe.throw(_("No customer linked to this Event Booking."))
 

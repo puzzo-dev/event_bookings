@@ -19,7 +19,7 @@
  "modified": "2026-06-13 22:48:37.610980",
  "modified_by": "Administrator",
  "module": "Event Bookings",
- "name": "Event Bookings Onboarding",
+ "name": "Events Management Onboarding",
  "owner": "Administrator",
  "steps": [
   {
@@ -32,7 +32,7 @@
    "step": "Create Event Booking"
   }
  ],
- "subtitle": "Get Started with Event Bookings",
- "success_message": "Awesome! You are all set to manage Event Bookings.",
- "title": "Event Bookings Onboarding"
+ "subtitle": "Get Started with Events Management",
+ "success_message": "Awesome! You are all set to manage your events.",
+ "title": "Events Management Onboarding"
 }

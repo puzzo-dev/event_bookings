@@ -166,8 +166,14 @@ def make_customer_from_lead(lead_name: str):
 	else:
 		customer_doc = _build_customer_from_lead_fields(lead_name)
 
-	# Ensure ERPNext mandatory fields always have safe defaults
-	if not getattr(customer_doc, "customer_group", None):
+	# Ensure ERPNext mandatory fields always have safe defaults.
+	# Lead carries no customer_group of its own, so any group on the mapped
+	# doc came from a default (Selling Settings / field default) — the Event
+	# Booking Settings value takes priority over those defaults (S-2).
+	settings_group = _get_settings_value("default_customer_group")
+	if settings_group:
+		customer_doc.customer_group = settings_group
+	elif not getattr(customer_doc, "customer_group", None):
 		customer_doc.customer_group = (
 			frappe.db.get_default("customer_group")
 			or frappe.db.get_value("Customer Group", {"is_group": 0}, "name")
@@ -182,6 +188,19 @@ def make_customer_from_lead(lead_name: str):
 		)
 
 	return customer_doc
+
+
+def _get_settings_value(fieldname):
+	"""Read a field from Event Booking Settings (Single), tolerant of missing record.
+
+	Served from Frappe's document cache rather than the database. Unlike the
+	toggles in utils.status, this goes through the document layer, so a save
+	invalidates the cache and no staleness window exists.
+	"""
+	try:
+		return frappe.get_cached_value("Event Booking Settings", "Event Booking Settings", fieldname)
+	except Exception:
+		return None
 
 
 def _build_customer_from_lead_fields(lead_name: str):

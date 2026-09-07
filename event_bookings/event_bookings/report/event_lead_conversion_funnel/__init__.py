@@ -1,0 +1,2 @@
+# Copyright (c) 2026, I-Varse Technologies NG and contributors
+# For license information, please see license.txt
