@@ -21,6 +21,9 @@ from frappe import _
 from frappe.utils import today
 
 
+_EXECUTE_BATCH_SIZE = 200
+
+
 def auto_execute_passed_events():
 	"""Daily: move Confirmed / Paid bookings to Executed once the event date
 	has passed. Gated by the auto_executed_after_event_date setting;
@@ -40,28 +43,53 @@ def auto_execute_passed_events():
 	if not settings_toggle_enabled("auto_executed_after_event_date"):
 		return
 
-	events = frappe.get_all(
-		"Event Booking",
-		filters={
-			"event_date": ("<", today()),
-			"booking_status": ("in", ["Confirmed", "Paid"]),
-			"docstatus": ("<", 2),
-		},
-		fields=["name", "event_name", "sales_order", "sales_invoice"],
-		limit_page_length=0,
-	)
+	filters = {
+		"event_date": ("<", today()),
+		"booking_status": ("in", ["Confirmed", "Paid"]),
+		"docstatus": ("<", 2),
+	}
+
 	# advance_booking_status re-checks enable_automated_status on every call, so
 	# without this the batch issues one identical Singles read per booking.
 	# Scoped to the loop, so nothing outside this job can read a stale toggle.
 	with cached_settings_toggles():
-		for eb in events:
-			changed = advance_booking_status(
-				eb.name,
-				"Executed",
-				reason="event date has passed (daily scheduler)",
+		# In chunks, not limit_page_length=0. On a long-lived site that loaded
+		# every past booking into memory at once, every night. A processed
+		# booking leaves Confirmed/Paid, so it drops out of the filter and the
+		# next chunk is always fresh work; the guard below stops the loop if a
+		# chunk somehow changes nothing, so it can never spin.
+		while True:
+			events = frappe.get_all(
+				"Event Booking",
+				filters=filters,
+				fields=["name", "event_name", "sales_order", "sales_invoice", "docstatus"],
+				limit_page_length=_EXECUTE_BATCH_SIZE,
+				order_by="event_date asc",
 			)
-			if changed:
-				_mark_linked_documents_delivered(eb)
+			if not events:
+				break
+
+			progressed = False
+			for eb in events:
+				changed = advance_booking_status(
+					eb.name,
+					"Executed",
+					reason="event date has passed (daily scheduler)",
+				)
+				if changed:
+					progressed = True
+					# Drafts included, deliberately. The audit read this as a
+					# defect - goods marked delivered against a booking nobody
+					# committed - but drafts are first class in this app's
+					# status model (see the status-only cancel on_cancel
+					# documents), the Sales Order being marked is itself
+					# submitted, and the event date really has passed. There is
+					# a test asserting exactly this. Left as designed.
+					_mark_linked_documents_delivered(eb)
+
+			frappe.db.commit()
+			if not progressed:
+				break
 
 
 def _mark_linked_documents_delivered(eb):

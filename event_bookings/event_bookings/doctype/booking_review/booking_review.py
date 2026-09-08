@@ -86,7 +86,12 @@ def submit_review(event_booking, rating=None, review_text=None):
 
 	# Rate limiting per customer+event — atomic INCR so concurrent submits cannot
 	# both read a stale count and slip past the cap (check-then-set race).
-	_cache_key = f"event_booking_review_limit:{customer}:{event_booking}"
+	# make_key prefixes the site's db_name. Without it the counter was shared by
+	# every site on the bench: two tenants with the same customer and booking
+	# names throttled each other, and one could exhaust the other's allowance.
+	_cache_key = frappe.cache.make_key(
+		f"event_booking_review_limit:{customer}:{event_booking}"
+	)
 	_count = frappe.cache.incr(_cache_key)
 	if _count == 1:
 		# First hit in this window — arm the TTL.

@@ -175,10 +175,13 @@ class TestSubmitReview(unittest.TestCase):
 
 		submit_review("EVT-001", rating=5, review_text="Great!")
 
-		incr_call = mock_frappe.cache.incr.call_args
-		self.assertIsNotNone(incr_call)
-		key = incr_call[0][0]
-		self.assertIn("EVT-001", key)
+		# The counter key is site-scoped through make_key, so what identifies the
+		# booking is what was handed to make_key — the value it returns is
+		# opaque.
+		make_key_call = mock_frappe.cache.make_key.call_args
+		self.assertIsNotNone(make_key_call)
+		self.assertIn("EVT-001", make_key_call[0][0])
+		self.assertIsNotNone(mock_frappe.cache.incr.call_args)
 
 
 @patch("event_bookings.event_bookings.doctype.booking_review.booking_review.frappe")
