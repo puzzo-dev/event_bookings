@@ -15,13 +15,42 @@ favicon = "/assets/event_bookings/images/logo.png"
 # Shift Assignment management respectively.  The app works on plain Frappe.
 # required_apps = ["erpnext", "hrms"]
 
-# Each item in the list will be shown as an app in the apps page
+def _desk_route() -> str:
+	"""Where the Desk lives on this version of Frappe.
+
+	v16 moved it from /app to /desk. A stale "/app" still arrives, through the
+	website_redirects rule v16 ships, but it costs a redirect and it fails
+	frappe.apps.is_desk_apps(), which matches routes against ^/desk. That check
+	feeds get_default_path(), so a single non-/desk route makes the whole site's
+	post-login landing page fall through to "/apps" — itself only a redirect to
+	/desk on v16. ERPNext changed its own hook to "/desk" for the same reason.
+
+	Resolved here rather than forked per branch so the v15 and v16 lines stay
+	one codebase. Falls back to the v15 route: it works on both, and a version
+	string that cannot be parsed is no reason to fail loading hooks.
+	"""
+	try:
+		import frappe
+
+		return "/desk" if int(frappe.__version__.split(".", 1)[0]) >= 16 else "/app"
+	except Exception:
+		return "/app"
+
+
+# Each item in the list will be shown as an app in the apps page.
+#
+# On v16 this no longer renders anywhere: frappe/www/apps.* was deleted, /apps
+# redirects to /desk, and nothing in the Desk iterates boot.apps_data.apps —
+# the only two readers are hardcoded lookups for "crm" and "helpdesk" that draw
+# promotional banners. The hook still feeds boot and the login landing page, so
+# it is kept and kept correct; on v16 the app is reached through its Events
+# Management workspace instead of an app tile.
 add_to_apps_screen = [
 	{
 		"name": "event_bookings",
 		"logo": "/assets/event_bookings/images/logo.svg",
 		"title": "Events Management",
-		"route": "/app",
+		"route": _desk_route(),
 		"has_permission": "event_bookings.api.permission.has_app_permission"
 	}
 ]
