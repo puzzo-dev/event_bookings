@@ -75,3 +75,40 @@ class TestEventBooking(FrappeTestCase):
 		doc.insert(ignore_permissions=True)
 		doc.submit()
 		self.assertEqual(doc.docstatus, 1)
+
+	def test_search_fields_hold_no_date_field(self):
+		"""No Date/Datetime/Time field may appear in search_fields.
+
+		Event Booking is registered as an Accounting Dimension, so every link
+		field to it is searched through erpnext.controllers.queries.
+		get_filtered_dimensions. That function LIKEs every entry of
+		get_search_fields() without checking the fieldtype:
+
+		    for field in searchfields:
+		        or_filters.append([field, "LIKE", "%%%s%%" % txt])
+
+		DatabaseQuery.prepare_filter_condition then routes a Date field to
+		frappe.db.format_date(), which cannot parse "%txt%" and throws
+		"<value> is not a valid date string" — a 417 on every keystroke in the
+		link field. Frappe's own search path whitelists the fieldtypes it will
+		LIKE and so never hits this; the dimension query does not.
+		"""
+		meta = frappe.get_meta("Event Booking")
+		offenders = []
+		for fieldname in meta.get_search_fields():
+			df = meta.get_field(fieldname)
+			if df and df.fieldtype in ("Date", "Datetime", "Time"):
+				offenders.append(f"{fieldname} ({df.fieldtype})")
+
+		self.assertEqual(
+			offenders,
+			[],
+			"search_fields must not contain a date-like field; "
+			f"found {offenders}. See get_filtered_dimensions.",
+		)
+
+	def test_link_field_shows_the_event_name(self):
+		"""A link to a booking must identify the event, not just show an ID."""
+		meta = frappe.get_meta("Event Booking")
+		self.assertEqual(meta.title_field, "event_name")
+		self.assertTrue(meta.show_title_field_in_link)
