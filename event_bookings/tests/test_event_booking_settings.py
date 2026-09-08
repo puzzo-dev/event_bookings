@@ -107,8 +107,11 @@ class TestDefaultWarehouse(TestSettingsBase):
 		booking = self._make_booking()
 		se = frappe._dict(make_stock_entry(booking.name, "Material Issue"))
 
+		# A Material Issue draws from a warehouse and has no destination. Both
+		# sides used to be prefilled with the same one, which is meaningless for
+		# an issue and refused outright for a transfer.
 		self.assertEqual(se.from_warehouse, warehouse)
-		self.assertEqual(se.to_warehouse, warehouse)
+		self.assertIsNone(se.to_warehouse)
 		self.assertEqual(se.event_booking, booking.name)
 		self.assertEqual(se.stock_entry_type, "Material Issue")
 

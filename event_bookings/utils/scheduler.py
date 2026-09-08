@@ -17,6 +17,7 @@ What remains:
 """
 
 import frappe
+from frappe.utils.data import escape_html
 from frappe import _
 from frappe.utils import today
 
@@ -202,9 +203,15 @@ def send_unstaffed_alerts():
 				"event_date": row["event_date"],
 				"shortfalls": [],
 			}
+		# escape_html on the free-text fields. designation and event_name are
+		# whatever someone typed, and they go straight into an HTML email — a
+		# booking named with markup rendered as markup in the manager's mail
+		# client. The counts are ints, so they cannot carry any.
 		events[row["name"]]["shortfalls"].append(
 			_("<li>{0} – required {1}, assigned {2}</li>").format(
-				row["designation"], int(row["qty_required"]), int(row["qty_assigned"])
+				escape_html(row["designation"] or ""),
+				int(row["qty_required"]),
+				int(row["qty_assigned"]),
 			)
 		)
 
@@ -214,7 +221,7 @@ def send_unstaffed_alerts():
 		lines.append(
 			"<li><strong>{0} – {1}</strong><ul>{2}</ul></li>".format(
 				frappe.utils.formatdate(ev["event_date"]),
-				ev["event_name"],
+				escape_html(ev["event_name"] or ""),
 				"".join(ev["shortfalls"]),
 			)
 		)

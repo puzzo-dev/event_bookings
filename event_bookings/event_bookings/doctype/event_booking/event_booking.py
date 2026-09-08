@@ -728,9 +728,14 @@ def make_stock_entry(booking_name, stock_entry_type="Material Issue"):
     source/target warehouses from Event Booking Settings.default_warehouse.
     Returns the new doc dict so frappe.model.open_mapped_doc can open it.
     """
-    if not frappe.has_permission("Event Booking", "read", booking_name):
+    # write, not read: the entry this opens carries an event_booking link, and
+    # setting that link is what drives the booking's Items Used and its status
+    # automation. validate_event_booking_link refuses it on save without write,
+    # so checking read here only sent the user to a form that could not be
+    # saved.
+    if not frappe.has_permission("Event Booking", "write", booking_name):
         frappe.throw(
-            "You do not have permission to read this Event Booking.",
+            "You do not have permission to change this Event Booking.",
             frappe.PermissionError,
         )
     if not is_erpnext_installed():
@@ -741,6 +746,12 @@ def make_stock_entry(booking_name, stock_entry_type="Material Issue"):
             frappe.PermissionError,
         )
 
+    # The type comes from the caller. An unknown one fails on save with a link
+    # error from deep inside ERPNext; refusing it here says what is wrong.
+    stock_entry_type = str(stock_entry_type or "").strip()
+    if not frappe.db.exists("Stock Entry Type", stock_entry_type):
+        frappe.throw(f"{stock_entry_type or 'Stock Entry Type'} is not a Stock Entry Type.")
+
     booking = frappe.get_doc("Event Booking", booking_name)
 
     se = frappe.new_doc("Stock Entry")
@@ -750,11 +761,22 @@ def make_stock_entry(booking_name, stock_entry_type="Material Issue"):
     if booking.cost_center:
         se.cost_center = booking.cost_center
 
-    # Prefill warehouses from Event Booking Settings
+    # Prefill the warehouse the purpose actually has.
+    #
+    # Both sides used to get the same warehouse whatever the purpose, which is
+    # wrong in two different ways: a Material Issue has no target at all, and a
+    # Material Transfer with source equal to target is refused by ERPNext. The
+    # prefill was producing an entry the user had to correct before it would
+    # save.
     default_warehouse = _get_settings_default_warehouse()
     if default_warehouse:
-        se.from_warehouse = default_warehouse
-        se.to_warehouse = default_warehouse
+        purpose = frappe.db.get_value("Stock Entry Type", stock_entry_type, "purpose")
+        if purpose == "Material Receipt":
+            se.to_warehouse = default_warehouse
+        else:
+            # Issue, Transfer and the rest all draw from somewhere; a transfer's
+            # destination is the choice the user is here to make.
+            se.from_warehouse = default_warehouse
 
     return se.as_dict()
 
