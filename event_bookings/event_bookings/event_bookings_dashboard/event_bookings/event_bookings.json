@@ -73,7 +73,7 @@
  "doctype": "Dashboard",
  "idx": 0,
  "is_default": 0,
- "is_standard": 1,
+ "is_standard": 0,
  "modified": "2026-09-06 10:51:44.590580",
  "modified_by": "Administrator",
  "module": "Event Bookings",
