@@ -81,8 +81,7 @@
    "label": "Booking Status",
    "options": "New\nQuoted\nInvoiced\nConfirmed\nPaid\nExecuted\nCancelled",
    "search_index": 1,
-   "read_only": 1,
-   "hidden": 1
+   "read_only": 1
   },
   {
    "fieldname": "customer",
