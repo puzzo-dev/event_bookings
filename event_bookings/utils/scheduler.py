@@ -46,7 +46,7 @@ def auto_execute_passed_events():
 
 	filters = {
 		"event_date": ("<", today()),
-		"booking_status": ("in", ["Confirmed", "Paid"]),
+		"status": ("in", ["Confirmed", "Paid"]),
 		"docstatus": ("<", 2),
 	}
 
@@ -183,7 +183,7 @@ def send_unstaffed_alerts():
 		FROM `tabEvent Booking` eb
 		INNER JOIN `tabEvent Staff Requirement` esr
 			ON esr.parent = eb.name AND esr.parenttype = 'Event Booking'
-		WHERE eb.booking_status = 'Confirmed'
+		WHERE eb.status = 'Confirmed'
 			AND eb.event_date >= %(today)s
 			AND IFNULL(esr.qty_assigned, 0) < esr.qty_required
 		ORDER BY eb.event_date ASC

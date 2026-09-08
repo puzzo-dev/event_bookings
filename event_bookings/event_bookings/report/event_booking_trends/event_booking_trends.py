@@ -238,7 +238,7 @@ def get_raw_values(based_on, date_field, group_by, from_date, to_date, company):
 			{value_expr}   AS value
 		FROM `tabEvent Booking`
 		WHERE docstatus < 2
-		  AND booking_status != 'Cancelled'
+		  AND status != 'Cancelled'
 		  AND {date_field} >= %s AND {date_field} <= %s
 		  {conditions}
 		GROUP BY series, bucket_date

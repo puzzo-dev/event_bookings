@@ -9,7 +9,7 @@
  "doctype": "Dashboard Chart",
  "document_type": "Event Booking",
  "dynamic_filters_json": "[[\"Event Booking\", \"company\", \"=\", \"frappe.defaults.get_user_default(\\\"Company\\\")\"]]",
- "filters_json": "[[\"Event Booking\", \"booking_status\", \"!=\", \"Cancelled\", false]]",
+ "filters_json": "[[\"Event Booking\", \"status\", \"!=\", \"Cancelled\", false]]",
  "idx": 0,
  "is_public": 1,
  "is_standard": 1,

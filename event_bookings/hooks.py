@@ -191,7 +191,7 @@ doc_events = {
 	"Event Booking": {
 		"on_update": "event_bookings.utils.google_calendar_sync.push_to_google_calendar",
 		# Frappe runs on_update_after_submit — NOT on_update — once a document is
-		# submitted (frappe/model/document.py: run_post_save_methods). booking_status
+		# submitted (frappe/model/document.py: run_post_save_methods). status
 		# is the only meaningfully editable field after submit and it appears in the
 		# calendar event body, so without this the Google Calendar entry froze at the
 		# status the booking had when it was submitted, cancellations included.

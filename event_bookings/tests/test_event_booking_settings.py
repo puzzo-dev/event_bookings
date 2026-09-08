@@ -88,7 +88,7 @@ class TestDefaultWarehouse(TestSettingsBase):
 				"doctype": "Event Booking",
 				"event_name": "Settings Warehouse Booking",
 				"event_type": self.event_type,
-				"booking_status": "Confirmed",
+				"status": "Confirmed",
 				"booking_date": frappe.utils.today(),
 				"event_date": frappe.utils.add_days(frappe.utils.today(), 30),
 				"event_time": "18:00:00",

@@ -55,13 +55,13 @@ def submit_review(event_booking, rating=None, review_text=None):
 		frappe.throw(_("Event Booking not found."))
 
 	# Only review completed events
-	booking_status = frappe.db.get_value("Event Booking", event_booking, "booking_status")
-	if booking_status not in _ALLOWED_STATUSES:
+	status = frappe.db.get_value("Event Booking", event_booking, "status")
+	if status not in _ALLOWED_STATUSES:
 		frappe.throw(
 			_(
 				"Reviews are only allowed for events that have been completed. "
 				"Current status: '{0}'."
-			).format(booking_status)
+			).format(status)
 		)
 
 	# Derive reviewer from the booking's Customer (quotation-first model)

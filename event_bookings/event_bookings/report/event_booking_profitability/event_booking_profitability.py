@@ -50,7 +50,7 @@ def get_columns():
 		{"fieldname": "customer", "label": _("Customer"), "fieldtype": "Link", "options": "Customer", "width": 160},
 		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 110},
 		{"fieldname": "event_time", "label": _("Event Time"), "fieldtype": "Time", "width": 90},
-		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
+		{"fieldname": "status", "label": _("Status"), "fieldtype": "Data", "width": 120},
 		{"fieldname": "total_estimated", "label": _("Estimated Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
 		{"fieldname": "total_actual", "label": _("Actual Revenue"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 140},
 		{"fieldname": "cogs", "label": _("COGS"), "fieldtype": "Currency", "options": CURRENCY_OPTIONS, "width": 120},
@@ -121,7 +121,7 @@ def get_data(filters):
 	# (see erpnext sales_order_analysis / sales_register). This app cancels by
 	# status as well as by docstatus, so both are excluded. "Cancelled" is
 	# therefore not offered in the Status filter — it could never match.
-	conditions = {"docstatus": ["!=", 2], "booking_status": ["!=", "Cancelled"]}
+	conditions = {"docstatus": ["!=", 2], "status": ["!=", "Cancelled"]}
 	if filters.get("from_date") and filters.get("to_date"):
 		conditions["event_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	elif filters.get("from_date"):
@@ -134,8 +134,8 @@ def get_data(filters):
 		conditions["company"] = filters["company"]
 	if filters.get("event_type"):
 		conditions["event_type"] = filters["event_type"]
-	if filters.get("booking_status") and filters["booking_status"] != "Cancelled":
-		conditions["booking_status"] = filters["booking_status"]
+	if filters.get("status") and filters["status"] != "Cancelled":
+		conditions["status"] = filters["status"]
 
 	# get_list (not get_all) so the report honours role permissions and the
 	# Event Booking permission_query_conditions (planner/company partitioning).
@@ -144,7 +144,7 @@ def get_data(filters):
 		filters=conditions,
 		fields=[
 			"name as event_name", "customer", "company", "event_date", "event_time",
-			"booking_status", "total_estimated", "total_actual"
+			"status", "total_estimated", "total_actual"
 		],
 		order_by="event_date desc, event_time desc",
 		limit_page_length=0,

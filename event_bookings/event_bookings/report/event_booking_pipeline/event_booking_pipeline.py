@@ -42,7 +42,7 @@ def get_columns():
 		{"fieldname": "event_type", "label": _("Event Type"), "fieldtype": "Link", "options": "Event Type", "width": 120},
 		{"fieldname": "event_date", "label": _("Event Date"), "fieldtype": "Date", "width": 110},
 		{"fieldname": "event_time", "label": _("Event Time"), "fieldtype": "Time", "width": 90},
-		{"fieldname": "booking_status", "label": _("Status"), "fieldtype": "Data", "width": 120},
+		{"fieldname": "status", "label": _("Status"), "fieldtype": "Data", "width": 120},
 		# Data (not Int) deliberately: frappe.desk.query_report.add_total_row sums
 		# every Int column with no opt-out, and a total of "days until event"
 		# is meaningless. align keeps it right-aligned like a number.
@@ -64,7 +64,7 @@ def get_data(filters):
 	# (see erpnext sales_order_analysis / sales_register). This app cancels by
 	# status as well as by docstatus, so both are excluded. "Cancelled" is
 	# therefore not offered in the Status filter — it could never match.
-	conditions = {"docstatus": ["!=", 2], "booking_status": ["!=", "Cancelled"]}
+	conditions = {"docstatus": ["!=", 2], "status": ["!=", "Cancelled"]}
 	if filters.get("from_date") and filters.get("to_date"):
 		conditions["event_date"] = ["between", [filters["from_date"], filters["to_date"]]]
 	elif filters.get("from_date"):
@@ -77,8 +77,8 @@ def get_data(filters):
 		conditions["company"] = filters["company"]
 	if filters.get("event_type"):
 		conditions["event_type"] = filters["event_type"]
-	if filters.get("booking_status") and filters["booking_status"] != "Cancelled":
-		conditions["booking_status"] = filters["booking_status"]
+	if filters.get("status") and filters["status"] != "Cancelled":
+		conditions["status"] = filters["status"]
 
 	# get_list (not get_all) so the report honours role permissions and the
 	# Event Booking permission_query_conditions (planner/company partitioning).
@@ -92,7 +92,7 @@ def get_data(filters):
 			"event_type",
 			"event_date",
 			"event_time",
-			"booking_status",
+			"status",
 			"total_estimated",
 			"total_actual",
 			"quotation",
@@ -118,7 +118,7 @@ def get_data(filters):
 			"event_type": eb.event_type,
 			"event_date": eb.event_date,
 			"event_time": eb.event_time,
-			"booking_status": eb.booking_status,
+			"status": eb.status,
 			"days_until_event": cstr(days_until),
 			"total_estimated": eb.total_estimated or 0,
 			"total_actual": eb.total_actual or 0,

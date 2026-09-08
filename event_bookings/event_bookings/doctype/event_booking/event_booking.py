@@ -47,7 +47,7 @@ class EventBooking(Document):
 
         For docstatus 1, run_before_save_methods() dispatches on
         _action == "update_after_submit" and runs ONLY this method — neither
-        validate nor before_save fires (frappe/model/document.py). booking_status
+        validate nor before_save fires (frappe/model/document.py). status
         is allow_on_submit, so it keeps changing after submit; without this the
         entire status-transition chain was dead on submitted bookings:
         lifecycle dates were never stamped, staffing alerts never sent, and a
@@ -120,7 +120,7 @@ class EventBooking(Document):
         # ["Cancelled", "eval:self.docstatus==2"] — so a cancelled document can
         # never read as anything else. This app also has a status-only cancel
         # (no docstatus change) for draft bookings, which left docstatus-2
-        # bookings sitting at booking_status "Confirmed" with no cancelled_on:
+        # bookings sitting at status "Confirmed" with no cancelled_on:
         # they stayed "converted" in every report and chart forever.
         #
         # Set the values in-memory BEFORE writing, so doc_events hooks (e.g.
@@ -129,8 +129,8 @@ class EventBooking(Document):
         #
         # Both columns go out in one statement: db_set accepts a dict, and two
         # calls meant two UPDATEs and two row locks for a single state change.
-        updates = {"booking_status": CANCELLED}
-        self.booking_status = CANCELLED
+        updates = {"status": CANCELLED}
+        self.status = CANCELLED
         if not self.cancelled_on:
             self.cancelled_on = frappe.utils.today()
             updates["cancelled_on"] = self.cancelled_on
@@ -140,7 +140,7 @@ class EventBooking(Document):
         if self.is_new():
             return
         old_status = self._cached_old_status
-        if old_status is None or old_status == self.booking_status:
+        if old_status is None or old_status == self.status:
             return
 
         # Status transitions are otherwise unrestricted; validation still runs
@@ -148,7 +148,7 @@ class EventBooking(Document):
         # reliably.
         #
         # The exception is cancelling a *submitted* booking by status alone.
-        # booking_status is allow_on_submit, so that path ran the whole
+        # status is allow_on_submit, so that path ran the whole
         # cancellation cascade — linked Quotation, Sales Order and Sales Invoice
         # all cancelled — while docstatus stayed 1. The booking then read as
         # cancelled everywhere this app looks and as live everywhere ERPNext
@@ -157,9 +157,9 @@ class EventBooking(Document):
         # The status-only cancel is deliberate for drafts, where there is no
         # submitted document to cancel (see on_cancel). On a submitted booking
         # the two concepts have to agree, and Cancel is what makes them agree:
-        # on_cancel sets booking_status itself.
+        # on_cancel sets status itself.
         if (
-            self.booking_status == CANCELLED
+            self.status == CANCELLED
             and self.docstatus == 1
             and getattr(self, "_action", None) != "cancel"
         ):
@@ -292,12 +292,12 @@ class EventBooking(Document):
         if self.is_new():
             self._cached_old_status = None
             return False
-        old_status = frappe.db.get_value("Event Booking", self.name, "booking_status")
+        old_status = frappe.db.get_value("Event Booking", self.name, "status")
         self._cached_old_status = old_status
-        return old_status != self.booking_status
+        return old_status != self.status
 
     def handle_status_transition(self):
-        status = self.booking_status
+        status = self.status
 
         if status == "Confirmed":
             self._notify_staff_requirements()
@@ -321,12 +321,12 @@ class EventBooking(Document):
 
         today = frappe.utils.today()
         confirmed_idx = STATUS_ORDER.index("Confirmed")
-        current_idx = status_index(self.booking_status)
+        current_idx = status_index(self.status)
 
         if current_idx is not None and current_idx >= confirmed_idx and not self.confirmed_on:
             self.confirmed_on = today
 
-        if self.booking_status == CANCELLED and not self.cancelled_on:
+        if self.status == CANCELLED and not self.cancelled_on:
             self.cancelled_on = today
 
     def _notify_staff_requirements(self):
@@ -386,7 +386,7 @@ class EventBooking(Document):
 
     @staticmethod
     def get_indicator(doc):
-        """Return colored indicator for booking_status in list views.
+        """Return colored indicator for status in list views.
 
         Colors follow the status order (commercial → operational):
         deal phases blue/orange, money pending orange, paid green,
@@ -401,7 +401,7 @@ class EventBooking(Document):
             "Executed": "gray",
             "Cancelled": "red",
         }
-        return [doc.booking_status, status_colors.get(doc.booking_status, "gray")]
+        return [doc.status, status_colors.get(doc.status, "gray")]
 
 
 # ---------------------------------------------------------------------------
@@ -608,7 +608,7 @@ def make_event_booking(source_name, target_doc=None):
         target.customer = customer
         # Booking status starts at Quoted — a quotation exists and was
         # accepted (decided with the status-order redesign).
-        target.booking_status = "Quoted"
+        target.status = "Quoted"
         # Read-only field, set server-side; on_quotation_update keeps it fresh.
         target.quotation = source.name
 
@@ -894,7 +894,7 @@ def get_calendar_events(start, end, filters=None):
         # as the term. get_list still applies the row-level partition, so this
         # leaked nothing, but the calendar is an equality filter and letting the
         # client pick the operator is surface with no purpose.
-        _ALLOWED_FILTERS = {"booking_status", "event_type", "event_planner"}
+        _ALLOWED_FILTERS = {"status", "event_type", "event_planner"}
         conditions.update({
             k: str(v)
             for k, v in filters.items()
@@ -907,7 +907,7 @@ def get_calendar_events(start, end, filters=None):
         filters=conditions,
         fields=[
             "name", "event_name", "event_date", "event_time",
-            "event_end_time", "booking_status", "customer",
+            "event_end_time", "status", "customer",
         ],
     )
 
@@ -936,8 +936,8 @@ def get_calendar_events(start, end, filters=None):
                 "title": title,
                 "start": f"{date_str} {ev.event_time}",
                 "end": f"{date_str} {ev.event_end_time or ev.event_time}",
-                "booking_status": ev.booking_status,
-                "color": _calendar_color(ev.booking_status),
+                "status": ev.status,
+                "color": _calendar_color(ev.status),
             }
         else:
             # No time recorded — treat as all-day.  FullCalendar renders
@@ -949,8 +949,8 @@ def get_calendar_events(start, end, filters=None):
                 "start": date_str,
                 "end": date_str,
                 "allDay": True,
-                "booking_status": ev.booking_status,
-                "color": _calendar_color(ev.booking_status),
+                "status": ev.status,
+                "color": _calendar_color(ev.status),
             }
         out.append(entry)
     return out
@@ -975,7 +975,7 @@ def on_doctype_update():
     Declared here as the source of truth; patches/index_hot_columns covers the
     ERPNext-owned tables and sites where this hook does not fire.
     """
-    # booking_status, event_date, company, customer and sales_invoice carry
+    # status, event_date, company, customer and sales_invoice carry
     # search_index on the field, so Frappe already indexes them.
     frappe.db.add_index("Event Booking", ["event_planner"])
     frappe.db.add_index("Event Booking", ["quotation"])

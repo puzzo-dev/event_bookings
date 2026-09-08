@@ -33,7 +33,7 @@ class TestEventCostCenter(FrappeTestCase):
             "event_date": frappe.utils.add_days(frappe.utils.today(), 14),
             "event_time": "18:00:00",
             "event_location": "Test Venue",
-            "booking_status": "New",
+            "status": "New",
             "booking_date": frappe.utils.today(),
         }
         defaults.update(kwargs)

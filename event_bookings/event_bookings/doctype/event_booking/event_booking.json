@@ -9,7 +9,7 @@
  "field_order": [
   "sec_core",
   "event_name",
-  "booking_status",
+  "status",
   "booking_date",
   "confirmed_on",
   "cancelled_on",
@@ -75,13 +75,14 @@
   {
    "allow_on_submit": 1,
    "default": "New",
-   "fieldname": "booking_status",
+   "fieldname": "status",
    "fieldtype": "Select",
    "in_standard_filter": 1,
    "label": "Booking Status",
    "options": "New\nQuoted\nInvoiced\nConfirmed\nPaid\nExecuted\nCancelled",
    "search_index": 1,
-   "read_only": 1
+   "read_only": 1,
+   "in_list_view": 1
   },
   {
    "fieldname": "customer",

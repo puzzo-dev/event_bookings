@@ -33,7 +33,7 @@ frappe.query_reports["Event Booking Profitability"] = {
 			options: "Event Type",
 		},
 		{
-			fieldname: "booking_status",
+			fieldname: "status",
 			label: __("Status"),
 			fieldtype: "Select",
 			// Cancelled is omitted deliberately: like ERPNext reports, cancelled

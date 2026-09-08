@@ -88,7 +88,7 @@ class TestRevertBookingStatus(FrappeTestCase):
 
 	def _revert(self, current, justified, docstatus=1):
 		with patch(f"{_MOD}.frappe.db.get_value",
-		           return_value=frappe._dict(booking_status=current, docstatus=docstatus)), \
+		           return_value=frappe._dict(status=current, docstatus=docstatus)), \
 			patch(f"{_MOD}.justified_status", return_value=justified), \
 			patch(f"{_MOD}.automation_enabled", return_value=True), \
 			patch(f"{_MOD}.frappe.db.set_value") as set_value, \
@@ -100,7 +100,7 @@ class TestRevertBookingStatus(FrappeTestCase):
 		changed, set_value = self._revert("Paid", "Invoiced")
 		self.assertTrue(changed)
 		set_value.assert_called_once_with(
-			"Event Booking", "EVT-1", {"booking_status": "Invoiced"}
+			"Event Booking", "EVT-1", {"status": "Invoiced"}
 		)
 
 	def test_never_moves_forward(self):

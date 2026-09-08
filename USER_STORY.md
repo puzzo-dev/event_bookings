@@ -78,7 +78,7 @@ The client requests changes to the catering package.
 Client accepts the quote.
 
 **Actor:** Event Manager  
-**Action:** Submits the Quotation in ERPNext (Sales team flow). Quotation `on_submit` hook fires → `on_quotation_submit()` updates `booking_status` to **Confirmed** on the linked Event Booking.
+**Action:** Submits the Quotation in ERPNext (Sales team flow). Quotation `on_submit` hook fires → `on_quotation_submit()` updates `status` to **Confirmed** on the linked Event Booking.
 
 **System behaviour (automatic):**
 - `handle_status_transition()` calls `ensure_event_cost_center()`
@@ -115,7 +115,7 @@ The event runs. Staff collect consumables from the warehouse (ERPNext Stock Entr
 
 **System behaviour:**
 - Sales team creates Sales Order from the Quotation in ERPNext
-- `on_submit` of Sales Order → `on_sales_order_submit()` sets `booking_status = Invoiced` on the Event Booking and updates `sales_order` link
+- `on_submit` of Sales Order → `on_sales_order_submit()` sets `status = Invoiced` on the Event Booking and updates `sales_order` link
 - `total_actual` recalculated from Sales Order line items
 
 ---
@@ -136,7 +136,7 @@ The event runs. Staff collect consumables from the warehouse (ERPNext Stock Entr
 **Scheduled (daily — automatic):**
 - `sync_invoice_payment_status()` runs a single SQL UPDATE JOIN:
   - Finds all `Invoiced` Event Bookings where the linked Sales Invoice `status = 'Paid'`
-  - Sets `booking_status = 'Paid'` in bulk, no full controller chain needed
+  - Sets `status = 'Paid'` in bulk, no full controller chain needed
 
 No manual action required.
 

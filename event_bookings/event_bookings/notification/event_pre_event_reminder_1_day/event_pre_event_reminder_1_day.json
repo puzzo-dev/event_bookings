@@ -1,7 +1,7 @@
 {
  "attach_print": 0,
  "channel": "Email",
- "condition": "doc.booking_status in ('Confirmed', 'Paid')",
+ "condition": "doc.status in ('Confirmed', 'Paid')",
  "creation": "2026-06-13 05:54:07.090378",
  "date_changed": "event_date",
  "days_in_advance": 1,

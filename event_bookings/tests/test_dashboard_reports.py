@@ -230,7 +230,7 @@ class TestEventLeadConversionFunnel(FrappeTestCase):
 				"doctype": "Event Booking",
 				"event_name": "Funnel Regression Booking",
 				"event_type": self.event_type,
-				"booking_status": "Confirmed",
+				"status": "Confirmed",
 				"booking_date": frappe.utils.today(),
 				"event_date": frappe.utils.add_days(frappe.utils.today(), 30),
 				"event_time": "18:00:00",
@@ -318,7 +318,7 @@ class TestEventBookingTrends(FrappeTestCase):
 				"doctype": "Event Booking",
 				"event_name": event_name,
 				"event_type": self.event_type,
-				"booking_status": status,
+				"status": status,
 				"booking_date": frappe.utils.today(),
 				"event_date": frappe.utils.add_days(frappe.utils.today(), 30),
 				"event_time": "18:00:00",
@@ -362,7 +362,7 @@ class TestEventBookingTrends(FrappeTestCase):
 			"""
 			SELECT SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0)))
 			FROM `tabEvent Booking`
-			WHERE docstatus < 2 AND booking_status != 'Cancelled' AND company = %s
+			WHERE docstatus < 2 AND status != 'Cancelled' AND company = %s
 			""",
 			company,
 		)[0][0] or 0

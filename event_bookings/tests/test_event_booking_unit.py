@@ -22,7 +22,7 @@ def _new_booking(**overrides):
 	eb.sales_order = None
 	eb.sales_invoice = None
 	eb.material_request = None
-	eb.booking_status = "New"
+	eb.status = "New"
 	eb.customer = "Test Customer"
 	eb.event_planner = None
 	eb.event_name = "Test Event"

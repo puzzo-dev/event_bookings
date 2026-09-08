@@ -18,7 +18,7 @@ Design contract
 ---------------
 - ``advance_booking_status`` is **forward-only**: it never moves a booking
   backwards in the order and never touches Cancelled or docstatus-2 bookings.
-- It acts on **submitted** bookings only. ``booking_status`` is
+- It acts on **submitted** bookings only. ``status`` is
   ``allow_on_submit`` so automation continues after the booking is submitted,
   but a draft is never advanced: no document may be raised against a draft
   booking in the first place, and a draft that is edited by hand is not
@@ -193,12 +193,12 @@ def revert_booking_status(booking_name, reason=None):
 		current = frappe.db.get_value(
 			"Event Booking",
 			booking_name,
-			["booking_status", "docstatus", "confirmed_on"],
+			["status", "docstatus", "confirmed_on"],
 			as_dict=True,
 		)
 		if not current:
 			return False
-		if current.docstatus == 2 or current.booking_status == CANCELLED:
+		if current.docstatus == 2 or current.status == CANCELLED:
 			return False
 		if not automation_enabled():
 			return False
@@ -207,16 +207,16 @@ def revert_booking_status(booking_name, reason=None):
 		if target is None:
 			return False
 
-		current_idx = status_index(current.booking_status)
+		current_idx = status_index(current.status)
 		target_idx = status_index(target)
 		# Executed is terminal for this purpose: the event happened.
 		if current_idx is None or target_idx is None or current_idx <= target_idx:
 			return False
-		if current.booking_status == "Executed":
+		if current.status == "Executed":
 			return False
 
-		frappe.db.set_value("Event Booking", booking_name, {"booking_status": target})
-		_add_timeline_comment(booking_name, current.booking_status, target, reason)
+		frappe.db.set_value("Event Booking", booking_name, {"status": target})
+		_add_timeline_comment(booking_name, current.status, target, reason)
 		return True
 	except Exception:
 		frappe.log_error(
@@ -248,12 +248,12 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		current = frappe.db.get_value(
 			"Event Booking",
 			booking_name,
-			["booking_status", "docstatus", "confirmed_on"],
+			["status", "docstatus", "confirmed_on"],
 			as_dict=True,
 		)
 		if not current:
 			return False
-		if current.docstatus == 2 or current.booking_status == CANCELLED:
+		if current.docstatus == 2 or current.status == CANCELLED:
 			return False
 		# A draft booking's status is nobody's business but the person editing
 		# it. Nothing should be able to link to one now (see
@@ -263,12 +263,12 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		# documents when it is submitted, not before.
 		if current.docstatus == 0:
 			return False
-		if not is_forward_transition(current.booking_status, target_status):
+		if not is_forward_transition(current.status, target_status):
 			return False
 		if not automation_enabled():
 			return False
 
-		update = {"booking_status": target_status}
+		update = {"status": target_status}
 
 		# advance_booking_status writes through db.set_value, so the document
 		# lifecycle (and EventBooking.stamp_lifecycle_dates) never runs. Stamp
@@ -283,7 +283,7 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		frappe.db.set_value("Event Booking", booking_name, update)
 
 		_add_timeline_comment(
-			booking_name, current.booking_status, target_status, reason
+			booking_name, current.status, target_status, reason
 		)
 		return True
 	except Exception:

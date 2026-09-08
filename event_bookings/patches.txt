@@ -16,3 +16,4 @@ event_bookings.patches.resync_stranded_invoice_payments
 event_bookings.patches.backfill_items_used
 event_bookings.patches.resync_standard_notifications
 event_bookings.patches.index_hot_columns
+event_bookings.patches.rename_booking_status_to_status

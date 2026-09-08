@@ -87,7 +87,7 @@ def get_data(filters):
 				SUM(IF(IFNULL(total_actual, 0) > 0, total_actual, IFNULL(total_estimated, 0))) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND booking_status != 'Cancelled'
+			  AND status != 'Cancelled'
 			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type
@@ -100,7 +100,7 @@ def get_data(filters):
 				COUNT(name) as value
 			FROM `tabEvent Booking`
 			WHERE docstatus < 2
-			  AND booking_status != 'Cancelled'
+			  AND status != 'Cancelled'
 			  AND booking_date >= %s AND booking_date <= %s
 			  {conditions}
 			GROUP BY event_type

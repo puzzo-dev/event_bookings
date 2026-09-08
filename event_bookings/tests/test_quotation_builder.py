@@ -73,7 +73,7 @@ class TestQuotationToBooking(FrappeTestCase):
 		self.assertEqual(booking.doctype, "Event Booking")
 		self.assertEqual(booking.customer, qt.party_name)
 		self.assertEqual(booking.quotation, qt.name)
-		self.assertEqual(booking.booking_status, "Quoted")
+		self.assertEqual(booking.status, "Quoted")
 		self.assertEqual(booking.company, qt.company)
 
 		booking = self._fill_and_insert_booking(booking)

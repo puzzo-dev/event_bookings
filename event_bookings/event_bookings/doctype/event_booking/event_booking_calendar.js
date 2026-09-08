@@ -4,7 +4,7 @@ frappe.views.calendar["Event Booking"] = {
 		end: "event_date",
 		id: "name",
 		title: "event_name",
-		status: "booking_status",
+		status: "status",
 	},
 	style_map: {
 		"New": "info",

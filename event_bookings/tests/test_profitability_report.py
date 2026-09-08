@@ -22,7 +22,7 @@ class TestGetColumns(unittest.TestCase):
 			"customer",
 			"event_date",
 			"event_time",
-			"booking_status",
+			"status",
 			"total_estimated",
 			"total_actual",
 			"cogs",
@@ -53,7 +53,7 @@ class TestGetData(unittest.TestCase):
 			event_name="EVT-001",
 			customer="Acme",
 			event_date="2026-07-15",
-			booking_status="Invoiced",
+			status="Invoiced",
 			total_estimated=50000,
 			total_actual=60000,
 		)
@@ -122,9 +122,9 @@ class TestGetData(unittest.TestCase):
 
 	def test_filter_by_status(self, mock_frappe, _mock_cogs, _mock_damages):
 		mock_frappe.get_list.return_value = []
-		get_data({"booking_status": "Paid"})
+		get_data({"status": "Paid"})
 		call_kwargs = mock_frappe.get_list.call_args
-		self.assertEqual(call_kwargs[1]["filters"]["booking_status"], "Paid")
+		self.assertEqual(call_kwargs[1]["filters"]["status"], "Paid")
 
 	def test_filter_by_date_range(self, mock_frappe, _mock_cogs, _mock_damages):
 		mock_frappe.get_list.return_value = []

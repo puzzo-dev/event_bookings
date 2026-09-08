@@ -1,24 +1,20 @@
-// The status pill, done the way ERPNext does it for Sales Order and Sales
-// Invoice: one read-only field the lifecycle maintains, surfaced as the
-// indicator rather than as a second column.
+// The status pill, the way Sales Order and Sales Invoice do it: one read-only
+// field the lifecycle maintains, surfaced as the indicator.
 //
-// add_fields is not a workaround — sales_order_list.js lists "status" there for
-// the same reason. Frappe fetches a field named literally `status` for the list
-// whether or not it is a column (get_fields_in_list_view), and drops it from the
-// columns when the doctype has an indicator (setup_columns), so ERPNext gets
-// both for free from the name. This field is booking_status, so it asks.
+// Nothing else is needed. The field is named `status`, so Frappe fetches it for
+// the list whether or not it is a column (get_fields_in_list_view) and drops it
+// from the columns while the doctype has an indicator (setup_columns) — which
+// is why in_list_view can stay on without the value appearing twice. The name
+// is doing the work that an add_fields entry and a pair of
+// has_indicator_for_* overrides used to.
 //
-// No has_indicator_for_draft / has_indicator_for_cancelled. ERPNext does not
-// override those, and neither should this: a draft reads "Draft" and a
-// cancelled document reads "Cancelled", which is true and is what every other
-// submittable doctype on the site does. booking_status is what a *submitted*
-// booking is doing, and that is when this runs.
+// Draft and Cancelled still come from docstatus, as they do everywhere else on
+// the site. This runs for a submitted booking, which is when the lifecycle
+// status is the thing worth showing.
 
 frappe.listview_settings["Event Booking"] = {
-	add_fields: ["booking_status"],
-
 	get_indicator(doc) {
-		if (!doc.booking_status) {
+		if (!doc.status) {
 			return null;
 		}
 
@@ -32,8 +28,8 @@ frappe.listview_settings["Event Booking"] = {
 			Paid: "green",
 			Executed: "grey",
 			Cancelled: "red",
-		}[doc.booking_status] || "grey";
+		}[doc.status] || "grey";
 
-		return [__(doc.booking_status), colour, `booking_status,=,${doc.booking_status}`];
+		return [__(doc.status), colour, `status,=,${doc.status}`];
 	},
 };

@@ -54,7 +54,7 @@ def _build_event_body(doc):
 		"description": (
 			f"Booking Ref: {doc.name}\n"
 			f"Customer: {doc.customer or ''}\n"
-			f"Status: {doc.booking_status}\n"
+			f"Status: {doc.status}\n"
 			f"Location: {doc.event_location or ''}\n"
 		) + (f"Special Requirements: {doc.special_requirements}\n" if doc.special_requirements else ""),
 		"location": doc.event_location or "",
@@ -67,7 +67,7 @@ def _build_event_body(doc):
 	# rather than deleting the event keeps the history — Google renders a
 	# cancelled event as cancelled — and it also covers the status-only cancel a
 	# draft booking uses, which never reaches on_cancel at all.
-	if doc.docstatus == 2 or doc.booking_status == "Cancelled":
+	if doc.docstatus == 2 or doc.status == "Cancelled":
 		body["status"] = "cancelled"
 
 	try:
@@ -122,7 +122,7 @@ def push_to_google_calendar(doc, method=None):
 # in the calendar, so it is not worth a round trip to Google.
 _CALENDAR_FIELDS = (
 	"event_name", "customer", "event_date", "event_time", "event_end_time",
-	"event_location", "special_requirements", "booking_status",
+	"event_location", "special_requirements", "status",
 	"google_calendar", "sync_with_google_calendar",
 )
 

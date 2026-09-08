@@ -6,7 +6,7 @@ Covers:
 - the forward-only guard (automation never downgrades),
 - Cancelled / docstatus-2 bookings are never touched,
 - the enable_automated_status and auto_executed_after_event_date toggles,
-- automation on submitted bookings (booking_status is allow_on_submit),
+- automation on submitted bookings (status is allow_on_submit),
 - docstatus cancel cascading to linked documents synchronously (before_cancel
   runs ahead of Frappe's back-link check),
 - the scheduler draft-booking fix (docstatus < 2, P1-16),
@@ -53,7 +53,7 @@ def _make_booking(**kwargs):
 	defaults = {
 		"doctype": "Event Booking",
 		"customer": party_name if party_type == "Customer" else None,
-		"booking_status": "New",
+		"status": "New",
 		"booking_date": frappe.utils.today(),
 		"event_time": "10:00:00",
 		"event_location": "Test Venue",
@@ -84,7 +84,7 @@ def _insert(submit=True, **kwargs):
 
 
 def _status(name):
-	return frappe.db.get_value("Event Booking", name, "booking_status")
+	return frappe.db.get_value("Event Booking", name, "status")
 
 
 def _set_toggle(fieldname, value):
@@ -125,7 +125,7 @@ class TestForwardOnlyGuard(FrappeTestCase):
 		self.assertFalse(is_forward_transition(CANCELLED, "Executed"))
 
 	def test_advance_never_downgrades(self):
-		doc = _insert(event_name="Test No Downgrade", booking_status="Invoiced")
+		doc = _insert(event_name="Test No Downgrade", status="Invoiced")
 		self.assertFalse(advance_booking_status(doc.name, "Quoted"))
 		self.assertEqual(_status(doc.name), "Invoiced")
 
@@ -137,18 +137,18 @@ class TestForwardOnlyGuard(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Invoiced")
 
 	def test_advance_skips_cancelled_and_unknown(self):
-		doc = _insert(event_name="Test Cancelled Skip", booking_status=CANCELLED)
+		doc = _insert(event_name="Test Cancelled Skip", status=CANCELLED)
 		self.assertFalse(advance_booking_status(doc.name, "Invoiced"))
 		self.assertEqual(_status(doc.name), CANCELLED)
 
-		doc2 = _insert(event_name="Test Unknown Target", booking_status="New")
+		doc2 = _insert(event_name="Test Unknown Target", status="New")
 		self.assertFalse(advance_booking_status(doc2.name, "Bogus"))
 		self.assertFalse(advance_booking_status(None, "Quoted"))
 		self.assertFalse(advance_booking_status(doc2.name, CANCELLED))
 		self.assertEqual(_status(doc2.name), "New")
 
 	def test_advance_skips_docstatus_cancelled(self):
-		doc = _insert(event_name="Test DS2 Skip", booking_status="Confirmed")
+		doc = _insert(event_name="Test DS2 Skip", status="Confirmed")
 		doc.cancel()
 		self.assertEqual(doc.docstatus, 2)
 		self.assertFalse(advance_booking_status(doc.name, "Executed"))
@@ -160,7 +160,7 @@ class TestAdvanceBehaviour(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_advance_persists_and_audits(self):
-		doc = _insert(event_name="Test Advance Audit", booking_status="New")
+		doc = _insert(event_name="Test Advance Audit", status="New")
 		self.assertTrue(advance_booking_status(doc.name, "Quoted", reason="test"))
 		self.assertEqual(_status(doc.name), "Quoted")
 		comments = frappe.get_all(
@@ -175,7 +175,7 @@ class TestAdvanceBehaviour(FrappeTestCase):
 		self.assertTrue(comments, "expected an audit timeline comment")
 
 	def test_advance_respects_toggle(self):
-		doc = _insert(event_name="Test Toggle Off", booking_status="New")
+		doc = _insert(event_name="Test Toggle Off", status="New")
 		_set_toggle("enable_automated_status", 0)
 		try:
 			self.assertFalse(advance_booking_status(doc.name, "Quoted"))
@@ -185,8 +185,8 @@ class TestAdvanceBehaviour(FrappeTestCase):
 		self.assertTrue(advance_booking_status(doc.name, "Quoted"))
 
 	def test_advance_works_on_submitted_booking(self):
-		"""booking_status is allow_on_submit — automation continues after submit."""
-		doc = _insert(event_name="Test Submitted Advance", booking_status="Confirmed")
+		"""status is allow_on_submit — automation continues after submit."""
+		doc = _insert(event_name="Test Submitted Advance", status="Confirmed")
 		self.assertEqual(doc.docstatus, 1)
 
 		self.assertTrue(advance_booking_status(doc.name, "Paid"))
@@ -195,11 +195,11 @@ class TestAdvanceBehaviour(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Executed")
 
 	def test_submit_allowed_at_any_status(self):
-		"""A booking can be submitted regardless of booking_status — the status
+		"""A booking can be submitted regardless of status — the status
 		is driven by linked documents (Quotation/SO/SI), not by the submit
 		action itself. Same as Sales Order in ERPNext."""
 		for status in ("New", "Quoted", "Invoiced", "Confirmed", "Paid"):
-			doc = _insert(event_name=f"Submit at {status}", booking_status=status)
+			doc = _insert(event_name=f"Submit at {status}", status=status)
 			self.assertEqual(doc.docstatus, 1)
 			self.assertEqual(_status(doc.name), status)
 
@@ -210,7 +210,7 @@ class TestHookWiring(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_quotation_link_hook_advances_to_quoted(self):
-		doc = _insert(event_name="Test Qt Link", booking_status="New")
+		doc = _insert(event_name="Test Qt Link", status="New")
 		on_quotation_update(
 			SimpleNamespace(event_booking=doc.name, name="QTN-FAKE", doctype="Quotation"),
 			None,
@@ -218,7 +218,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Quoted")
 
 	def test_quotation_submit_ensures_quoted_but_never_backwards(self):
-		doc = _insert(event_name="Test Qt Submit", booking_status="New")
+		doc = _insert(event_name="Test Qt Submit", status="New")
 		on_quotation_submit(
 			SimpleNamespace(event_booking=doc.name, name="QTN-FAKE", doctype="Quotation"),
 			None,
@@ -226,7 +226,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Quoted")
 
 		# A booking already past Quoted is untouched by quotation submission
-		doc2 = _insert(event_name="Test Qt Submit NoBack", booking_status="Invoiced")
+		doc2 = _insert(event_name="Test Qt Submit NoBack", status="Invoiced")
 		on_quotation_submit(
 			SimpleNamespace(event_booking=doc2.name, name="QTN-FAKE2", doctype="Quotation"),
 			None,
@@ -234,7 +234,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc2.name), "Invoiced")
 
 	def test_si_submit_advances_to_invoiced(self):
-		doc = _insert(event_name="Test SI Submit", booking_status="Quoted")
+		doc = _insert(event_name="Test SI Submit", status="Quoted")
 		on_sales_invoice_submit(
 			SimpleNamespace(event_booking=doc.name, name="SINV-FAKE", doctype="Sales Invoice"),
 			None,
@@ -242,7 +242,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Invoiced")
 
 	def test_si_partly_paid_advances_to_confirmed(self):
-		doc = _insert(event_name="Test SI Partly Paid", booking_status="Invoiced")
+		doc = _insert(event_name="Test SI Partly Paid", status="Invoiced")
 		on_sales_invoice_update(
 			SimpleNamespace(
 				event_booking=doc.name, name="SINV-FAKE",
@@ -253,7 +253,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Confirmed")
 
 	def test_si_fully_paid_advances_to_paid(self):
-		doc = _insert(event_name="Test SI Fully Paid", booking_status="Confirmed")
+		doc = _insert(event_name="Test SI Fully Paid", status="Confirmed")
 		on_sales_invoice_update(
 			SimpleNamespace(
 				event_booking=doc.name, name="SINV-FAKE",
@@ -264,7 +264,7 @@ class TestHookWiring(FrappeTestCase):
 		self.assertEqual(_status(doc.name), "Paid")
 
 	def test_si_unpaid_does_not_advance(self):
-		doc = _insert(event_name="Test SI Unpaid", booking_status="Invoiced")
+		doc = _insert(event_name="Test SI Unpaid", status="Invoiced")
 		on_sales_invoice_update(
 			SimpleNamespace(
 				event_booking=doc.name, name="SINV-FAKE",
@@ -326,7 +326,7 @@ class TestRealQuotationIntegration(FrappeTestCase):
 	def test_draft_quotation_save_advances_booking(self):
 		"""End-to-end: creating a linked draft Quotation fires the real
 		doc_events hook → booking advances New → Quoted."""
-		booking = _insert(event_name="Test E2E Qt", booking_status="New")
+		booking = _insert(event_name="Test E2E Qt", status="New")
 		qt = self._make_quotation(booking)
 
 		self.assertEqual(frappe.db.get_value("Event Booking", booking.name, "quotation"), qt.name)
@@ -335,7 +335,7 @@ class TestRealQuotationIntegration(FrappeTestCase):
 	def test_docstatus_cancel_cascades_to_linked_quotation(self):
 		"""Cancelling a submitted booking synchronously cancels the linked
 		submitted Quotation (before_cancel runs ahead of the back-link check)."""
-		booking = _insert(event_name="Test E2E Cancel", booking_status="Confirmed")
+		booking = _insert(event_name="Test E2E Cancel", status="Confirmed")
 		booking.submit()
 		self.assertEqual(booking.docstatus, 1)
 
@@ -380,23 +380,23 @@ class TestScheduler(FrappeTestCase):
 
 		confirmed = _insert(
 			event_name="Test AutoExec Confirmed",
-			booking_status="Confirmed", event_date=past,
+			status="Confirmed", event_date=past,
 		)
 		paid = _insert(
 			event_name="Test AutoExec Paid",
-			booking_status="Paid", event_date=past,
+			status="Paid", event_date=past,
 		)
 		invoiced = _insert(
 			event_name="Test AutoExec Invoiced",
-			booking_status="Invoiced", event_date=past,
+			status="Invoiced", event_date=past,
 		)
 		executed = _insert(
 			event_name="Test AutoExec Executed",
-			booking_status="Executed", event_date=past,
+			status="Executed", event_date=past,
 		)
 		future_confirmed = _insert(
 			event_name="Test AutoExec Future",
-			booking_status="Confirmed",
+			status="Confirmed",
 			event_date=frappe.utils.add_days(frappe.utils.today(), 3),
 		)
 
@@ -413,7 +413,7 @@ class TestScheduler(FrappeTestCase):
 		past = frappe.utils.add_days(frappe.utils.today(), -3)
 		doc = _insert(
 			event_name="Test AutoExec Toggle",
-			booking_status="Confirmed", event_date=past,
+			status="Confirmed", event_date=past,
 		)
 		_set_toggle("auto_executed_after_event_date", 0)
 		try:
@@ -432,7 +432,7 @@ class TestScheduler(FrappeTestCase):
 		past = frappe.utils.add_days(frappe.utils.today(), -3)
 		booking = _insert(
 			event_name="Test AutoExec SO Delivered",
-			booking_status="Confirmed", event_date=past,
+			status="Confirmed", event_date=past,
 		)
 
 		# Build a real Sales Order from the booking's quotation
@@ -484,7 +484,7 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 		for status in STATUS_ORDER + [CANCELLED]:
 			doc = _insert(
 				event_name=f"Legacy {status}",
-				booking_status=status,
+				status=status,
 				event_date=past,
 				guest_count=50,
 			)
@@ -497,7 +497,7 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 
 		future_doc = _insert(
 			event_name="Legacy Future Confirmed",
-			booking_status="Confirmed", event_date=future,
+			status="Confirmed", event_date=future,
 		)
 
 		# The daily automation exactly as it runs after the upgrade.
@@ -519,7 +519,7 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 				["docstatus", "quotation", "total_estimated", "total_actual"],
 				as_dict=True,
 			)
-			# Legacy data integrity — nothing touched except booking_status.
+			# Legacy data integrity — nothing touched except status.
 			# Submitted, because the automation only acts on submitted
 			# bookings: a draft is not a commitment, so nothing links to one
 			# and nothing advances it.
@@ -534,7 +534,7 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 	def test_status_order_matches_doctype_options(self):
 		"""The shipped Select options must be exactly STATUS_ORDER + Cancelled."""
 		meta = frappe.get_meta("Event Booking")
-		options = meta.get_options("booking_status").split("\n")
+		options = meta.get_options("status").split("\n")
 		self.assertEqual(options, STATUS_ORDER + [CANCELLED])
 
 
@@ -551,28 +551,28 @@ class TestLifecycleDateStamping(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_not_stamped_before_confirmed(self):
-		doc = _insert(event_name="Stamp New", booking_status="New")
+		doc = _insert(event_name="Stamp New", status="New")
 		self.assertIsNone(doc.confirmed_on)
 		self.assertIsNone(doc.cancelled_on)
 
 	def test_confirmed_on_stamped_when_skipping_confirmed(self):
 		"""A booking can jump Invoiced -> Paid and never pass through Confirmed."""
-		doc = _insert(event_name="Stamp Skip", booking_status="Invoiced")
+		doc = _insert(event_name="Stamp Skip", status="Invoiced")
 		self.assertIsNone(doc.confirmed_on)
 
-		doc.booking_status = "Paid"
+		doc.status = "Paid"
 		doc.save(ignore_permissions=True)
 		self.assertIsNotNone(doc.confirmed_on)
 		self.assertEqual(frappe.utils.getdate(doc.confirmed_on), frappe.utils.getdate(frappe.utils.today()))
 
 	def test_confirmed_on_never_moves(self):
-		doc = _insert(event_name="Stamp Once", booking_status="Confirmed")
+		doc = _insert(event_name="Stamp Once", status="Confirmed")
 		first = doc.confirmed_on
 		self.assertIsNotNone(first)
 
 		frappe.db.set_value("Event Booking", doc.name, "confirmed_on", "2020-01-01")
 		doc.reload()
-		doc.booking_status = "Executed"
+		doc.status = "Executed"
 		doc.save(ignore_permissions=True)
 
 		self.assertEqual(frappe.utils.getdate(doc.confirmed_on), frappe.utils.getdate("2020-01-01"))
@@ -580,10 +580,10 @@ class TestLifecycleDateStamping(FrappeTestCase):
 	def test_cancelled_on_stamped_on_cancel(self):
 		# A draft: the status-only cancel is the documented route there, and a
 		# submitted booking must go through Cancel instead.
-		doc = _insert(submit=False, event_name="Stamp Cancel", booking_status="Confirmed")
+		doc = _insert(submit=False, event_name="Stamp Cancel", status="Confirmed")
 		self.assertIsNone(doc.cancelled_on)
 
-		doc.booking_status = CANCELLED
+		doc.status = CANCELLED
 		doc.save(ignore_permissions=True)
 		self.assertIsNotNone(doc.cancelled_on)
 		self.assertEqual(frappe.utils.getdate(doc.cancelled_on), frappe.utils.getdate(frappe.utils.today()))
@@ -591,7 +591,7 @@ class TestLifecycleDateStamping(FrappeTestCase):
 	def test_automated_advance_stamps_confirmed_on(self):
 		"""advance_booking_status writes via db.set_value, bypassing the document
 		lifecycle — it must stamp confirmed_on itself."""
-		doc = _insert(event_name="Stamp Auto", booking_status="Invoiced")
+		doc = _insert(event_name="Stamp Auto", status="Invoiced")
 		self.assertTrue(advance_booking_status(doc.name, "Confirmed", reason="test"))
 
 		stamped = frappe.db.get_value("Event Booking", doc.name, "confirmed_on")
@@ -601,8 +601,8 @@ class TestLifecycleDateStamping(FrappeTestCase):
 	def test_cancelling_a_booking_does_not_raise(self):
 		"""Regression: cancel_linked_documents used frappe.in_test, a v16-only
 		API, so every cancellation raised AttributeError on v15."""
-		doc = _insert(submit=False, event_name="Cancel No Raise", booking_status="Confirmed")
-		doc.booking_status = CANCELLED
+		doc = _insert(submit=False, event_name="Cancel No Raise", status="Confirmed")
+		doc.status = CANCELLED
 		doc.save(ignore_permissions=True)
 		self.assertEqual(_status(doc.name), CANCELLED)
 
@@ -611,7 +611,7 @@ class TestLifecycleDateStamping(FrappeTestCase):
 class TestSubmittedBookingLifecycle(FrappeTestCase):
 	"""Bookings are submitted (docstatus 1) in normal use.
 
-	booking_status is allow_on_submit, so it keeps changing after submit — but
+	status is allow_on_submit, so it keeps changing after submit — but
 	the lifecycle date fields were not, so every stamp on a submitted booking
 	was silently discarded and D-4 was inert in production.
 	"""
@@ -620,10 +620,10 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 		frappe.db.rollback()
 
 	def test_confirmed_on_stamped_after_submit(self):
-		doc = _insert(event_name="Submitted Stamp", booking_status="New")
+		doc = _insert(event_name="Submitted Stamp", status="New")
 		self.assertIsNone(doc.confirmed_on)
 
-		doc.booking_status = "Confirmed"
+		doc.status = "Confirmed"
 		doc.save(ignore_permissions=True)
 		doc.reload()
 
@@ -632,16 +632,16 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 			frappe.utils.getdate(doc.confirmed_on), frappe.utils.getdate(frappe.utils.today())
 		)
 
-	def test_docstatus_cancel_syncs_booking_status(self):
+	def test_docstatus_cancel_syncs_status(self):
 		"""ERPNext derives status from docstatus (status_updater.py:
 		["Cancelled", "eval:self.docstatus==2"]). A docstatus-cancelled booking
 		must not keep reading as Confirmed, or it counts as converted forever."""
-		doc = _insert(event_name="Docstatus Cancel", booking_status="New")
+		doc = _insert(event_name="Docstatus Cancel", status="New")
 		doc.cancel()
 		doc.reload()
 
 		self.assertEqual(doc.docstatus, 2)
-		self.assertEqual(doc.booking_status, CANCELLED)
+		self.assertEqual(doc.status, CANCELLED)
 		self.assertIsNotNone(doc.cancelled_on)
 		self.assertEqual(
 			frappe.utils.getdate(doc.cancelled_on), frappe.utils.getdate(frappe.utils.today())
@@ -657,8 +657,8 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 			event_booking_profitability,
 		)
 
-		live = _insert(event_name="Report Visible", booking_status="Confirmed")
-		gone = _insert(event_name="Report Cancelled", booking_status=CANCELLED)
+		live = _insert(event_name="Report Visible", status="Confirmed")
+		gone = _insert(event_name="Report Cancelled", status=CANCELLED)
 
 		for module in (event_booking_pipeline, event_booking_profitability):
 			names = {row["event_name"] for row in module.get_data({})}
@@ -671,8 +671,8 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 			event_booking_pipeline,
 		)
 
-		cancelled = _insert(event_name="Filter Probe", booking_status=CANCELLED)
-		rows = event_booking_pipeline.get_data({"booking_status": CANCELLED})
+		cancelled = _insert(event_name="Filter Probe", status=CANCELLED)
+		rows = event_booking_pipeline.get_data({"status": CANCELLED})
 		self.assertNotIn(cancelled.name, {row["event_name"] for row in rows})
 
 
@@ -682,7 +682,7 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 
 	run_before_save_methods runs only before_update_after_submit (not validate /
 	before_save) and run_post_save_methods runs only on_update_after_submit (not
-	on_update). booking_status is allow_on_submit, so everything hanging off the
+	on_update). status is allow_on_submit, so everything hanging off the
 	save chain silently stopped working on submitted bookings.
 	"""
 
@@ -693,16 +693,16 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 		"""It used to cancel the linked Quotation / Sales Order / Sales Invoice
 		and leave docstatus at 1 — the booking then read as cancelled to this
 		app and live to ERPNext, and could still be amended against."""
-		doc = _insert(event_name="Submitted Cascade", booking_status="Confirmed")
+		doc = _insert(event_name="Submitted Cascade", status="Confirmed")
 
-		doc.booking_status = CANCELLED
+		doc.status = CANCELLED
 		with self.assertRaises(frappe.ValidationError):
 			doc.save(ignore_permissions=True)
 
 	def test_cancelling_a_submitted_booking_still_cascades(self):
 		"""Cancel is the supported route, and it must do what the status-only
 		path used to: cancel the linked documents."""
-		doc = _insert(event_name="Submitted Cascade Cancel", booking_status="Confirmed")
+		doc = _insert(event_name="Submitted Cascade Cancel", status="Confirmed")
 
 		target = (
 			"event_bookings.event_bookings.doctype.event_booking"
@@ -713,21 +713,21 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 
 		cascade.assert_called_once_with(doc.name)
 		self.assertEqual(doc.docstatus, 2)
-		self.assertEqual(doc.booking_status, CANCELLED)
+		self.assertEqual(doc.status, CANCELLED)
 
 	def test_draft_booking_still_cancels_by_status(self):
 		"""Deliberate: a draft has no submitted document to cancel."""
-		doc = _insert(submit=False, event_name="Draft Cascade", booking_status="Confirmed")
-		doc.booking_status = CANCELLED
+		doc = _insert(submit=False, event_name="Draft Cascade", status="Confirmed")
+		doc.status = CANCELLED
 		doc.save(ignore_permissions=True)
-		self.assertEqual(doc.booking_status, CANCELLED)
+		self.assertEqual(doc.status, CANCELLED)
 		self.assertEqual(doc.docstatus, 0)
 
 	def test_staffing_alert_fires_on_submitted_booking(self):
-		doc = _insert(event_name="Submitted Staffing", booking_status="New")
+		doc = _insert(event_name="Submitted Staffing", status="New")
 
 		with patch.object(type(doc), "_notify_staff_requirements") as notify:
-			doc.booking_status = "Confirmed"
+			doc.status = "Confirmed"
 			doc.save(ignore_permissions=True)
 
 		notify.assert_called_once()
@@ -814,7 +814,7 @@ class TestRealPaymentPathIntegration(FrappeTestCase):
 
 	def test_advance_from_sales_invoice_does_not_raise(self):
 		"""Guards the TypeError that silently killed the whole payment path."""
-		booking = _insert(event_name="Real SI Payment Path", booking_status="Invoiced")
+		booking = _insert(event_name="Real SI Payment Path", status="Invoiced")
 		si = self._make_submitted_invoice(booking)
 
 		# Called directly, outside on_payment_entry_submit's except block, so a
@@ -825,7 +825,7 @@ class TestRealPaymentPathIntegration(FrappeTestCase):
 
 	def test_settled_invoice_advances_booking_to_paid(self):
 		"""An invoice with nothing outstanding must carry the booking to Paid."""
-		booking = _insert(event_name="Real SI Settled", booking_status="Invoiced")
+		booking = _insert(event_name="Real SI Settled", status="Invoiced")
 		si = self._make_submitted_invoice(booking)
 
 		# Settle it the way a payment would, then let the hook re-read status.
@@ -836,7 +836,7 @@ class TestRealPaymentPathIntegration(FrappeTestCase):
 
 	def test_cash_invoice_reaches_paid_without_a_payment_entry(self):
 		"""is_paid invoices create no Payment Entry, so on_submit must cover them."""
-		booking = _insert(event_name="Real SI Cash", booking_status="Quoted")
+		booking = _insert(event_name="Real SI Cash", status="Quoted")
 		si = self._make_submitted_invoice(booking)
 		si.db_set("outstanding_amount", 0, update_modified=False)
 		si.set_status(update=True, update_modified=False)

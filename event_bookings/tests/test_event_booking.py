@@ -9,7 +9,7 @@ def _make_booking(**kwargs):
 	defaults = {
 		"doctype": "Event Booking",
 		"customer": get_or_create_test_customer(),
-		"booking_status": "New",
+		"status": "New",
 		"booking_date": frappe.utils.today(),
 		"event_time": "18:00:00",
 		"event_location": "Test Venue",
