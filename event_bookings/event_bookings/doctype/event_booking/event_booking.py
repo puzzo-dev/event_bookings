@@ -900,3 +900,16 @@ def _calendar_color(status):
         "Executed": "#adb5bd",
         "Cancelled": "#e24c4c",
     }.get(status, "#adb5bd")
+
+
+def on_doctype_update():
+    """Indexes for the columns the reports, hooks and partition filter on.
+
+    Declared here as the source of truth; patches/index_hot_columns covers the
+    ERPNext-owned tables and sites where this hook does not fire.
+    """
+    # booking_status, event_date, company, customer and sales_invoice carry
+    # search_index on the field, so Frappe already indexes them.
+    frappe.db.add_index("Event Booking", ["event_planner"])
+    frappe.db.add_index("Event Booking", ["quotation"])
+    frappe.db.add_index("Event Booking", ["sales_order"])
