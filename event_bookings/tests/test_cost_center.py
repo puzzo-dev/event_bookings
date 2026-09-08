@@ -1,5 +1,5 @@
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 
 
 class TestEventCostCenter(FrappeTestCase):

@@ -204,7 +204,11 @@ def send_unstaffed_alerts():
 			message="".join(lines),
 			now=False,
 		)
-	except (frappe.DatabaseError, frappe.ValidationError):
+	except Exception:
+		# Not `frappe.DatabaseError` — no such name exists on v15 or v16, so a
+		# failed digest raised AttributeError out of the scheduled job instead
+		# of being logged. A digest that cannot be sent must never take the
+		# scheduler down with it.
 		frappe.log_error(
 			message=frappe.get_traceback(),
 			title=_("Staffing digest alert failed"),

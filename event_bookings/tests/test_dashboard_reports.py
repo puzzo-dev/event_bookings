@@ -19,7 +19,7 @@ import json
 import unittest
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 
 from event_bookings.tests.fixtures import (
 	ensure_test_customer_leaf_details,

@@ -1,7 +1,7 @@
 import unittest
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 

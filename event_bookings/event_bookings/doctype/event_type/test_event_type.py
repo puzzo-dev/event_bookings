@@ -2,7 +2,7 @@
 # See license.txt
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 
 
 class TestEventType(FrappeTestCase):

@@ -11,7 +11,7 @@ Covers:
 import unittest
 
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 
 from event_bookings.event_bookings.doctype.event_booking.event_booking import (
 	make_event_booking,

@@ -65,8 +65,12 @@ def _build_event_body(doc):
 		)
 		body.update(format_date_according_to_google_calendar(False, start_dt, end_dt))
 	except ImportError:
-		body["start"] = {"dateTime": start_dt.isoformat(), "timeZone": frappe.utils.get_time_zone()}
-		body["end"] = {"dateTime": end_dt.isoformat(), "timeZone": frappe.utils.get_time_zone()}
+		# frappe.utils.get_time_zone does not exist on v15 or v16 — the name is
+		# get_system_timezone, so this fallback raised AttributeError instead of
+		# falling back, on exactly the sites without the Google Calendar module.
+		tz = frappe.utils.get_system_timezone()
+		body["start"] = {"dateTime": start_dt.isoformat(), "timeZone": tz}
+		body["end"] = {"dateTime": end_dt.isoformat(), "timeZone": tz}
 	return body
 
 

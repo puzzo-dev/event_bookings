@@ -1,5 +1,5 @@
 import frappe
-from frappe.tests.utils import FrappeTestCase
+from event_bookings.tests.compat import FrappeTestCase
 
 from event_bookings.tests.fixtures import get_or_create_test_customer, get_or_create_test_event_type
 

@@ -79,7 +79,12 @@ def _update_linked_event_booking(doc, callback=None, **field_updates):
 		# a per-field loop issued a separate statement (and a separate row lock)
 		# for each key.
 		frappe.db.set_value("Event Booking", eb_name, field_updates, update_modified=False)
-	except frappe.DatabaseError:
+	except Exception:
+		# Not `frappe.DatabaseError` — no such name exists on v15 or v16, so
+		# evaluating this handler raised AttributeError and the real database
+		# error was replaced by a misleading one, inside an ERPNext document
+		# hook where it rolls back the user's save. The intent is to log and
+		# leave the caller's document alone whatever went wrong here.
 		frappe.log_error(
 			message=frappe.get_traceback(),
 			title=f"Failed to update Event Booking {eb_name} fields "
