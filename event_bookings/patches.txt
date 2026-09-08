@@ -14,3 +14,4 @@ event_bookings.patches.cleanup_legacy_dashboard_artefacts
 event_bookings.patches.backfill_lifecycle_dates
 event_bookings.patches.resync_stranded_invoice_payments
 event_bookings.patches.backfill_items_used
+event_bookings.patches.resync_standard_notifications

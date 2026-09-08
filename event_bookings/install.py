@@ -11,11 +11,16 @@ def after_install():
 	- Seeds default Event Types
 	- Creates event-specific Chart of Accounts accounts
 	- Creates default Email Templates
+	- Repairs the standard Notification module files
 	- Registers Event Booking as an Accounting Dimension
 	- Creates custom fields on native doctypes
 	"""
 	seed_event_types()
 	create_email_templates()
+	# Same check migrate makes. A fresh install gets its notification files from
+	# the checkout, but a partial or packaged install may not, and a standard
+	# Notification with no module file fails the save that triggers it.
+	_repair_standard_notifications()
 	if is_erpnext_installed():
 		create_event_coa_accounts()    # requires Account + Company DocTypes
 		create_accounting_dimension()  # auto-creates system custom fields on SO, SI, SE, PI, EC
@@ -502,7 +507,23 @@ def create_email_templates():
 
 
 def _repair_standard_notifications():
-	"""Create any missing notification module files for this app's modules."""
+	"""Repair the notification packages this app ships, and demote orphans.
+
+	The app is the source of truth for its standard Notifications: whatever is
+	in ``event_bookings/notification/`` is the complete set. The repair runs in
+	that direction only — over the folders on disk, writing back the package
+	files a partial checkout or a restored backup might be missing.
+
+	It used to run the other way as well, writing a folder for any database
+	record marked standard and exporting the record into it. That resurrects
+	what a release removed: ``frappe.model.sync`` walks the module folder and
+	imports every JSON it finds, so an exported orphan is re-created on the next
+	migrate, and the app now carries a file for a notification it does not ship.
+
+	A standard record with no shipped definition is demoted to non-standard
+	instead. That stops the failing import immediately — the import only happens
+	for standard records — leaves the alert working, and deletes nothing.
+	"""
 	import importlib
 	import os
 
@@ -512,45 +533,62 @@ def _repair_standard_notifications():
 		except Exception:
 			continue
 
-		names = frappe.get_all(
-			"Notification", filters={"module": module, "is_standard": 1}, pluck="name"
-		)
-		if not names:
-			continue
+		shipped = _shipped_notification_slugs(base)
+		repaired = []
 
-		_ensure_package(base)
-		repaired = False
-		for name in names:
-			slug = frappe.scrub(name)
+		if shipped:
+			_ensure_package(base)
+
+		for slug in shipped:
 			folder = os.path.join(base, slug)
 			_ensure_package(folder)
 			leaf = os.path.join(folder, f"{slug}.py")
 			if not os.path.exists(leaf):
 				with open(leaf, "w"):
 					pass
-				repaired = True
+				repaired.append(slug)
 
-			# Only when absent — migrate syncs JSON into the database, so an
-			# unconditional export would push the database back over a
-			# definition just changed in git.
-			if not os.path.exists(os.path.join(folder, f"{slug}.json")):
-				try:
-					from frappe.modules.export_file import export_to_files
-
-					export_to_files(
-						record_list=[["Notification", name]],
-						record_module=module,
-						create_init=True,
-					)
-					repaired = True
-				except Exception:
-					frappe.log_error(
-						title=f"Event Bookings: could not export notification {name}",
-						message=frappe.get_traceback(),
-					)
+		demoted = []
+		for name in frappe.get_all(
+			"Notification", filters={"module": module, "is_standard": 1}, pluck="name"
+		):
+			if frappe.scrub(name) in shipped:
+				continue
+			frappe.db.set_value("Notification", name, "is_standard", 0, update_modified=False)
+			demoted.append(name)
 
 		if repaired:
 			importlib.invalidate_caches()
+
+		if demoted:
+			frappe.log_error(
+				title="Event Bookings: demoted orphaned standard notifications",
+				message=(
+					"These Notifications were marked standard but this release does not "
+					"ship a definition for them: "
+					+ ", ".join(demoted)
+					+ ". They are now ordinary Notifications — they still run, and they "
+					"no longer fail the saves they are attached to. Delete them if they "
+					"are left over from an older release."
+				),
+			)
+
+
+def _shipped_notification_slugs(base: str) -> set:
+	"""Notification folders the app actually ships — those carrying a definition.
+
+	A folder holding only package files defines nothing; it is residue from the
+	export this function used to perform, so it does not count as shipped.
+	"""
+	import os
+
+	if not os.path.isdir(base):
+		return set()
+	return {
+		entry
+		for entry in os.listdir(base)
+		if os.path.isfile(os.path.join(base, entry, f"{entry}.json"))
+	}
 
 
 def _ensure_package(path: str):
