@@ -1,5 +1,15 @@
 import frappe
 
+# Roles this module partitions Event Booking for. Anything outside this set is
+# refused rather than left unrestricted — see get_event_booking_query.
+GOVERNED_ROLES = (
+    "Event Manager",
+    "Event Assistant",
+    "Sales Manager",
+    "Sales User",
+    "Accounts User",
+)
+
 
 def get_event_booking_query(user=None):
     """
@@ -11,7 +21,8 @@ def get_event_booking_query(user=None):
 
     Partitioning logic:
     - Administrator / System Manager: unrestricted.
-    - All non-admin roles: company restriction applied when User Permissions exist.
+    - Roles outside GOVERNED_ROLES: no rows at all.
+    - Governed roles: company restriction applied when User Permissions exist.
     - Sales Manager / Sales User / Accounts User: company restriction only.
     - Event Manager / Event Assistant: company restriction AND planner restriction
       (own Sales Partner + unassigned bookings).
@@ -23,6 +34,18 @@ def get_event_booking_query(user=None):
 
     if user == "Administrator" or "System Manager" in roles:
         return ""
+
+    # A role this partition says nothing about sees nothing.
+    #
+    # Every role that ships with read on Event Booking is handled below, so as
+    # shipped this changes no one. It matters the moment a site grants Event
+    # Booking to a role of its own: the function used to fall through to an
+    # empty condition, which Frappe reads as "no additional restriction", so a
+    # new role would silently see every booking in every company. Failing
+    # closed makes that a visible "no rows" to fix in this file rather than a
+    # silent leak nobody notices.
+    if not any(r in roles for r in GOVERNED_ROLES):
+        return "1=0"
 
     conditions = []
 

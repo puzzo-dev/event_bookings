@@ -249,6 +249,10 @@ doc_events = {
 	"Payment Entry": {
 		"validate": "event_bookings.utils.erpnext_hooks.validate_event_booking_link",
 		"on_submit": "event_bookings.utils.erpnext_hooks.on_payment_entry_submit",
+		# There was no cancel counterpart: a payment could take a booking to
+		# Paid and then be cancelled, leaving the booking Paid against an
+		# invoice that was outstanding again.
+		"on_cancel": "event_bookings.utils.erpnext_hooks.on_payment_entry_cancel",
 	},
 	# Journal Entries settle invoices without creating a Payment Entry, so the
 	# Payment Entry hook alone leaves those bookings stuck at Invoiced.

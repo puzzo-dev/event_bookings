@@ -8,10 +8,18 @@ def validate_event_booking_link(doc, method=None):
 	"""Reject an ``event_booking`` link the user is not entitled to set.
 
 	The status automation deliberately writes to the booking with
-	``frappe.db.set_value``: the person submitting an invoice legitimately may
-	not own the booking, so requiring write permission there would break the
-	whole Phase 1 design. That makes *the link itself* the trust boundary —
-	whoever sets it can drive the booking's entire commercial lifecycle.
+	``frappe.db.set_value``: the automation runs as a consequence of a business
+	event, not as a user edit, and checking permissions inside it would also
+	block the scheduler and background jobs. That makes *the link itself* the
+	trust boundary — whoever sets it can drive the booking's entire commercial
+	lifecycle — so the link is what has to be earned.
+
+	Which is why read is not enough. Read was all this asked for, and Event
+	Assistant is read-only on Event Booking by design: an assistant who could
+	submit a Sales Invoice could therefore advance any booking they could see,
+	which is precisely the authority the read-only role exists to withhold.
+	Setting the link is an act on the booking, so it takes write on the
+	booking.
 
 	``set_value`` bypasses permission_query_conditions, so without this a user
 	restricted by a Company User Permission could point their own Sales Invoice
@@ -38,9 +46,9 @@ def validate_event_booking_link(doc, method=None):
 	if not frappe.db.exists("Event Booking", booking):
 		return
 
-	if not frappe.has_permission("Event Booking", ptype="read", doc=booking):
+	if not frappe.has_permission("Event Booking", ptype="write", doc=booking):
 		frappe.throw(
-			_("You do not have permission to link {0} to this document.").format(booking),
+			_("You need write access to {0} to link it to this document.").format(booking),
 			frappe.PermissionError,
 		)
 
@@ -290,16 +298,64 @@ def on_sales_invoice_update(doc, method):
 			)
 
 
+def _unlink_and_revert(doc, what, **field_updates):
+	"""Clear the link, then walk the booking back to what still stands.
+
+	Both halves matter and only the first was here. advance_booking_status is
+	forward-only, so a booking that reached Paid on the strength of an invoice
+	stayed Paid after that invoice was cancelled — reading as revenue in every
+	report, for good. The link is cleared first so the recompute sees only the
+	documents that are still live.
+	"""
+	booking = getattr(doc, "event_booking", None)
+	_update_linked_event_booking(doc, **field_updates)
+	if booking:
+		from event_bookings.utils.status import revert_booking_status
+
+		revert_booking_status(booking, reason=_("{0} {1} was cancelled").format(what, doc.name))
+
+
 def on_quotation_cancel(doc, method):
-	_update_linked_event_booking(doc, quotation=None)
+	_unlink_and_revert(doc, _("Quotation"), quotation=None)
 
 
 def on_sales_order_cancel(doc, method):
-	_update_linked_event_booking(doc, sales_order=None)
+	_unlink_and_revert(doc, _("Sales Order"), sales_order=None)
 
 
 def on_sales_invoice_cancel(doc, method):
-	_update_linked_event_booking(doc, sales_invoice=None)
+	_unlink_and_revert(doc, _("Sales Invoice"), sales_invoice=None)
+
+
+def on_payment_entry_cancel(doc, method=None):
+	"""Cancelling a payment un-pays the invoice, so the booking follows it back.
+
+	There was no cancel counterpart to on_payment_entry_submit at all: a
+	payment could take a booking to Paid and then be cancelled, and the booking
+	stayed Paid with an invoice that was outstanding again.
+
+	The Payment Entry does not carry the booking; its references name the
+	invoices, and those carry it.
+	"""
+	from event_bookings.utils.status import revert_booking_status
+
+	seen = set()
+	for ref in (doc.references or []):
+		ref_doctype = getattr(ref, "reference_doctype", None)
+		ref_name = getattr(ref, "reference_name", None)
+		if not ref_doctype or not ref_name:
+			continue
+		try:
+			booking = frappe.db.get_value(ref_doctype, ref_name, "event_booking")
+		except Exception:
+			# The referenced doctype may not carry the dimension at all.
+			continue
+		if not booking or booking in seen:
+			continue
+		seen.add(booking)
+		revert_booking_status(
+			booking, reason=_("Payment Entry {0} was cancelled").format(doc.name)
+		)
 
 
 def on_payment_entry_submit(doc, method):

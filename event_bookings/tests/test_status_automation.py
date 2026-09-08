@@ -676,10 +676,21 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def test_status_cancel_cascades_on_submitted_booking(self):
-		"""The linked Quotation / Sales Order / Sales Invoice cascade must still
-		fire when a *submitted* booking is cancelled by status."""
+	def test_submitted_booking_refuses_a_status_only_cancel(self):
+		"""It used to cancel the linked Quotation / Sales Order / Sales Invoice
+		and leave docstatus at 1 — the booking then read as cancelled to this
+		app and live to ERPNext, and could still be amended against."""
 		doc = _insert(event_name="Submitted Cascade", booking_status="Confirmed")
+		doc.submit()
+
+		doc.booking_status = CANCELLED
+		with self.assertRaises(frappe.ValidationError):
+			doc.save(ignore_permissions=True)
+
+	def test_cancelling_a_submitted_booking_still_cascades(self):
+		"""Cancel is the supported route, and it must do what the status-only
+		path used to: cancel the linked documents."""
+		doc = _insert(event_name="Submitted Cascade Cancel", booking_status="Confirmed")
 		doc.submit()
 
 		target = (
@@ -687,10 +698,19 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 			".event_booking._cancel_linked_documents"
 		)
 		with patch(target) as cascade:
-			doc.booking_status = CANCELLED
-			doc.save(ignore_permissions=True)
+			doc.cancel()
 
 		cascade.assert_called_once_with(doc.name)
+		self.assertEqual(doc.docstatus, 2)
+		self.assertEqual(doc.booking_status, CANCELLED)
+
+	def test_draft_booking_still_cancels_by_status(self):
+		"""Deliberate: a draft has no submitted document to cancel."""
+		doc = _insert(event_name="Draft Cascade", booking_status="Confirmed")
+		doc.booking_status = CANCELLED
+		doc.save(ignore_permissions=True)
+		self.assertEqual(doc.booking_status, CANCELLED)
+		self.assertEqual(doc.docstatus, 0)
 
 	def test_staffing_alert_fires_on_submitted_booking(self):
 		doc = _insert(event_name="Submitted Staffing", booking_status="New")

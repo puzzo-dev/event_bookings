@@ -56,6 +56,12 @@ class EventBooking(Document):
         """
         self.stamp_lifecycle_dates()
         if self.has_status_changed():
+            # Validated here too. before_save never runs on a submitted
+            # document, so a guard placed only there governs exactly the path
+            # that does not need it — and leaves the submitted path, the one
+            # that can cancel linked documents while staying submitted,
+            # unchecked.
+            self._validate_status_transition()
             self.handle_status_transition()
 
     def after_insert(self):
@@ -113,8 +119,35 @@ class EventBooking(Document):
         old_status = self._cached_old_status
         if old_status is None or old_status == self.booking_status:
             return
-        # All status transitions are allowed; validation still runs so the
-        # transition hook (notifications, linked-doc cancellation) fires reliably.
+
+        # Status transitions are otherwise unrestricted; validation still runs
+        # so the transition hook (notifications, linked-doc cancellation) fires
+        # reliably.
+        #
+        # The exception is cancelling a *submitted* booking by status alone.
+        # booking_status is allow_on_submit, so that path ran the whole
+        # cancellation cascade — linked Quotation, Sales Order and Sales Invoice
+        # all cancelled — while docstatus stayed 1. The booking then read as
+        # cancelled everywhere this app looks and as live everywhere ERPNext
+        # does, and it could still be amended and submitted against.
+        #
+        # The status-only cancel is deliberate for drafts, where there is no
+        # submitted document to cancel (see on_cancel). On a submitted booking
+        # the two concepts have to agree, and Cancel is what makes them agree:
+        # on_cancel sets booking_status itself.
+        if (
+            self.booking_status == CANCELLED
+            and self.docstatus == 1
+            and getattr(self, "_action", None) != "cancel"
+        ):
+            frappe.throw(
+                _(
+                    "Use Cancel to cancel a submitted booking. Setting the status "
+                    "to Cancelled on its own would cancel the linked documents "
+                    "while leaving this booking submitted."
+                ),
+                title=_("Cancel the Booking Instead"),
+            )
 
     # -----------------------------------------------------------------
     # Validations

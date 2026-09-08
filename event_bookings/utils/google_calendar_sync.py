@@ -59,6 +59,17 @@ def _build_event_body(doc):
 		) + (f"Special Requirements: {doc.special_requirements}\n" if doc.special_requirements else ""),
 		"location": doc.event_location or "",
 	}
+
+	# A cancelled booking has to read as cancelled in the calendar too. on_cancel
+	# is wired to this same push, and the body never said anything about status,
+	# so cancelling a booking sent Google an ordinary update: the event stayed on
+	# everyone's calendar, at the original time, looking live. Setting it here
+	# rather than deleting the event keeps the history — Google renders a
+	# cancelled event as cancelled — and it also covers the status-only cancel a
+	# draft booking uses, which never reaches on_cancel at all.
+	if doc.docstatus == 2 or doc.booking_status == "Cancelled":
+		body["status"] = "cancelled"
+
 	try:
 		from frappe.integrations.doctype.google_calendar.google_calendar import (
 			format_date_according_to_google_calendar,

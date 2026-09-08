@@ -31,7 +31,7 @@ from contextlib import contextmanager
 
 import frappe
 from frappe import _
-from frappe.utils import cint
+from frappe.utils import cint, flt
 
 STATUS_ORDER = [
 	"New",
@@ -118,6 +118,104 @@ def settings_toggle_enabled(fieldname):
 def automation_enabled():
 	"""Read the enable_automated_status toggle (default ON when unset)."""
 	return settings_toggle_enabled("enable_automated_status")
+
+
+def justified_status(booking_name):
+	"""The furthest status the booking's *remaining* live documents support.
+
+	The automation matrix read forwards: a submitted invoice means Invoiced, a
+	full payment means Paid. This reads it backwards, from whatever is still
+	standing, and is what cancelling one of those documents needs — otherwise a
+	booking sits at Paid on the strength of an invoice that no longer exists.
+
+	Executed is not derived here. It records that the event date passed, which
+	cancelling paperwork does not undo.
+	"""
+	booking = frappe.db.get_value(
+		"Event Booking",
+		booking_name,
+		["quotation", "sales_order", "sales_invoice"],
+		as_dict=True,
+	)
+	# `is None` and not a truthiness test: get_value returns None when the row
+	# is gone, and a dict of Nones when the booking exists with nothing linked.
+	# The second is a real answer — New — not a missing booking.
+	if booking is None:
+		return None
+
+	if booking.sales_invoice:
+		si = frappe.db.get_value(
+			"Sales Invoice",
+			booking.sales_invoice,
+			["docstatus", "grand_total", "outstanding_amount"],
+			as_dict=True,
+		)
+		if si and si.docstatus == 1:
+			outstanding = flt(si.outstanding_amount)
+			if outstanding <= 0:
+				return "Paid"
+			if outstanding < flt(si.grand_total):
+				return "Confirmed"
+			return "Invoiced"
+
+	if booking.sales_order:
+		if frappe.db.get_value("Sales Order", booking.sales_order, "docstatus") == 1:
+			return "Confirmed"
+
+	if booking.quotation:
+		if frappe.db.get_value("Quotation", booking.quotation, "docstatus") == 1:
+			return "Quoted"
+
+	return "New"
+
+
+def revert_booking_status(booking_name, reason=None):
+	"""Walk a booking back to what its remaining documents justify.
+
+	advance_booking_status is forward-only by design, so nothing ever undid a
+	transition: cancelling the invoice that made a booking Paid left it reading
+	Paid for good, and every report counted revenue that had been cancelled.
+
+	Only ever moves *backwards*, and never past Cancelled or a cancelled
+	document — going forwards stays the job of advance_booking_status, which
+	has the reasons for each step. Errors are logged rather than raised, like
+	its counterpart, so an ERPNext cancel cannot fail because of this.
+	"""
+	if not booking_name:
+		return False
+
+	try:
+		current = frappe.db.get_value(
+			"Event Booking", booking_name, ["booking_status", "docstatus"], as_dict=True
+		)
+		if not current:
+			return False
+		if current.docstatus == 2 or current.booking_status == CANCELLED:
+			return False
+		if not automation_enabled():
+			return False
+
+		target = justified_status(booking_name)
+		if target is None:
+			return False
+
+		current_idx = status_index(current.booking_status)
+		target_idx = status_index(target)
+		# Executed is terminal for this purpose: the event happened.
+		if current_idx is None or target_idx is None or current_idx <= target_idx:
+			return False
+		if current.booking_status == "Executed":
+			return False
+
+		frappe.db.set_value("Event Booking", booking_name, {"booking_status": target})
+		_add_timeline_comment(booking_name, current.booking_status, target, reason)
+		return True
+	except Exception:
+		frappe.log_error(
+			title=f"Event Bookings: could not revert status on {booking_name}",
+			message=frappe.get_traceback(),
+		)
+		return False
 
 
 def advance_booking_status(booking_name, target_status, reason=None):
