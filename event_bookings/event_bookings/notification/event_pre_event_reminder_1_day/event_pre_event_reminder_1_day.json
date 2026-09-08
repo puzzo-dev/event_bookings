@@ -11,7 +11,7 @@
  "enabled": 1,
  "event": "Days Before",
  "idx": 0,
- "is_standard": 1,
+ "is_standard": 0,
  "message": "<p>{{ _(\"This is a 1-day reminder for the event\") }} <b>{{ doc.event_name }}</b> ({{ doc.name }}) {{ _(\"scheduled on\") }} <b>{{ frappe.format_value(doc.event_date) }}</b>.</p><p>{{ _(\"Please ensure all preparations are complete.\") }}</p>",
  "message_type": "HTML",
  "modified": "2026-09-06 12:00:00",

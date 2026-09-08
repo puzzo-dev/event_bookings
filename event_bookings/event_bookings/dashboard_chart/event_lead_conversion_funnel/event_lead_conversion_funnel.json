@@ -5,7 +5,7 @@
  "doctype": "Dashboard Chart",
  "filters_json": "{\"period\": \"Monthly\"}",
  "is_public": 1,
- "is_standard": 1,
+ "is_standard": 0,
  "module": "Event Bookings",
  "name": "Event Lead Conversion Funnel",
  "report_name": "Event Lead Conversion Funnel",
