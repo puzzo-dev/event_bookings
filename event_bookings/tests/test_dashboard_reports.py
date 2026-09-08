@@ -16,9 +16,11 @@ Covers:
 """
 
 import json
+import os
 import unittest
 
 import frappe
+from frappe.utils import cint
 from event_bookings.tests.compat import FrappeTestCase
 
 from event_bookings.tests.fixtures import (
@@ -55,16 +57,39 @@ CARDS = [
 ]
 
 
+def _shipped(doctype_folder, name):
+	"""The record as this branch ships it, read from the module folder."""
+	path = os.path.join(
+		frappe.get_app_path("event_bookings", "event_bookings", doctype_folder),
+		frappe.scrub(name),
+		f"{frappe.scrub(name)}.json",
+	)
+	with open(path) as f:
+		return json.load(f)
+
+
 class TestModuleFolderSync(FrappeTestCase):
-	"""sync_dashboards must materialise every shipped record, standard."""
+	"""sync_dashboards must materialise every shipped record, as shipped."""
 
 	def test_all_charts_cards_dashboard_and_reports_exist(self):
 		frappe.utils.dashboard.sync_dashboards("event_bookings")
 
+		# is_standard is compared against the module folder rather than
+		# hardcoded to 1: the production branches ship these records with
+		# is_standard 0 so the app installs without developer_mode, and the
+		# development branches ship 1. Pinning the assertion to one of those
+		# made the suite fail on the other branch for a difference that is
+		# deliberate. What must hold on every branch is that the database
+		# matches what the branch ships — which is also the real bug this
+		# catches, a record that failed to sync from its folder.
 		for chart_name, chart_type in CHARTS.items():
 			chart = frappe.get_doc("Dashboard Chart", chart_name)
 			self.assertEqual(chart.chart_type, chart_type, chart_name)
-			self.assertEqual(chart.is_standard, 1, chart_name)
+			self.assertEqual(
+				chart.is_standard,
+				cint(_shipped("dashboard_chart", chart_name).get("is_standard")),
+				chart_name,
+			)
 			if chart_type == "Report":
 				self.assertTrue(chart.report_name, chart_name)
 				self.assertTrue(
@@ -72,10 +97,13 @@ class TestModuleFolderSync(FrappeTestCase):
 				)
 
 		for card in CARDS:
-			self.assertEqual(frappe.db.get_value("Number Card", card, "is_standard"), 1, card)
+			self.assertEqual(
+				cint(frappe.db.get_value("Number Card", card, "is_standard")),
+				cint(_shipped("number_card", card).get("is_standard")),
+				card,
+			)
 
 		dashboard = frappe.get_doc("Dashboard", "Event Bookings")
-		self.assertEqual(dashboard.is_standard, 1)
 		self.assertEqual(len(dashboard.charts), len(CHARTS))
 		self.assertEqual(len(dashboard.cards), len(CARDS))
 

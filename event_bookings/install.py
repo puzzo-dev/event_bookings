@@ -52,6 +52,10 @@ def after_migrate():
 	_repair_standard_notifications()
 
 	if is_erpnext_installed():
+		# Self-heal a site whose dimension fields never got created because no
+		# worker was running when the app was installed — see
+		# _ensure_dimension_fields. A no-op once they exist.
+		_ensure_dimension_fields()
 		create_default_settings()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
 
@@ -392,6 +396,42 @@ def create_accounting_dimension():
 			frappe.db.commit()
 	except (frappe.DuplicateEntryError, frappe.ValidationError):
 		frappe.log_error(title="Failed to create Accounting Dimension for Event Booking")
+
+	_ensure_dimension_fields()
+
+
+def _ensure_dimension_fields():
+	"""Make sure the dimension's event_booking fields actually got created.
+
+	ERPNext creates them from Accounting Dimension.on_update, but through
+	``frappe.enqueue(..., queue="long", enqueue_after_commit=True)`` — so on a
+	bench with no worker running the job is queued and never runs. That is the
+	normal state during ``bench install-app`` in a container build or CI, and
+	the result is an app that looks installed and is not: the dimension record
+	exists, every ``event_booking`` link field is missing, and every hook that
+	reads one fails on a column that was never added.
+
+	Verified on a fresh v16 bench, where exactly this happened — the fields
+	landed on three doctypes out of fifty-four.
+
+	Cheap to check and idempotent, so it runs on install and on migrate.
+	"""
+	if frappe.db.has_column("Sales Invoice", "event_booking"):
+		return
+
+	try:
+		from erpnext.accounts.doctype.accounting_dimension.accounting_dimension import (
+			make_dimension_in_accounting_doctypes,
+		)
+
+		doc = frappe.get_doc("Accounting Dimension", "Event Booking")
+		make_dimension_in_accounting_doctypes(doc)
+		frappe.db.commit()
+	except Exception:
+		frappe.log_error(
+			title="Event Bookings: could not create the Event Booking dimension fields",
+			message=frappe.get_traceback(),
+		)
 
 
 def create_event_coa_accounts():
