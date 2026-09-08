@@ -1,15 +1,23 @@
-// Colour the booking status in the list view.
+// The booking status is what the pill shows — on the list and on the form.
 //
-// This only ever existed on the production branches, so it was never carried
-// into develop and every sync back from develop dropped it. It also still
-// listed "Negotiating" and "In Preparation", two states the status model no
-// longer has — a booking in any current state fell through to grey.
+// frappe.get_indicator is shared by both, and the form toolbar calls it for the
+// pill beside the document name. Without the two flags below it short-circuits
+// to "Draft" or "Cancelled" on docstatus alone and never reaches get_indicator,
+// which is why a booking's real status was invisible on its own form.
 //
-// The colours read as a progression: the deal is open (blue), waiting on
-// someone (orange), settled (green), finished (grey), or dead (red).
+// booking_status is read-only and hidden on the form now: it is set by the
+// lifecycle, not typed, so this pill is the only place it is shown.
 
 frappe.listview_settings["Event Booking"] = {
+	// Both are needed. get_indicator is consulted after the docstatus
+	// short-circuits, so these are what let it run for a draft or a cancelled
+	// booking at all.
+	has_indicator_for_draft: 1,
+	has_indicator_for_cancelled: 1,
+
 	get_indicator(doc) {
+		// The colours read as a progression: the deal is open (blue), waiting
+		// on someone (orange), settled (green), finished (grey), or dead (red).
 		const colour = {
 			New: "blue",
 			Quoted: "orange",
