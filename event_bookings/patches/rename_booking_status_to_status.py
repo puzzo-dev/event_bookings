@@ -14,15 +14,25 @@ ERPNext's Sales Order and Sales Invoice both rely on exactly this, which is why
 neither needs anything beyond a read-only field. This app was reimplementing
 those three behaviours by hand instead.
 
-Ordering matters and is why this patch is last. The doctype sync has already
-created the empty `status` column by the time post_model_sync patches run, and
-`booking_status` is still there with the data in it. Every earlier patch in
-patches.txt was written against `booking_status` and still refers to it: on a
-site where they have not run yet they execute first, against the old column, and
-this patch then carries their result across. That is also why none of them were
-rewritten — a patch records a migration at a point in time, and editing one to
-use a name that did not exist when it ran would make it operate on the wrong
-column.
+Ordering matters, and this patch's position in patches.txt is load-bearing in
+both directions. The doctype sync has already created the empty `status` column
+by the time post_model_sync patches run, and `booking_status` is still there
+with the data in it.
+
+It must run *after* every patch that touches the old column directly —
+migrate_in_preparation_to_confirmed and backfill_lifecycle_dates both read and
+write `booking_status`, so they have to see it. None of them were rewritten to
+say `status`: a patch records a migration at a point in time, and editing one to
+use a name that did not exist when it ran would make it write to the empty
+column, which this patch would then overwrite with the stale values.
+
+And it must run *before* every patch that calls this app's current code, because
+that code now reads `status`. resync_stranded_invoice_payments calls
+advance_booking_status, which reads Event Booking.status — run before this
+patch, on a production database, it would find that column empty for every
+booking, decide no transition was forward, and silently do nothing. The patch
+exists to repair stranded invoice payments and would have quietly repaired
+none. So it sits between the two groups.
 """
 
 import frappe

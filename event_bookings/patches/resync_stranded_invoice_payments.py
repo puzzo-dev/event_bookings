@@ -48,7 +48,15 @@ def execute():
 			continue
 
 		target = "Paid" if si.status == "Paid" else "Confirmed"
-		before = frappe.db.get_value("Event Booking", si.event_booking, "booking_status")
+		# `status`, not `booking_status`. This patch straddled the rename: it
+		# read the column by its old name here and then called
+		# advance_booking_status, which reads the new one. Ordered before the
+		# rename it found an empty column and silently repaired nothing;
+		# ordered after it, the old column was gone and the migration aborted.
+		# rename_booking_status_to_status is now sequenced immediately before
+		# this patch, so the new name is the only one that exists by the time
+		# it runs, and both halves of the patch agree.
+		before = frappe.db.get_value("Event Booking", si.event_booking, "status")
 		if before == target:
 			continue
 
@@ -73,7 +81,7 @@ def execute():
 			)
 			continue
 
-		after = frappe.db.get_value("Event Booking", si.event_booking, "booking_status")
+		after = frappe.db.get_value("Event Booking", si.event_booking, "status")
 		if after != before:
 			advanced += 1
 
