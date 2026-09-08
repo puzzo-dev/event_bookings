@@ -20,10 +20,19 @@ frappe.ui.form.on("Event Booking", {
                 frm.reload_doc();
             });
 
-            // Create Sales Order — always available, with or without a
-            // linked quotation. The server-side mapper copies quotation
-            // items if a quotation exists, otherwise creates a blank SO.
-            if (!frm.doc.sales_order) {
+            // Everything under Create is gated on the booking being submitted.
+            //
+            // No document is raised against a draft booking — the same rule
+            // ERPNext applies to a draft Sales Order — and the server refuses
+            // it. Offering the button anyway sent people to a form they could
+            // fill in and then not save, which reads as a bug in the app rather
+            // than as the rule it is.
+            const submitted = frm.doc.docstatus === 1;
+
+            // Create Sales Order — with or without a linked quotation. The
+            // server-side mapper copies quotation items if a quotation exists,
+            // otherwise creates a blank SO.
+            if (submitted && !frm.doc.sales_order) {
                 frm.add_custom_button(__('Sales Order'), function() {
                     frappe.model.open_mapped_doc({
                         method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_sales_order",
@@ -34,7 +43,7 @@ frappe.ui.form.on("Event Booking", {
             }
 
             // Create Sales Invoice from the linked Sales Order.
-            if (frm.doc.sales_order && !frm.doc.sales_invoice) {
+            if (submitted && frm.doc.sales_order && !frm.doc.sales_invoice) {
                 frm.add_custom_button(__('Sales Invoice'), function() {
                     frappe.model.open_mapped_doc({
                         method: "erpnext.selling.doctype.sales_order.sales_order.make_sales_invoice",
@@ -45,7 +54,7 @@ frappe.ui.form.on("Event Booking", {
             }
 
             // Create Project from the Event Booking.
-            if (!frm.doc.project) {
+            if (submitted && !frm.doc.project) {
                 frm.add_custom_button(__('Project'), function() {
                     frappe.model.open_mapped_doc({
                         method: "event_bookings.event_bookings.doctype.event_booking.event_booking.make_project",
@@ -58,7 +67,9 @@ frappe.ui.form.on("Event Booking", {
             // Create Stock Entry — opens a dialog to choose the type, then
             // creates a Stock Entry with event_booking, company, cost_center
             // and default warehouse prefilled from Event Booking Settings.
-            _add_stock_entry_button(frm);
+            if (submitted) {
+                _add_stock_entry_button(frm);
+            }
 
             // Render the items table (from linked Quotation or Sales Order)
             _render_items_table(frm);
