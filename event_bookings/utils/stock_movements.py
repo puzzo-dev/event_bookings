@@ -111,6 +111,14 @@ def sync_booking(booking: str) -> int:
 
 	frappe.db.delete(_CHILD_DOCTYPE, {"parent": booking, "parenttype": _PARENT_DOCTYPE})
 
+	if not movements:
+		return 0
+
+	# One statement, not one per line. This runs on every save of a Stock Entry
+	# tagged with a booking, and rebuilds the whole table each time, so a
+	# booking with fifty item lines meant fifty round trips to write a
+	# projection nobody had asked to change.
+	docs = []
 	for idx, row in enumerate(movements, start=1):
 		child = frappe.new_doc(_CHILD_DOCTYPE)
 		child.update(row)
@@ -118,6 +126,15 @@ def sync_booking(booking: str) -> int:
 		child.parenttype = _PARENT_DOCTYPE
 		child.parentfield = _PARENTFIELD
 		child.idx = idx
-		child.db_insert()
+		child.name = frappe.generate_hash(length=10)
+		docs.append(child)
+
+	frappe.db.bulk_insert(
+		_CHILD_DOCTYPE,
+		fields=list(docs[0].get_valid_dict(convert_dates_to_str=True).keys()),
+		values=[
+			list(d.get_valid_dict(convert_dates_to_str=True).values()) for d in docs
+		],
+	)
 
 	return len(movements)
