@@ -80,6 +80,29 @@ class EventBooking(Document):
                     update_modified=False,
                 )
 
+    def on_submit(self):
+        """Catch the status up to what the booking's documents justify.
+
+        While a booking is a draft its status is whatever the person editing it
+        set, and nothing advances it — no document may be raised against a
+        draft, and the automation refuses one outright. Submitting is the moment
+        that changes, so it is also the moment the booking reconciles with the
+        Quotation it came from and anything else already attached to it.
+
+        Forward only, so a status someone deliberately set ahead is not walked
+        back by paperwork that has not caught up.
+        """
+        from event_bookings.utils.status import advance_booking_status, justified_status
+
+        target = justified_status(self.name)
+        if not target:
+            return
+
+        if advance_booking_status(
+            self.name, target, reason=_("booking submitted")
+        ):
+            self.reload()
+
     def before_cancel(self):
         # Cancel linked submitted documents SYNCHRONOUSLY, before the
         # docstatus flip: Frappe's back-link check (check_no_back_links_exist)
@@ -728,6 +751,17 @@ def make_stock_entry(booking_name, stock_entry_type="Material Issue"):
     source/target warehouses from Event Booking Settings.default_warehouse.
     Returns the new doc dict so frappe.model.open_mapped_doc can open it.
     """
+    # Told here rather than on save. validate_event_booking_link refuses a link
+    # to a draft booking, so opening the form first would only waste the user's
+    # time filling in an entry that cannot be saved.
+    if frappe.db.get_value("Event Booking", booking_name, "docstatus") == 0:
+        frappe.throw(
+            _("Submit Event Booking {0} before recording stock against it.").format(
+                booking_name
+            ),
+            title=_("Booking Not Submitted"),
+        )
+
     # write, not read: the entry this opens carries an event_booking link, and
     # setting that link is what drives the booking's Items Used and its status
     # automation. validate_event_booking_link refuses it on save without write,

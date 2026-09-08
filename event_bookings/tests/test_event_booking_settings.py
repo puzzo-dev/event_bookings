@@ -83,7 +83,7 @@ class TestDefaultWarehouse(TestSettingsBase):
 		self.event_type = get_or_create_test_event_type()
 
 	def _make_booking(self):
-		return frappe.get_doc(
+		booking = frappe.get_doc(
 			{
 				"doctype": "Event Booking",
 				"event_name": "Settings Warehouse Booking",
@@ -96,7 +96,12 @@ class TestDefaultWarehouse(TestSettingsBase):
 				"customer": self.customer,
 				"company": frappe.db.get_value("Company", {}, "name", order_by="creation asc"),
 			}
-		).insert(ignore_permissions=True)
+		)
+		booking.insert(ignore_permissions=True)
+		# Submitted: nothing may be recorded against a draft booking, so a
+		# draft is not a state make_stock_entry can be asked about.
+		booking.submit()
+		return booking
 
 	def test_warehouse_prefilled_on_stock_entry(self):
 		warehouse = frappe.db.get_value(

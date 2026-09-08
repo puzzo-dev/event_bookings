@@ -64,9 +64,22 @@ def _make_booking(**kwargs):
 	return frappe.get_doc(defaults)
 
 
-def _insert(**kwargs):
+def _insert(submit=True, **kwargs):
+	"""Insert a booking, submitted by default.
+
+	Submitted is the state the automation applies to. Nothing may be linked to
+	a draft booking — the same rule ERPNext applies to a draft Sales Order — and
+	advance_booking_status refuses one outright, so a test that drives the
+	lifecycle against a draft is testing a state the application does not allow.
+
+	`submit=False` is for the tests that are specifically about draft
+	behaviour.
+	"""
 	doc = _make_booking(**kwargs)
 	doc.insert(ignore_permissions=True)
+	if submit:
+		doc.submit()
+		doc.reload()
 	return doc
 
 
@@ -136,7 +149,6 @@ class TestForwardOnlyGuard(FrappeTestCase):
 
 	def test_advance_skips_docstatus_cancelled(self):
 		doc = _insert(event_name="Test DS2 Skip", booking_status="Confirmed")
-		doc.submit()
 		doc.cancel()
 		self.assertEqual(doc.docstatus, 2)
 		self.assertFalse(advance_booking_status(doc.name, "Executed"))
@@ -175,7 +187,6 @@ class TestAdvanceBehaviour(FrappeTestCase):
 	def test_advance_works_on_submitted_booking(self):
 		"""booking_status is allow_on_submit — automation continues after submit."""
 		doc = _insert(event_name="Test Submitted Advance", booking_status="Confirmed")
-		doc.submit()
 		self.assertEqual(doc.docstatus, 1)
 
 		self.assertTrue(advance_booking_status(doc.name, "Paid"))
@@ -189,7 +200,6 @@ class TestAdvanceBehaviour(FrappeTestCase):
 		action itself. Same as Sales Order in ERPNext."""
 		for status in ("New", "Quoted", "Invoiced", "Confirmed", "Paid"):
 			doc = _insert(event_name=f"Submit at {status}", booking_status=status)
-			doc.submit()
 			self.assertEqual(doc.docstatus, 1)
 			self.assertEqual(_status(doc.name), status)
 
@@ -469,7 +479,7 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 		future = frappe.utils.add_days(frappe.utils.today(), 10)
 
 		# Seed one booking in every pre-upgrade status (same option values,
-		# new order) with legacy link + totals, all past-dated, all draft.
+		# new order) with legacy link + totals, all past-dated, all submitted.
 		seed = []  # (original_status, name)
 		for status in STATUS_ORDER + [CANCELLED]:
 			doc = _insert(
@@ -509,8 +519,11 @@ class TestLegacyUpgradeRegression(FrappeTestCase):
 				["docstatus", "quotation", "total_estimated", "total_actual"],
 				as_dict=True,
 			)
-			# Legacy data integrity — nothing touched except booking_status
-			self.assertEqual(row.docstatus, 0)
+			# Legacy data integrity — nothing touched except booking_status.
+			# Submitted, because the automation only acts on submitted
+			# bookings: a draft is not a commitment, so nothing links to one
+			# and nothing advances it.
+			self.assertEqual(row.docstatus, 1)
 			self.assertEqual(row.quotation, "QTN-LEGACY")
 			self.assertEqual(float(row.total_estimated), 1000.0)
 			self.assertEqual(float(row.total_actual), 0.0)
@@ -565,7 +578,9 @@ class TestLifecycleDateStamping(FrappeTestCase):
 		self.assertEqual(frappe.utils.getdate(doc.confirmed_on), frappe.utils.getdate("2020-01-01"))
 
 	def test_cancelled_on_stamped_on_cancel(self):
-		doc = _insert(event_name="Stamp Cancel", booking_status="Confirmed")
+		# A draft: the status-only cancel is the documented route there, and a
+		# submitted booking must go through Cancel instead.
+		doc = _insert(submit=False, event_name="Stamp Cancel", booking_status="Confirmed")
 		self.assertIsNone(doc.cancelled_on)
 
 		doc.booking_status = CANCELLED
@@ -586,7 +601,7 @@ class TestLifecycleDateStamping(FrappeTestCase):
 	def test_cancelling_a_booking_does_not_raise(self):
 		"""Regression: cancel_linked_documents used frappe.in_test, a v16-only
 		API, so every cancellation raised AttributeError on v15."""
-		doc = _insert(event_name="Cancel No Raise", booking_status="Confirmed")
+		doc = _insert(submit=False, event_name="Cancel No Raise", booking_status="Confirmed")
 		doc.booking_status = CANCELLED
 		doc.save(ignore_permissions=True)
 		self.assertEqual(_status(doc.name), CANCELLED)
@@ -606,7 +621,6 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 
 	def test_confirmed_on_stamped_after_submit(self):
 		doc = _insert(event_name="Submitted Stamp", booking_status="New")
-		doc.submit()
 		self.assertIsNone(doc.confirmed_on)
 
 		doc.booking_status = "Confirmed"
@@ -623,7 +637,6 @@ class TestSubmittedBookingLifecycle(FrappeTestCase):
 		["Cancelled", "eval:self.docstatus==2"]). A docstatus-cancelled booking
 		must not keep reading as Confirmed, or it counts as converted forever."""
 		doc = _insert(event_name="Docstatus Cancel", booking_status="New")
-		doc.submit()
 		doc.cancel()
 		doc.reload()
 
@@ -681,7 +694,6 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 		and leave docstatus at 1 — the booking then read as cancelled to this
 		app and live to ERPNext, and could still be amended against."""
 		doc = _insert(event_name="Submitted Cascade", booking_status="Confirmed")
-		doc.submit()
 
 		doc.booking_status = CANCELLED
 		with self.assertRaises(frappe.ValidationError):
@@ -691,7 +703,6 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 		"""Cancel is the supported route, and it must do what the status-only
 		path used to: cancel the linked documents."""
 		doc = _insert(event_name="Submitted Cascade Cancel", booking_status="Confirmed")
-		doc.submit()
 
 		target = (
 			"event_bookings.event_bookings.doctype.event_booking"
@@ -706,7 +717,7 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 
 	def test_draft_booking_still_cancels_by_status(self):
 		"""Deliberate: a draft has no submitted document to cancel."""
-		doc = _insert(event_name="Draft Cascade", booking_status="Confirmed")
+		doc = _insert(submit=False, event_name="Draft Cascade", booking_status="Confirmed")
 		doc.booking_status = CANCELLED
 		doc.save(ignore_permissions=True)
 		self.assertEqual(doc.booking_status, CANCELLED)
@@ -714,7 +725,6 @@ class TestSubmittedHookDispatch(FrappeTestCase):
 
 	def test_staffing_alert_fires_on_submitted_booking(self):
 		doc = _insert(event_name="Submitted Staffing", booking_status="New")
-		doc.submit()
 
 		with patch.object(type(doc), "_notify_staff_requirements") as notify:
 			doc.booking_status = "Confirmed"

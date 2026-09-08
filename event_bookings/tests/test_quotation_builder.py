@@ -53,13 +53,17 @@ class TestQuotationToBooking(FrappeTestCase):
 	def tearDown(self):
 		frappe.db.rollback()
 
-	def _fill_and_insert_booking(self, booking, event_name="Mapped Wedding"):
+	def _fill_and_insert_booking(self, booking, event_name="Mapped Wedding", submit=False):
 		booking.event_name = event_name
 		booking.event_type = self.test_event_type
 		booking.event_date = frappe.utils.add_days(frappe.utils.today(), 30)
 		booking.event_time = "18:00:00"
 		booking.event_location = "Grand Ballroom"
 		booking.insert(ignore_permissions=True)
+		if submit:
+			# Anything that links to the booking needs it submitted first.
+			booking.submit()
+			booking.reload()
 		return booking
 
 	def test_make_event_booking_from_submitted_quotation(self):
@@ -146,6 +150,9 @@ class TestSalesOrderAutoLink(FrappeTestCase):
 		booking.event_time = "18:00:00"
 		booking.event_location = "Hall"
 		booking.insert(ignore_permissions=True)
+		# The inherited link is subject to the same rule as one a user sets: a
+		# Sales Order is not raised against a draft booking.
+		booking.submit()
 
 		# Create SO directly from the Quotation (not from the EB form)
 		so = make_sales_order(qt.name)
@@ -182,6 +189,9 @@ class TestStockEntryCreation(FrappeTestCase):
 		booking.event_location = "Hall"
 		booking.company = frappe.defaults.get_user_default("Company")
 		booking.insert(ignore_permissions=True)
+		# Stock is recorded against a submitted booking. A draft is not a
+		# commitment, so nothing may be raised against one.
+		booking.submit()
 		return booking
 
 	def test_make_stock_entry_links_event_booking(self):

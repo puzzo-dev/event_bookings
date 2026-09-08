@@ -26,15 +26,16 @@ def validate_event_booking_link(doc, method=None):
 	at a booking in another company — one they cannot even see in a list view —
 	and advance it to Paid.
 
-	Only user-supplied values are checked. Links this app sets for itself (see
-	the _inherit_event_booking_from_* helpers) carry a flag and are trusted,
-	so inheriting a link from a source document never blocks a legitimate save.
+	Two rules, and they answer different questions. The booking must be
+	*submitted* — no document is raised against a draft, exactly as ERPNext
+	refuses a Sales Invoice against a draft Sales Order — and that holds however
+	the link arrived, including the ones this app inherits from a source
+	document. The permission check is the second rule, and links this app sets
+	for itself (see the _inherit_event_booking_from_* helpers) carry a flag that
+	skips it, so inheriting from a source document never fails on who is asking.
 	"""
 	booking = getattr(doc, "event_booking", None)
 	if not booking:
-		return
-
-	if getattr(doc.flags, "event_booking_inherited", False):
 		return
 
 	# Only validate a value that actually changed on this save.
@@ -44,6 +45,34 @@ def validate_event_booking_link(doc, method=None):
 			return
 
 	if not frappe.db.exists("Event Booking", booking):
+		return
+
+	# A draft booking is not a thing to trade against.
+	#
+	# ERPNext does not let a Sales Invoice be raised against a draft Sales
+	# Order, and an Event Booking is no different: while it is a draft nothing
+	# about it is agreed, and a document that points at one is claiming a
+	# commitment nobody made. This app allowed it, and the consequence was
+	# visible in the data — a booking could reach Confirmed or Paid through the
+	# status automation without a single person ever submitting it.
+	#
+	# Checked before the inherited-link exemption below, because this is a fact
+	# about the booking's state, not a question about who is asking. A Sales
+	# Order that inherits its link from a Quotation is subject to the same rule
+	# as one a user linked by hand.
+	if frappe.db.get_value("Event Booking", booking, "docstatus") == 0:
+		frappe.throw(
+			_(
+				"Event Booking {0} is still a draft. Submit it before linking "
+				"{1} to it."
+			).format(booking, doc.doctype),
+			title=_("Booking Not Submitted"),
+		)
+
+	# Links this app sets for itself carry a flag and skip the *permission*
+	# check — inheriting a link from a source document must not fail because the
+	# user cannot write to the booking. The draft rule above still applies.
+	if getattr(doc.flags, "event_booking_inherited", False):
 		return
 
 	if not frappe.has_permission("Event Booking", ptype="write", doc=booking):

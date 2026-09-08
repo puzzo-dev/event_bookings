@@ -239,7 +239,11 @@ class TestEventLeadConversionFunnel(FrappeTestCase):
 				"company": _company(),
 				"quotation": qt.name,
 			}
-		).insert(ignore_permissions=True)
+		)
+		booking.insert(ignore_permissions=True)
+		# Submitted before anything links to it — a Sales Order is not raised
+		# against a draft booking.
+		booking.submit()
 
 		so = frappe.get_doc(
 			{

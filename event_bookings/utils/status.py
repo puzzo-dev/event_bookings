@@ -18,9 +18,11 @@ Design contract
 ---------------
 - ``advance_booking_status`` is **forward-only**: it never moves a booking
   backwards in the order and never touches Cancelled or docstatus-2 bookings.
-- It works for both draft (docstatus 0) and submitted (docstatus 1) bookings —
-  ``booking_status`` is ``allow_on_submit`` so automation continues after the
-  booking is submitted.
+- It acts on **submitted** bookings only. ``booking_status`` is
+  ``allow_on_submit`` so automation continues after the booking is submitted,
+  but a draft is never advanced: no document may be raised against a draft
+  booking in the first place, and a draft that is edited by hand is not
+  something automation should be overwriting.
 - It is **exception-safe**: every failure is logged and returns False so
   callers (ERPNext doc_events on Quotation/Sales Order/Sales Invoice) never
   abort their own save/submit.
@@ -252,6 +254,14 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		if not current:
 			return False
 		if current.docstatus == 2 or current.booking_status == CANCELLED:
+			return False
+		# A draft booking's status is nobody's business but the person editing
+		# it. Nothing should be able to link to one now (see
+		# validate_event_booking_link), so this should be unreachable from the
+		# hooks — it is here for the rows that predate that rule and for anything
+		# reaching this function directly. A booking catches up with its
+		# documents when it is submitted, not before.
+		if current.docstatus == 0:
 			return False
 		if not is_forward_transition(current.booking_status, target_status):
 			return False
