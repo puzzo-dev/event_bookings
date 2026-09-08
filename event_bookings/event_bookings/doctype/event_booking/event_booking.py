@@ -21,6 +21,7 @@ _ITEMS_TABLE = {
 class EventBooking(Document):
     def validate(self):
         self.validate_dates()
+        self._fetch_contact_phone()
         # Quotation-first flow: new bookings always carry a Customer
         # (legacy rows are exempt — the party model is retired, not frozen).
         if self.is_new() and not self.customer:
@@ -151,6 +152,55 @@ class EventBooking(Document):
             "total_estimated": self.total_estimated,
             "total_actual": self.total_actual,
         }, update_modified=False)
+
+    def _fetch_contact_phone(self):
+        """Fill Contact Phone from whoever the booking is for.
+
+        The number is what a reminder or a confirmation is actually sent to, and
+        it lives on the Lead or on the Customer's primary Contact — not on the
+        booking. Read-only and refreshed on every save, so it follows the
+        contact record rather than going stale the moment someone updates it
+        there.
+
+        The Customer link is preferred over party_type: a booking that started
+        as a Lead carries the Customer once the quotation is accepted, and that
+        Contact is the more current of the two.
+        """
+        customer = self.customer or (self.party_name if self.party_type == "Customer" else None)
+
+        if customer:
+            self.contact_phone = self._primary_contact_phone(customer)
+            return
+
+        if self.party_type == "Lead" and self.party_name:
+            self.contact_phone = (
+                frappe.db.get_value("Lead", self.party_name, "whatsapp_no")
+                or frappe.db.get_value("Lead", self.party_name, "mobile_no")
+                or frappe.db.get_value("Lead", self.party_name, "phone")
+            )
+            return
+
+        self.contact_phone = None
+
+    @staticmethod
+    def _primary_contact_phone(customer):
+        """The phone on the Customer's first linked Contact, if there is one."""
+        contact = frappe.get_all(
+            "Dynamic Link",
+            filters={
+                "link_doctype": "Customer",
+                "link_name": customer,
+                "parenttype": "Contact",
+            },
+            pluck="parent",
+            order_by="idx asc",
+            limit=1,
+        )
+        if not contact:
+            return None
+        return frappe.db.get_value("Contact", contact[0], "mobile_no") or frappe.db.get_value(
+            "Contact", contact[0], "phone"
+        )
 
     def validate_dates(self):
         """

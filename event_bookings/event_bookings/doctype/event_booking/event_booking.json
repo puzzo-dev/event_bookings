@@ -16,6 +16,7 @@
   "customer",
   "party_type",
   "party_name",
+  "contact_phone",
   "col_type",
   "event_type",
   "event_planner",
@@ -107,6 +108,13 @@
    "label": "Party Name (Legacy)",
    "read_only": 1,
    "search_index": 1
+  },
+  {
+   "fieldname": "contact_phone",
+   "fieldtype": "Data",
+   "label": "Contact Phone",
+   "options": "Phone",
+   "read_only": 1
   },
   {
    "fieldname": "col_type",
@@ -273,7 +281,7 @@
    "options": "Service Item",
    "read_only": 1,
    "allow_on_submit": 1,
-   "description": "What was actually used to deliver this event, from submitted Stock Entries tagged to this booking. Issue what is consumed, transfer what comes back — both count as used. To add a row, make a Stock Entry and set Event Booking on it."
+   "description": "What was actually used to deliver this event, from submitted Stock Entries tagged to this booking. Issue what is consumed, transfer what comes back \u2014 both count as used. To add a row, make a Stock Entry and set Event Booking on it."
   },
   {
    "fieldname": "tab_staffing",
