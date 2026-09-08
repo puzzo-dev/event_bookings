@@ -39,6 +39,13 @@ def after_migrate():
 	the HRMS Designation field upgrade (bench migrate resets it to the JSON
 	baseline before this hook runs).
 	"""
+	# Standard Notifications: Frappe imports a module file for each one before
+	# sending, and a missing file does not skip the alert — it raises inside the
+	# save that triggered it. The two reminders here are scheduled, so a missing
+	# file would break the scheduler rather than a form, which is quieter and
+	# worse. Written back if absent.
+	_repair_standard_notifications()
+
 	if is_erpnext_installed():
 		create_default_settings()
 	upgrade_designation_for_hrms()  # re-apply on every migrate — JSON resets it to Data
@@ -491,3 +498,66 @@ def create_email_templates():
 				frappe.log_error(title=f"Failed to create Email Template {t['name']}")
 
 	frappe.db.commit()
+
+
+
+def _repair_standard_notifications():
+	"""Create any missing notification module files for this app's modules."""
+	import importlib
+	import os
+
+	for module in ("Event Bookings",):
+		try:
+			base = os.path.join(frappe.get_module_path(module), "notification")
+		except Exception:
+			continue
+
+		names = frappe.get_all(
+			"Notification", filters={"module": module, "is_standard": 1}, pluck="name"
+		)
+		if not names:
+			continue
+
+		_ensure_package(base)
+		repaired = False
+		for name in names:
+			slug = frappe.scrub(name)
+			folder = os.path.join(base, slug)
+			_ensure_package(folder)
+			leaf = os.path.join(folder, f"{slug}.py")
+			if not os.path.exists(leaf):
+				with open(leaf, "w"):
+					pass
+				repaired = True
+
+			# Only when absent — migrate syncs JSON into the database, so an
+			# unconditional export would push the database back over a
+			# definition just changed in git.
+			if not os.path.exists(os.path.join(folder, f"{slug}.json")):
+				try:
+					from frappe.modules.export_file import export_to_files
+
+					export_to_files(
+						record_list=[["Notification", name]],
+						record_module=module,
+						create_init=True,
+					)
+					repaired = True
+				except Exception:
+					frappe.log_error(
+						title=f"Event Bookings: could not export notification {name}",
+						message=frappe.get_traceback(),
+					)
+
+		if repaired:
+			importlib.invalidate_caches()
+
+
+def _ensure_package(path: str):
+	import os
+
+	os.makedirs(path, exist_ok=True)
+	init = os.path.join(path, "__init__.py")
+	if not os.path.exists(init):
+		with open(init, "w"):
+			pass
