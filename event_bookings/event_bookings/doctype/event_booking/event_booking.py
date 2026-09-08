@@ -853,8 +853,19 @@ def get_calendar_events(start, end, filters=None):
         if isinstance(filters, str):
             filters = json.loads(filters)
         # Whitelist filter keys — prevents arbitrary filter injection from the client.
+        #
+        # And coerce the values. The keys were checked and the values passed
+        # through untouched, so a client could send an operator form —
+        # ["!=", "Cancelled"], ["like", "%"] — and choose the comparison as well
+        # as the term. get_list still applies the row-level partition, so this
+        # leaked nothing, but the calendar is an equality filter and letting the
+        # client pick the operator is surface with no purpose.
         _ALLOWED_FILTERS = {"booking_status", "event_type", "event_planner"}
-        conditions.update({k: v for k, v in filters.items() if k in _ALLOWED_FILTERS})
+        conditions.update({
+            k: str(v)
+            for k, v in filters.items()
+            if k in _ALLOWED_FILTERS and isinstance(v, (str, int, float))
+        })
 
     # frappe.get_list respects user permissions; frappe.get_all would bypass them.
     events = frappe.get_list(

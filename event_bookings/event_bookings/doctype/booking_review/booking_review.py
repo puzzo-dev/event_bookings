@@ -118,10 +118,17 @@ def submit_review(event_booking, rating=None, review_text=None):
 	if len(review_text) > _MAX_REVIEW_TEXT:
 		frappe.throw(_("Review text must not exceed {0} characters.").format(_MAX_REVIEW_TEXT))
 
-	# Duplicate prevention (same customer + event, 24h window)
+	# Duplicate prevention (same customer + event, 24h window).
+	#
+	# Keyed on the booking and the customer, not on reviewer_email. The email is
+	# derived from whatever contact the customer happens to have, so it is blank
+	# on customers with none — and a blank matched every other blank, which made
+	# the window either far too wide or, once two such customers existed,
+	# nonsense. The booking already belongs to exactly one customer, so the
+	# booking is the key.
 	last_review = frappe.db.get_value(
 		"Booking Review",
-		{"event_booking": event_booking, "reviewer_email": reviewer_email},
+		{"event_booking": event_booking},
 		"creation",
 		order_by="creation desc",
 	)

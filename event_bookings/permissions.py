@@ -50,11 +50,7 @@ def get_event_booking_query(user=None):
     conditions = []
 
     # Company filter from User Permissions — applies to all non-admin roles.
-    user_companies = frappe.get_all(
-        "User Permission",
-        filters={"user": user, "allow": "Company"},
-        pluck="for_value",
-    )
+    user_companies = _permitted_companies(user)
     if user_companies:
         escaped_companies = ", ".join(frappe.db.escape(c) for c in user_companies)
         conditions.append(f"`tabEvent Booking`.`company` IN ({escaped_companies})")
@@ -85,6 +81,28 @@ def get_event_booking_query(user=None):
     return " AND ".join(conditions)
 
 
+def _permitted_companies(user):
+    """The user's Company User Permissions, read once per request.
+
+    Frappe calls this condition builder for every query against Event Booking,
+    and a page that shows a list, a chart and three number cards asks five
+    times over — each one re-reading the same User Permission rows. frappe.local
+    lives exactly as long as the request, which is the right lifetime: a
+    permission changed mid-request is not a case worth serving stale, and one
+    changed between requests is picked up on the next.
+    """
+    cache = getattr(frappe.local, "_event_bookings_permitted_companies", None)
+    if cache is None:
+        cache = frappe.local._event_bookings_permitted_companies = {}
+    if user not in cache:
+        cache[user] = frappe.get_all(
+            "User Permission",
+            filters={"user": user, "allow": "Company"},
+            pluck="for_value",
+        )
+    return cache[user]
+
+
 def _get_sales_partner_for_user(user):
     """
     Return the Sales Partner name linked to this user, or None.
@@ -111,12 +129,7 @@ def get_permitted_companies(user=None):
     if user == "Administrator" or "System Manager" in frappe.get_roles(user):
         return None
 
-    companies = frappe.get_all(
-        "User Permission",
-        filters={"user": user, "allow": "Company"},
-        pluck="for_value",
-    )
-    return companies or None
+    return _permitted_companies(user) or None
 
 
 def validate_company_filter(filters):

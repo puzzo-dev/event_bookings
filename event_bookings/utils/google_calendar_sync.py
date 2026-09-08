@@ -99,13 +99,49 @@ def push_to_google_calendar(doc, method=None):
 	if not _should_sync(doc):
 		return
 
+	# Nothing the calendar shows has changed on most saves - recalculating
+	# totals after an invoice, stamping a lifecycle date, a status the body
+	# does not mention - and each of those queued a job that fetched
+	# credentials and called Google to push an identical event.
+	if not _calendar_fields_changed(doc):
+		return
+
 	frappe.enqueue(
 		"event_bookings.utils.google_calendar_sync._sync_in_background",
 		booking_name=doc.name,
 		queue="default",
 		enqueue_after_commit=True,
 		job_id=f"google_calendar_sync:{doc.name}",
+		# job_id alone only names the job; without this, ten saves in a row
+		# queued ten identical pushes.
+		deduplicate=True,
 	)
+
+
+# What _build_event_body actually reads. A change to anything else is invisible
+# in the calendar, so it is not worth a round trip to Google.
+_CALENDAR_FIELDS = (
+	"event_name", "customer", "event_date", "event_time", "event_end_time",
+	"event_location", "special_requirements", "booking_status",
+	"google_calendar", "sync_with_google_calendar",
+)
+
+
+def _calendar_fields_changed(doc) -> bool:
+	"""True when a field the calendar entry shows has changed on this save.
+
+	A new booking, a cancel, or a document with no before-image all count as
+	changed: there is nothing to compare against and the calendar has to be
+	told.
+	"""
+	if doc.docstatus == 2 or doc.is_new():
+		return True
+
+	before = doc.get_doc_before_save()
+	if before is None:
+		return True
+
+	return any(doc.get(f) != before.get(f) for f in _CALENDAR_FIELDS)
 
 
 def _sync_in_background(booking_name):

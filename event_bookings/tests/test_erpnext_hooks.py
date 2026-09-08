@@ -115,7 +115,17 @@ class TestShiftAssignmentUpdate(unittest.TestCase):
 		mock_frappe.db.sql.assert_called_once()
 		args = mock_frappe.db.sql.call_args[0]
 		self.assertIn("tabEvent Staff Requirement", args[0])
-		self.assertEqual(args[1], {"booking": "EVT-001"})
+		# exclude_name is always bound now — the SQL is one fixed statement
+		# rather than one assembled per path — and is empty except on trash,
+		# where it names the row still sitting in the table.
+		self.assertEqual(args[1], {"booking": "EVT-001", "exclude_name": ""})
+
+	def test_trash_excludes_the_row_being_removed(self, mock_frappe):
+		"""The trashed assignment is still in the table when the hook runs."""
+		doc = SimpleNamespace(event_booking="EVT-001", name="HR-SA-009")
+		on_shift_assignment_update(doc, "on_trash")
+		args = mock_frappe.db.sql.call_args[0]
+		self.assertEqual(args[1]["exclude_name"], "HR-SA-009")
 
 	def test_noop_without_booking(self, mock_frappe):
 		doc = SimpleNamespace(event_booking=None, name="HR-SA-002")

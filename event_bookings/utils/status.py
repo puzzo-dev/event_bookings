@@ -185,8 +185,14 @@ def revert_booking_status(booking_name, reason=None):
 		return False
 
 	try:
+		# confirmed_on is read here rather than in a second get_value below: it
+		# is a column on the row this already fetches, and every ERPNext hook
+		# that advances a booking was paying for two reads of it.
 		current = frappe.db.get_value(
-			"Event Booking", booking_name, ["booking_status", "docstatus"], as_dict=True
+			"Event Booking",
+			booking_name,
+			["booking_status", "docstatus", "confirmed_on"],
+			as_dict=True,
 		)
 		if not current:
 			return False
@@ -234,8 +240,14 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		return False
 
 	try:
+		# confirmed_on is read here rather than in a second get_value below: it
+		# is a column on the row this already fetches, and every ERPNext hook
+		# that advances a booking was paying for two reads of it.
 		current = frappe.db.get_value(
-			"Event Booking", booking_name, ["booking_status", "docstatus"], as_dict=True
+			"Event Booking",
+			booking_name,
+			["booking_status", "docstatus", "confirmed_on"],
+			as_dict=True,
 		)
 		if not current:
 			return False
@@ -252,8 +264,9 @@ def advance_booking_status(booking_name, target_status, reason=None):
 		# lifecycle (and EventBooking.stamp_lifecycle_dates) never runs. Stamp
 		# confirmed_on here so automated transitions carry the same date basis
 		# as manual ones. Written once — never moved by a later transition.
-		if status_index(target_status) >= STATUS_ORDER.index("Confirmed") and not frappe.db.get_value(
-			"Event Booking", booking_name, "confirmed_on"
+		if (
+			status_index(target_status) >= STATUS_ORDER.index("Confirmed")
+			and not current.confirmed_on
 		):
 			update["confirmed_on"] = frappe.utils.today()
 

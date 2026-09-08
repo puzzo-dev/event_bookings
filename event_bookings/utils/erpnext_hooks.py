@@ -528,15 +528,14 @@ def on_shift_assignment_update(doc, method=None):
 	if not booking:
 		return
 
-	params = {"booking": booking}
-	exclude_clause = ""
-	if method == "on_trash":
-		# The trashed row is still in the DB at this point — exclude it.
-		params["exclude_name"] = doc.name
-		exclude_clause = "AND sa.name != %(exclude_name)s"
-
+	# One statement, one bound parameter, and no string built into the SQL.
+	# The exclusion used to be interpolated with an f-string; the value was a
+	# fixed literal so it was never injectable, but a query assembled by string
+	# formatting is a shape that invites the mistake later. The trashed row is
+	# still in the table at on_trash, so it is excluded by comparing against a
+	# bound name that is simply never equal to anything on the other paths.
 	frappe.db.sql(
-		f"""
+		"""
 		UPDATE `tabEvent Staff Requirement` esr
 		SET esr.qty_assigned = (
 			SELECT COUNT(*)
@@ -544,13 +543,16 @@ def on_shift_assignment_update(doc, method=None):
 			INNER JOIN `tabEmployee` emp ON emp.name = sa.employee
 			WHERE sa.event_booking = %(booking)s
 			  AND sa.docstatus = 1
-			  {exclude_clause}
+			  AND sa.name != %(exclude_name)s
 			  AND emp.designation = esr.designation
 		)
 		WHERE esr.parent = %(booking)s
 		  AND esr.parenttype = 'Event Booking'
 		""",
-		params,
+		{
+			"booking": booking,
+			"exclude_name": doc.name if method == "on_trash" else "",
+		},
 	)
 
 
