@@ -9,6 +9,11 @@
 // lifecycle, not typed, so this pill is the only place it is shown.
 
 frappe.listview_settings["Event Booking"] = {
+	// The list only fetches the fields it renders as columns, and
+	// booking_status is no longer one — it is the pill instead. Without this it
+	// is simply not in the row data and every pill reads "undefined".
+	add_fields: ["booking_status"],
+
 	// Both are needed. get_indicator is consulted after the docstatus
 	// short-circuits, so these are what let it run for a draft or a cancelled
 	// booking at all.
@@ -16,6 +21,12 @@ frappe.listview_settings["Event Booking"] = {
 	has_indicator_for_cancelled: 1,
 
 	get_indicator(doc) {
+		if (!doc.booking_status) {
+			// Nothing to show rather than an empty pill; frappe.get_indicator
+			// falls through to its own defaults when this returns nothing.
+			return null;
+		}
+
 		// The colours read as a progression: the deal is open (blue), waiting
 		// on someone (orange), settled (green), finished (grey), or dead (red).
 		const colour = {
