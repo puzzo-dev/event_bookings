@@ -70,7 +70,7 @@ def submit_review(event_booking, rating=None, review_text=None):
 		frappe.throw(_("No customer linked to this Event Booking."))
 
 	# Authorization: determine caller type and submitted_via in one pass
-	submitted_via = _get_submitted_via(customer)
+	submitted_via = _get_submitted_via(customer, event_booking)
 	if submitted_via is None:
 		frappe.throw(
 			_(
@@ -138,13 +138,13 @@ def submit_review(event_booking, rating=None, review_text=None):
 	return {"message": "Review submitted successfully.", "name": review.name}
 
 
-def _get_submitted_via(customer):
+def _get_submitted_via(customer, event_booking=None):
 	"""Return the submitted_via label for the current caller, or None if not authorised.
 
 	Priority:
 	1. Administrator / system API user → "Public Link"
 	   (public form authenticates with owner API credentials in the background)
-	2. Event Manager role → "Event Manager"
+	2. Event Manager who can read *this* booking → "Event Manager"
 	   (desk submission; manager knows the customer from the booking context)
 	3. Frappe user linked to the customer → "Direct"
 	   (customer self-service via portal or direct API call)
@@ -156,7 +156,15 @@ def _get_submitted_via(customer):
 
 	roles = frappe.get_roles(user)
 	if "Event Manager" in roles:
-		return "Event Manager"
+		# Holding the role was the whole test, for any booking on the site.
+		# Event Managers are partitioned by Sales Partner (see
+		# permissions.has_event_booking_permission), so a manager could review a
+		# booking they are not allowed to open — and the review carries the
+		# customer's name, so it reads as the customer's own words.
+		if event_booking is None or frappe.has_permission(
+			"Event Booking", ptype="read", doc=event_booking, user=user
+		):
+			return "Event Manager"
 
 	if _user_linked_to_customer(user, customer):
 		return "Direct"

@@ -53,8 +53,29 @@ def validate_event_booking_link(doc, method=None):
 		)
 
 	booking_company = frappe.db.get_value("Event Booking", booking, "company")
+	if not booking_company:
+		return
+
+	# `and doc_company and` used to be the whole guard, so a document whose
+	# company was simply blank skipped the comparison and could be attached to a
+	# booking in any company at all — the one case where the check matters most,
+	# because nothing else pins that document to a tenant.
+	#
+	# A doctype with no company field is a different thing from one whose
+	# company is empty: there is nothing to compare, and the write permission
+	# checked above is what governs it.
+	if not doc.meta.get_field("company"):
+		return
+
 	doc_company = getattr(doc, "company", None)
-	if booking_company and doc_company and booking_company != doc_company:
+	if not doc_company:
+		frappe.throw(
+			_("Set a Company before linking Event Booking {0}, which belongs to {1}.").format(
+				booking, booking_company
+			)
+		)
+
+	if booking_company != doc_company:
 		frappe.throw(
 			_("Event Booking {0} belongs to {1}, not {2}.").format(
 				booking, booking_company, doc_company

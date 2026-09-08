@@ -124,6 +124,24 @@ def _sync_in_background(booking_name):
 		_update_event(doc)
 
 
+def _calendar_id(account, doc=None) -> str:
+	"""Which Google calendar to write to.
+
+	Taken from the linked Google Calendar record rather than the booking's own
+	google_calendar_id. That field is marked read_only, which is a form
+	constraint and not a server one — the API will happily set it — so trusting
+	it let a caller aim this app's writes at any calendar the site's credentials
+	can reach. The Google Calendar doctype is the thing an administrator
+	actually grants, so it is what decides the destination.
+	"""
+	calendar_id = getattr(account, "google_calendar_id", None)
+	if calendar_id:
+		return calendar_id
+	# Older rows may predate the field on the account; fall back to the booking
+	# rather than fail the sync outright.
+	return getattr(doc, "google_calendar_id", None) or ""
+
+
 def _insert_event(doc):
 	try:
 		from googleapiclient.errors import HttpError
@@ -151,7 +169,7 @@ def _insert_event(doc):
 		event = (
 			google_calendar.events()
 			.insert(
-				calendarId=doc.google_calendar_id,
+				calendarId=_calendar_id(account, doc),
 				body=_build_event_body(doc),
 				sendUpdates="all",
 			)
@@ -202,7 +220,7 @@ def _update_event(doc):
 
 	try:
 		google_calendar.events().patch(
-			calendarId=doc.google_calendar_id,
+			calendarId=_calendar_id(account, doc),
 			eventId=doc.google_calendar_event_id,
 			body=_build_event_body(doc),
 			sendUpdates="all",
@@ -248,9 +266,9 @@ def _delete_in_background(booking_name, google_calendar, google_calendar_id, goo
 		return
 
 	try:
-		google_calendar_obj, _account = get_google_calendar_object(google_calendar)
+		google_calendar_obj, account = get_google_calendar_object(google_calendar)
 		google_calendar_obj.events().patch(
-			calendarId=google_calendar_id,
+			calendarId=_calendar_id(account) or google_calendar_id,
 			eventId=google_calendar_event_id,
 			body={"status": "cancelled"},
 		).execute()
