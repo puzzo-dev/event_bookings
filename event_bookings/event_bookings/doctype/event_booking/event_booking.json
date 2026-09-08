@@ -512,5 +512,8 @@
  "sort_order": "DESC",
  "states": [],
  "track_changes": 1,
- "track_views": 1
+ "track_views": 1,
+ "title_field": "event_name",
+ "show_title_field_in_link": 1,
+ "search_fields": "event_name,event_date,customer"
 }
