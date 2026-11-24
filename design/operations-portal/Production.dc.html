@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Production board</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-direction: column">
+
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 6px; font-size: 14px">
+<a href="Main.dc.html" style="color: #6B6B6B; text-decoration: none">Home</a><span aria-hidden="true" style="color: #C7C7C7">/</span>
+<span style="color: #6B6B6B">Couture</span><span aria-hidden="true" style="color: #C7C7C7">/</span>
+<span style="font-size: 18px; font-weight: 600; color: #171717">Production board</span>
+</nav>
+<div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px">
+<div role="group" aria-label="Filter by type" style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px">
+<button type="button" aria-pressed="true" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717; font: 500 13px Inter, sans-serif">All 9</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Bespoke 4</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">RTW 2</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Alterations 2</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">MTM 1</button>
+</div>
+<button type="button" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; background: #171717; color: #FFFFFF; font: 500 14px Inter, sans-serif">New project</button>
+</div>
+</header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load this batch</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Batch not found</span><span style="font-size: 14px; color: #525252; max-width: 360px">It may have been removed.</span></div></sc-if><div style="display: {{vShow}}; flex-direction: column; flex: 1">
+
+<div style="overflow-x: auto; padding: 20px 20px 40px">
+<div style="display: flex; gap: 12px; align-items: flex-start; width: max-content">
+
+<section aria-label="Cutting" style="width: 288px; flex-shrink: 0; background: #F8F8F8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px"><h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #171717">Cutting</h2><span style="font-size: 12px; color: #6B6B6B">2</span></div>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #E6F4FF; color: #005EB0; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Bespoke</span><span style="font-size: 12px; color: #9A4A00">Sat · behind</span></div>
+<span style="font-weight: 500; color: #171717">Bridal party · 6 outfits</span>
+<span style="font-size: 13px; color: #6B6B6B">Team C · fabric issued</span>
+<div style="height: 4px; background: #EDEDED; border-radius: 2px"><div style="width: 33%; height: 4px; background: #383838; border-radius: 2px"></div></div>
+<span style="font-size: 12px; color: #6B6B6B">2 of 6 pieces</span>
+<div style="display: flex; gap: 6px"><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Log pieces</button><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #171717; color: #FFFFFF; font: 500 13px Inter, sans-serif">To sewing</button></div>
+</article>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #F5F0FF; color: #6B3FC9; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">RTW run</span><span style="font-size: 12px; color: #6B6B6B">20 Nov</span></div>
+<span style="font-weight: 500; color: #171717">Àṣà Kaftan · 40 pcs</span>
+<span style="font-size: 13px; color: #6B6B6B">Team A · S 8 · M 14 · L 12 · XL 6</span>
+<div style="height: 4px; background: #EDEDED; border-radius: 2px"><div style="width: 15%; height: 4px; background: #383838; border-radius: 2px"></div></div>
+<span style="font-size: 12px; color: #6B6B6B">6 of 40 pieces</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Log pieces</button>
+</article>
+</section>
+
+<section aria-label="Sewing" style="width: 288px; flex-shrink: 0; background: #F8F8F8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px"><h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #171717">Sewing</h2><span style="font-size: 12px; color: #6B6B6B">2</span></div>
+<article style="background: #FFFFFF; border: 1px solid #F0C26B; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #F5F0FF; color: #6B3FC9; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">RTW run</span><span style="font-size: 12px; color: #9A4A00">Thu · behind</span></div>
+<span style="font-weight: 500; color: #171717">Ìfẹ́ Wrap Dress · 60 pcs</span>
+<span style="font-size: 13px; color: #6B6B6B">Team B · your team</span>
+<div style="height: 4px; background: #EDEDED; border-radius: 2px"><div style="width: 57%; height: 4px; background: #383838; border-radius: 2px"></div></div>
+<span style="font-size: 12px; color: #6B6B6B">34 of 60 · needs 13 a day</span>
+<div style="display: flex; gap: 6px"><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Log pieces</button><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Add helper</button></div>
+</article>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #E6F4FF; color: #005EB0; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Bespoke</span><span style="font-size: 12px; color: #6B6B6B">18 Nov</span></div>
+<span style="font-weight: 500; color: #171717">Chidi N. · senator suit</span>
+<span style="font-size: 13px; color: #6B6B6B">Team A · measurements v2</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #171717; color: #FFFFFF; font: 500 13px Inter, sans-serif">To finishing</button>
+</article>
+</section>
+
+<section aria-label="Finishing and fittings" style="width: 288px; flex-shrink: 0; background: #F8F8F8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px"><h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #171717">Finishing &amp; fittings</h2><span style="font-size: 12px; color: #6B6B6B">2</span></div>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #E6F4FF; color: #005EB0; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Bespoke</span><span style="font-size: 12px; color: #6B6B6B">Wed</span></div>
+<span style="font-weight: 500; color: #171717">Adaeze O. · agbada set</span>
+<span style="font-size: 13px; color: #6B6B6B">Final fitting today 16:00</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Record adjustments</button>
+</article>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #E4FAEB; color: #16794C; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Made-to-measure</span><span style="font-size: 12px; color: #6B6B6B">Fri</span></div>
+<span style="font-weight: 500; color: #171717">Tolu B. · corporate suit</span>
+<span style="font-size: 13px; color: #6B6B6B">Fitting 2 at 11:00</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Record adjustments</button>
+</article>
+</section>
+
+<section aria-label="Quality check" style="width: 288px; flex-shrink: 0; background: #F8F8F8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px"><h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #171717">Quality check</h2><span style="font-size: 12px; color: #6B6B6B">2</span></div>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #FFF7D3; color: #9A4A00; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Alteration</span><span style="font-size: 12px; color: #6B6B6B">Sat</span></div>
+<span style="font-weight: 500; color: #171717">Kemi A. · hem &amp; take-in</span>
+<span style="font-size: 13px; color: #6B6B6B">From in-store sale · Wrap M</span>
+<div style="display: flex; gap: 6px"><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #F3F3F3; color: #383838; font: 500 13px Inter, sans-serif">Send back</button><button type="button" style="flex: 1; height: 28px; border: none; border-radius: 8px; background: #171717; color: #FFFFFF; font: 500 13px Inter, sans-serif">Pass QC</button></div>
+</article>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #FFF7D3; color: #9A4A00; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Alteration</span><span style="font-size: 12px; color: #6B6B6B">Mon</span></div>
+<span style="font-weight: 500; color: #171717">Bisi K. · sleeve shorten</span>
+<span style="font-size: 13px; color: #6B6B6B">Team B</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #171717; color: #FFFFFF; font: 500 13px Inter, sans-serif">Pass QC</button>
+</article>
+</section>
+
+<section aria-label="Ready" style="width: 288px; flex-shrink: 0; background: #F8F8F8; border-radius: 12px; padding: 8px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 4px 6px"><h2 style="margin: 0; font-size: 14px; font-weight: 600; color: #171717">Ready</h2><span style="font-size: 12px; color: #6B6B6B">1</span></div>
+<article style="background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="background: #E6F4FF; color: #005EB0; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">Bespoke</span><span style="font-size: 12px; color: #16794C">Ready</span></div>
+<span style="font-weight: 500; color: #171717">Ngozi E. · aso-ebi gown</span>
+<span style="font-size: 13px; color: #6B6B6B">Balance due ₦85,000</span>
+<button type="button" style="height: 28px; border: none; border-radius: 8px; background: #171717; color: #FFFFFF; font: 500 13px Inter, sans-serif">Notify on WhatsApp</button>
+</article>
+</section>
+
+</div>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = {}; this.__vinit(); }
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+return {};
+}
+}
+</script>
+</body>
+</html>

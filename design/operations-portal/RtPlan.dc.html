@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Production plan</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}.pg>header{padding-left:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important;padding-right:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important}.pg>*:not(header){width:100%;max-width:var(--pg-max,1080px);margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 980px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-wrap: wrap; align-items: stretch">
+<div style="flex: 0 0 auto; display: flex"><dc-import name="EvSidebar" active="production" role="Owner" hint-size="224px,900px"></dc-import></div>
+<div class="pg" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px"><h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #171717">Production</h1><div style="display: flex; align-items: center; gap: 8px"><div style="background: #F3F3F3; border-radius: 8px; padding: 2px; display: flex"><nav aria-label="Production" style="display: flex; gap: 4px"><a href="RtPlan.dc.html" aria-current="page" style="height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717">Plan</a><a href="RtProduction.dc.html" aria-current="false" style="height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; background: transparent; color: #525252">Batches</a><a href="RtRecipes.dc.html" aria-current="false" style="height: 24px; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 6px; text-decoration: none; font-size: 13px; font-weight: 500; background: transparent; color: #525252">Recipes</a></nav></div><a href="RtStartBatch.dc.html" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF; text-decoration: none; display: inline-flex; align-items: center">Start a batch</a></div></header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load the production plan</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Nothing planned</span><span style="font-size: 14px; color: #525252; max-width: 360px">Start a batch to see it here.</span></div></sc-if>
+<div style="display: {{vShow}}; flex-direction: column; flex: 1">
+<div style="display: flex; flex-wrap: wrap; flex: 1">
+<main style="flex: 999 1 520px; min-width: 0; box-sizing: border-box; padding: 20px 20px 40px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<div style="display: flex; flex-direction: column; gap: 2px"><h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Week of 9 to 15 Nov</h2><span style="font-size: 13px; color: #6B6B6B">Demand = orders + event favours + usual weekly sales. Expiring bottles are not counted as stock.</span></div>
+<div style="display: flex; align-items: center; gap: 4px"><button type="button" aria-label="Previous week" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #F3F3F3; color: #383838">‹</button><button type="button" aria-label="Next week" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #F3F3F3; color: #383838">›</button></div>
+</div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px">
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #525252">Orders to pack</span><span style="font-size: 20px; font-weight: 600; color: #171717">5 orders · 54 bottles</span><a href="RtOrders.dc.html" style="font-size: 13px">Open orders</a></div>
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #525252">Event favours this week</span><span style="font-size: 20px; font-weight: 600; color: #171717">30 Chapman</span><span style="font-size: 13px; color: #6B6B6B">Bisola's party, Fri 13 Nov</span></div>
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #525252">Usual walk-in and shop sales</span><span style="font-size: 20px; font-weight: 600; color: #171717">About 40 a week</span><span style="font-size: 13px; color: #6B6B6B">Average of the last 4 weeks</span></div>
+</div>
+<div style="overflow-x: auto">
+<table style="width: 100%; min-width: 640px; border-collapse: collapse">
+<thead><tr><th style="height: 32px; padding: 0 8px 0 0; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left">Drink</th><th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left; text-align: right">Sellable stock</th><th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left; text-align: right">Planned</th><th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left; text-align: right">Demand</th><th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left; text-align: right">Gap</th><th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: left">Suggestion</th></tr></thead>
+<tbody style="color: #525252">
+<sc-for list="{{rows}}" as="r" hint-placeholder-count="6">
+<tr>
+<td style="height: 52px; padding: 0 8px 0 0; border-bottom: 1px solid #EDEDED"><div style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 6px; {{r.swatch}}"></span><div style="display: flex; flex-direction: column"><span style="color: #171717; font-weight: 500">{{r.name}}</span><span style="font-size: 12px; color: #6B6B6B">{{r.detail}}</span></div></div></td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right">{{r.stock}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right">{{r.planned}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right; color: #171717">{{r.demand}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right; {{r.gapStyle}}">{{r.gap}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED"><sc-if value="{{r.canAdd}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{r.toggle}}" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; {{r.btnStyle}}">{{r.btnLabel}}</button></sc-if><sc-if value="{{r.covered}}" hint-placeholder-val="{{ false }}"><span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; background: #E4FAEB; color: #16794C; white-space: nowrap; flex-shrink: 0">Covered</span></sc-if></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+</main>
+<aside aria-label="Plan summary" style="flex: 1 1 320px; max-width: 360px; box-sizing: border-box; border-left: 1px solid #EDEDED; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">This week's plan</h2>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{plan}}" as="b" hint-placeholder-count="3">
+<div style="display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #EDEDED"><div style="display: flex; flex-direction: column; gap: 2px"><span style="color: #171717">{{b.name}}</span><span style="font-size: 12px; color: #6B6B6B">{{b.when}}</span></div><span style="color: #171717">{{b.qty}} btl</span></div>
+</sc-for>
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="font-size: 13px; color: #525252">Ingredients for the whole plan</span>
+<sc-for list="{{ing}}" as="i" hint-placeholder-count="4">
+<div style="display: flex; justify-content: space-between; gap: 8px"><span style="color: #171717">{{i.name}}</span><span style="font-size: 13px; white-space: nowrap; {{i.style}}">{{i.text}}</span></div>
+</sc-for>
+</div>
+<sc-if value="{{short}}" hint-placeholder-val="{{ true }}"><div style="background: #FFF7D3; border-radius: 12px; padding: 12px; font-size: 13px; line-height: 1.5; color: #6B3A00">{{shortText}}</div></sc-if>
+<div style="display: flex; gap: 8px"><button type="button" style="flex: 1; height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #F3F3F3; color: #383838">Request restock</button><a href="RtStartBatch.dc.html" style="flex: 1; box-sizing: border-box; text-align: center; line-height: 28px; text-decoration: none; border-radius: 8px; background: #171717; color: #FFFFFF; font-size: 14px; font-weight: 500">Start first batch</a></div>
+</aside>
+</div>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":980}}'>
+class Component extends DCLogic {
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+constructor(p) { super(p); this.__vinit(); this.state = { chap: true, pine: false }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const s = this.state;
+const SW = { chap: 'background: #F6C9C0', zobo: 'background: #E6C6E8', pass: 'background: #FCE7B2', vm: 'background: #CDEFD6', pine: 'background: #FFF2B8', tn: 'background: #EDE3D2' };
+const add = { chap: 48, pine: 24 };
+const row = (k, name, detail, stock, planned, demand, suggest) => {
+  const p = planned + (suggest && s[k] ? add[k] : 0);
+  const gap = Math.max(0, demand - stock - p);
+  const base = { name, detail, stock, planned: p || '0', demand, gap: gap || '0', swatch: SW[k], gapStyle: gap ? 'color: #C12C2C; font-weight: 500' : 'color: #16794C' };
+  if (suggest) {
+    const on = s[k];
+    return { ...base, canAdd: true, covered: false, btnLabel: on ? 'Added: ' + add[k] + ' btl' : 'Add batch of ' + add[k], btnStyle: on ? 'background: #E4FAEB; color: #16794C' : 'background: #171717; color: #FFFFFF', toggle: () => this.setState({ [k]: !s[k] }) };
+  }
+  return { ...base, canAdd: false, covered: true, btnLabel: '', btnStyle: '', toggle: () => {} };
+};
+const rows = [
+  row('chap', 'Chapman', '64 in stock, 18 expire 13 Nov', 46, 0, 94, true),
+  row('zobo', 'Zobo Mojito', 'Batch ADN-1109-01 planned today', 12, 60, 66, false),
+  row('pass', 'Passion Martini', '', 48, 0, 36, false),
+  row('vm', 'Virgin Mojito', '', 55, 0, 40, false),
+  row('pine', 'Pineapple Ginger Fizz', 'Sold out last batch, 40 left', 40, 0, 64, true),
+  row('tn', 'Tiger Nut Colada', 'Batch ADN-1109-02 bottling now', 8, 48, 50, false)
+];
+const plan = [{ name: 'Zobo Mojito', when: 'Mon 9 Nov', qty: 60 }, { name: 'Tiger Nut Colada', when: 'Mon 9 Nov, in progress', qty: 48 }];
+if (s.chap) plan.push({ name: 'Chapman', when: 'Tue 10 Nov', qty: 48 });
+if (s.pine) plan.push({ name: 'Pineapple Ginger Fizz', when: 'Wed 11 Nov', qty: 24 });
+const rumNeed = 9 + (s.chap ? 5 : 0), rumHave = 13;
+const juice = 0 + (s.pine ? 5 : 0), spare = 20;
+const ing = [
+  { name: 'White rum', text: rumNeed + ' of ' + rumHave + ' btl', style: rumNeed > rumHave ? 'color: #C12C2C; font-weight: 500' : 'color: #16794C' },
+  { name: 'Chapman mix', text: s.chap ? '12 of 20 L' : '0 of 20 L', style: 'color: #16794C' },
+  { name: 'Pineapple juice', text: (6 + juice) + ' of ' + spare + ' L', style: 'color: #16794C' },
+  { name: '330 ml bottles', text: (108 + (s.chap ? 48 : 0) + (s.pine ? 24 : 0)) + ' of 210', style: 'color: #16794C' }
+];
+const short = rumNeed > rumHave;
+return { rows, plan, ing, short, shortText: short ? 'White rum falls short by ' + (rumNeed - rumHave) + ' bottle. It is also reserved for Saturday\'s wedding bar. Request a restock before starting the Chapman batch.' : '' };
+}
+}
+</script>
+</body>
+</html>

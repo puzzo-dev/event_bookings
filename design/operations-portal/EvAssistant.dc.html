@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Event prep</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 15px; color: #383838; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="min-height: 52px; padding: 8px 12px; border-bottom: 1px solid #EDEDED; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center">
+<a href="#" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; color: #383838"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<h1 style="margin: 0; text-align: center; font-size: 17px; font-weight: 600; color: #171717">Event prep</h1>
+<span></span>
+</header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 16px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(100px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 64px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load event prep</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 64px 16px 16px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">No tasks yet</span><span style="font-size: 14px; color: #525252; max-width: 360px">Tasks appear once the booking is confirmed.</span></div></sc-if><div style="display: {{vShow}}; flex-direction: column; flex: 1; min-height: 0">
+
+<div style="flex: 1; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span style="background: #E6F7F4; color: #0B6E5E; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; align-self: flex-start; white-space: nowrap; flex-shrink: 0">Confirmed · Sat 14 Nov</span>
+<span style="font-size: 20px; font-weight: 600; color: #171717">Tomi &amp; Dayo wedding</span>
+<span style="font-size: 14px; color: #6B6B6B">4:00 pm · Victoria Island · 250 guests · set-up from 1:00 pm</span>
+</div>
+
+<section style="display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center"><h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Checklist</h2><span style="font-size: 13px; color: #6B6B6B">{{doneCount}}</span></div>
+<sc-for list="{{tasks}}" as="t" hint-placeholder-count="6">
+<button type="button" onClick="{{t.toggle}}" aria-pressed="{{t.pressed}}" style="min-height: 48px; display: flex; align-items: center; gap: 12px; padding: 0; border: none; border-bottom: 1px solid #EDEDED; background: transparent; text-align: left; font: 400 15px Inter, sans-serif; color: #171717">
+<span aria-hidden="true" style="width: 20px; height: 20px; flex-shrink: 0; border-radius: 6px; display: flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 13px; {{t.box}}">{{t.mark}}</span>
+<span style="flex: 1; {{t.text}}">{{t.label}}</span>
+</button>
+</sc-for>
+</section>
+
+<section style="display: flex; flex-direction: column; gap: 6px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Staff</h2>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; border-bottom: 1px solid #EDEDED"><span>Bartenders</span><span style="background: #FFF7D3; color: #9A4A00; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">2 of 4</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center; min-height: 44px; border-bottom: 1px solid #EDEDED"><span>Waiters, mixologist, bar backs</span><span style="background: #E4FAEB; color: #16794C; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">All confirmed</span></div>
+</section>
+</div>
+
+<div style="padding: 12px 16px; border-top: 1px solid #EDEDED; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px">
+<button type="button" style="height: 44px; border: none; border-radius: 10px; background: #F3F3F3; color: #171717; font: 500 15px Inter, sans-serif">Find bartenders</button>
+<a href="EvPackEvent.dc.html" style="height: 44px; box-sizing: border-box; border-radius: 10px; background: #171717; color: #FFFFFF; font: 500 15px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; text-decoration: none">Pack items</a>
+</div>
+
+</div>
+<nav aria-label="App" style="border-top: 1px solid #EDEDED; display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); padding: 4px 4px 20px">
+<a href="#" aria-current="page" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; font-weight: 500; color: #171717; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 11l3 3 8-8"></path><path d="M20 12v7a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h9"></path></svg>Today</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: #6B6B6B; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><rect x="3" y="4" width="18" height="17" rx="2"></rect><path d="M16 2v4M8 2v4M3 10h18"></path></svg>Bookings</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: #6B6B6B; text-decoration: none"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M21 8l-9-5-9 5 9 5 9-5z"></path><path d="M3 8v8l9 5 9-5V8"></path></svg>Stock</a>
+<a href="#" style="min-height: 52px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 4px; font-size: 12px; color: #6B6B6B; text-decoration: none"><span aria-hidden="true" style="width: 20px; height: 20px; border-radius: 10px; background: #EDEDED; color: #383838; font-size: 9px; font-weight: 600; display: flex; align-items: center; justify-content: center">AS</span>You</a>
+</nav>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 72px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+constructor(p) { super(p); this.__vinit(); const read = () => { try { return JSON.parse(localStorage.getItem('opsPacked') || '{}').v2 || null; } catch (e) { return null; } }; this.state = { packed: read(), done: { 'Bar counter and gold d\u00E9cor packed': true, 'Signature menu printed': true } }; try { window.addEventListener('storage', () => this.setState({ packed: read() })); window.addEventListener('focus', () => this.setState({ packed: read() })); } catch (e) {} }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const labels = ['Coupe & highball glasses packed', 'Bar counter and gold d\u00E9cor packed', 'Signature menu printed', 'Ice \u00B7 40 bags (collect on the day)', 'Confirm 2 more bartenders', 'Send staff call time on WhatsApp'];
+const pk = this.state.packed;
+if (pk && pk.short) labels.splice(1, 0, 'Buy what is short: ' + pk.short);
+const dn = (l) => l === labels[0] ? !!pk : !!this.state.done[l];
+return { doneCount: labels.filter(dn).length + ' of ' + labels.length + ' done', tasks: labels.map((label, i) => { const d = dn(label); return {
+label,
+pressed: d ? 'true' : 'false',
+mark: d ? '\u2713' : '',
+box: d ? 'background: #171717; border: 1px solid #171717' : 'background: #FFFFFF; border: 1px solid #C7C7C7',
+text: d ? 'color: #6B6B6B; text-decoration: line-through' : 'color: #171717',
+toggle: () => { if (i === 0) return; this.setState({ done: Object.assign({}, this.state.done, { [label]: !this.state.done[label] }) }); }
+}; }) };
+}
+}
+</script>
+</body>
+</html>

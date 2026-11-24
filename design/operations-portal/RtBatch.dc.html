@@ -1,0 +1,102 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Batch detail</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}.pg>header{padding-left:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important;padding-right:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important}.pg>*:not(header){width:100%;max-width:var(--pg-max,1080px);margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}input[type=number]{-moz-appearance:textfield;appearance:textfield}input[type=number]::-webkit-inner-spin-button,input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none;margin:0}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 820px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-wrap: wrap; align-items: stretch">
+<div style="flex: 0 0 auto; display: flex"><dc-import name="EvSidebar" active="production" role="Owner" hint-size="224px,900px"></dc-import></div>
+<div class="pg" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px"><h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #171717">Batch ADN-1109-02</h1><div style="display: flex; align-items: center; gap: 8px"></div></header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load this batch</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Batch not found</span><span style="font-size: 14px; color: #525252; max-width: 360px">It may have been removed.</span></div></sc-if>
+<div style="display: {{vShow}}; flex-direction: column; flex: 1">
+<div style="display: flex; flex-wrap: wrap; flex: 1">
+<main style="flex: 999 1 480px; min-width: 0; box-sizing: border-box; padding: 20px 20px 40px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px"><a href="RtProduction.dc.html" style="font-size: 13px">‹ All batches</a><span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; {{pill}}">{{stageName}}</span></div>
+<ol style="list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 8px">
+<sc-for list="{{stages}}" as="s" hint-placeholder-count="5"><li style="flex: 1 1 120px; display: flex; flex-direction: column; gap: 6px"><span style="height: 4px; border-radius: 2px; {{s.bar}}"></span><span style="font-size: 13px; {{s.text}}">{{s.name}}</span></li></sc-for>
+</ol>
+<sc-if value="{{isBottling}}" hint-placeholder-val="{{ true }}">
+<section style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 12px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Record the bottling</h2>
+<div style="display: flex; flex-wrap: wrap; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="filled" style="font-size: 13px; color: #525252">Bottles filled</label><input id="filled" type="number" value="46" style="width: 120px; height: 28px; box-sizing: border-box; border: none; border-radius: 8px; background: #F3F3F3; padding: 0 8px; font: 400 14px Inter, sans-serif; color: #171717"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><label for="waste" style="font-size: 13px; color: #525252">Spilled or broken</label><input id="waste" type="number" value="2" style="width: 120px; height: 28px; box-sizing: border-box; border: none; border-radius: 8px; background: #F3F3F3; padding: 0 8px; font: 400 14px Inter, sans-serif; color: #171717"></div>
+<div style="display: flex; flex-direction: column; gap: 6px"><span style="font-size: 13px; color: #525252">Planned</span><span style="height: 28px; display: flex; align-items: center; color: #171717">48 bottles</span></div>
+</div>
+<span style="font-size: 13px; color: #6B6B6B">Only filled bottles are added to stock. The 2 lost bottles are logged as wastage.</span>
+</section>
+</sc-if>
+<sc-if value="{{isQc}}" hint-placeholder-val="{{ false }}">
+<section style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 8px">
+<h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Quality check</h2>
+<span style="color: #525252">Taste a sample, check the caps and seals, and stick the labels on.</span>
+<span style="color: #171717">Label: Adun Tiger Nut Colada · {{code}} · best before 23 Nov</span>
+</section>
+</sc-if>
+<sc-if value="{{isDone}}" hint-placeholder-val="{{ false }}">
+<section style="background: #E4FAEB; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 4px">
+<span style="font-weight: 600; color: #16794C">46 bottles added to stock</span>
+<span style="color: #16794C">They are now on sale for new orders and in the online shop.</span>
+</section>
+</sc-if>
+<div style="display: flex; gap: 8px"><sc-if value="{{canAdvance}}" hint-placeholder-val="{{ true }}"><button type="button" onClick="{{advance}}" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">{{nextLabel}}</button></sc-if><button type="button" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; font: 500 14px Inter, sans-serif; cursor: pointer; background: #F3F3F3; color: #383838">Report a problem</button></div>
+</main>
+<aside aria-label="Batch details" style="flex: 1 1 320px; max-width: 360px; box-sizing: border-box; border-left: 1px solid #EDEDED; padding: 20px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-size: 12px; color: #6B6B6B">{{code}}</span><h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Tiger Nut Colada · 48 bottles</h2></div>
+<div style="display: flex; flex-direction: column">
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EDEDED"><span>Started</span><span style="color: #171717">Mon 9 Nov, 09:10</span></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EDEDED"><span>Best before</span><span style="color: #171717">Mon 23 Nov</span></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EDEDED"><span>Team</span><span style="color: #171717">Kemi, Tunde</span></div>
+<div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #EDEDED"><span>Cost per bottle</span><span style="color: #171717">₦960</span></div>
+</div>
+<div style="display: flex; flex-direction: column; gap: 4px"><span style="font-size: 13px; color: #525252">Ingredients used</span>
+<div style="display: flex; justify-content: space-between"><span style="color: #171717">Tiger nut milk</span><span>10.6 L</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #171717">Coconut cream</span><span>2.4 L</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #171717">Pineapple juice</span><span>2.4 L</span></div>
+<div style="display: flex; justify-content: space-between"><span style="color: #171717">Bottles and caps</span><span>48</span></div></div>
+</aside>
+</div>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":820}}'>
+class Component extends DCLogic {
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+constructor(p) { super(p); this.__vinit(); this.state = { stage: 2 }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const i = this.state.stage;
+const names = ['Planned', 'Mixing', 'Bottling', 'Quality check', 'Ready'];
+const next = ['Start mixing', 'Start bottling', 'Finish bottling', 'Pass quality check', ''];
+const pills = ['background: #EDEDED; color: #525252', 'background: #E6F4FF; color: #005EB0', 'background: #E6F4FF; color: #005EB0', 'background: #FFF7D3; color: #9A4A00', 'background: #E4FAEB; color: #16794C'];
+return {
+  code: 'ADN-1109-02', stageName: i === 0 ? 'Not Started' : i === 4 ? 'Completed' : 'In Process', pill: pills[i], nextLabel: next[i], canAdvance: i < 4,
+  isBottling: i === 2, isQc: i === 3, isDone: i === 4,
+  stages: names.map((n, k) => ({ name: n, bar: k <= i ? 'background: #171717' : 'background: #E2E2E2', text: k === i ? 'color: #171717; font-weight: 600' : k < i ? 'color: #525252' : 'color: #8C8C8C' })),
+  advance: () => this.setState({ stage: Math.min(4, i + 1) })
+};
+}
+}
+</script>
+</body>
+</html>

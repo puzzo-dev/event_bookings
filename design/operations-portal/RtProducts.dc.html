@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Products and stock</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}.pg>header{padding-left:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important;padding-right:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important}.pg>*:not(header){width:100%;max-width:var(--pg-max,1080px);margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 1040px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-wrap: wrap; align-items: stretch">
+<div style="flex: 0 0 auto; display: flex"><dc-import name="EvSidebar" active="products" role="Owner" hint-size="224px,900px"></dc-import></div>
+
+<div class="pg" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #171717">Products</h1>
+<div style="display: flex; gap: 8px">
+<a href="RtEditProduct.dc.html" style="height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 8px; background: #F3F3F3; color: #383838; text-decoration: none; font-size: 14px; font-weight: 500">New product</a>
+<a href="RtProduction.dc.html" style="height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 8px; background: #171717; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 500">Bottle a batch</a>
+</div>
+</header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load products</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">No products yet</span><span style="font-size: 14px; color: #525252; max-width: 360px">Add a product to start selling.</span></div></sc-if>
+<div style="display: {{vShow}}; flex-direction: column; flex: 1">
+
+<div style="padding: 12px 20px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<div role="group" aria-label="Show" style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px">
+<button type="button" aria-pressed="true" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717; font: 500 13px Inter, sans-serif">All drinks 6</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Cocktails 3</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Mocktails 3</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Mixed packs 3</button>
+</div>
+<span style="font-size: 13px; color: #6B6B6B">Stock counted in bottles · packs come out of the same stock</span>
+</div>
+
+<div style="padding: 0 20px 24px; overflow-x: auto">
+<table style="width: 100%; min-width: 880px; border-collapse: collapse">
+<thead><tr style="text-align: left">
+<th style="height: 32px; padding: 0 8px 0 0; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED">Drink</th>
+<th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED">Brand</th>
+<th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: right">Bottles</th>
+<th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: right">= 6-packs</th>
+<th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: right">Single</th>
+<th style="padding: 0 8px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED; text-align: right">6-pack</th>
+<th style="padding: 0 0 0 16px; font-size: 13px; font-weight: 400; color: #6B6B6B; border-bottom: 1px solid #EDEDED">Stock</th>
+</tr></thead>
+<tbody style="color: #525252">
+<sc-for list="{{drinks}}" as="d" hint-placeholder-count="6">
+<tr>
+<td style="height: 52px; padding: 0 8px 0 0; border-bottom: 1px solid #EDEDED"><div style="display: flex; align-items: center; gap: 10px"><span aria-hidden="true" style="width: 28px; height: 28px; border-radius: 8px; flex-shrink: 0; {{d.swatch}}"></span><div style="display: flex; flex-direction: column; gap: 2px"><a href="RtProduct.dc.html" onClick="{{d.pick}}" style="color: #171717; font-weight: 500; text-decoration: none">{{d.name}}</a><span style="font-size: 12px; color: #6B6B6B">{{d.kind}} · 330 ml</span></div></div></td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED">Adun</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right; color: #171717">{{d.bottles}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right">{{d.packs}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right">{{d.single}}</td>
+<td style="padding: 0 8px; border-bottom: 1px solid #EDEDED; text-align: right">{{d.six}}</td>
+<td style="padding: 0 0 0 16px; border-bottom: 1px solid #EDEDED"><span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; {{d.badge}}">{{d.status}}</span></td>
+</tr>
+</sc-for>
+</tbody>
+</table>
+</div>
+
+<section style="padding: 0 20px 40px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between; align-items: center"><h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Mixed packs</h2><a href="RtEditPack.dc.html" style="height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 8px; background: #F3F3F3; color: #383838; text-decoration: none; font-size: 14px; font-weight: 500">New mixed pack</a></div>
+<div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px">
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><a href="RtEditPack.dc.html" style="font-weight: 500; color: #171717; text-decoration: none">Party Mix 6</a><span style="color: #171717">₦19,500</span></div>
+<span style="font-size: 13px; color: #6B6B6B">Set mix: 2 Chapman · 2 Zobo Mojito · 2 Passion Martini</span>
+<span style="font-size: 12px; color: #16794C">Can make 7 now</span>
+</div>
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><a href="RtEditPack.dc.html" style="font-weight: 500; color: #171717; text-decoration: none">Mocktail Mix 6</a><span style="color: #171717">₦15,000</span></div>
+<span style="font-size: 13px; color: #6B6B6B">Set mix: 2 Virgin Mojito · 2 Pineapple Ginger · 2 Tiger Nut Colada</span>
+<span style="font-size: 12px; color: #9A4A00">Can make 3 · limited by Tiger Nut Colada</span>
+</div>
+<div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 14px; display: flex; flex-direction: column; gap: 8px">
+<div style="display: flex; justify-content: space-between"><a href="RtEditPack.dc.html" style="font-weight: 500; color: #171717; text-decoration: none">Build your own 6</a><span style="color: #171717">₦19,500</span></div>
+<span style="font-size: 13px; color: #6B6B6B">Customer picks any 6 at checkout · pack price applied</span>
+<span style="font-size: 12px; color: #6B6B6B">Added from New order</span>
+</div>
+</div>
+</section>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":1040}}'>
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = {}; this.__vinit(); }
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const B = { ok: 'background: #E4FAEB; color: #16794C', low: 'background: #FFF7D3; color: #9A4A00', exp: 'background: #FFF0F0; color: #C12C2C' };
+const d = (name, kind, bottles, single, six, st, label, swatch) => ({ pick: () => { try { localStorage.setItem('opsSel_product', name); } catch (e) {} }, name, kind, bottles, packs: Math.floor(bottles / 6), single, six, badge: B[st], status: label, swatch });
+return { drinks: [
+d('Chapman', 'Cocktail', 64, '₦3,500', '₦19,500', 'exp', '18 expire 13 Nov', 'background: #F6C9C0'),
+d('Zobo Mojito', 'Cocktail', 12, '₦3,500', '₦19,500', 'low', 'Low · bottle a batch', 'background: #E6C6E8'),
+d('Passion Martini', 'Cocktail', 48, '₦4,000', '₦22,000', 'ok', 'In stock', 'background: #FCE7B2'),
+d('Virgin Mojito', 'Mocktail', 55, '₦2,800', '₦15,000', 'ok', 'In stock', 'background: #CDEFD6'),
+d('Pineapple Ginger Fizz', 'Mocktail', 40, '₦2,800', '₦15,000', 'ok', 'In stock', 'background: #FFF2B8'),
+d('Tiger Nut Colada', 'Mocktail', 8, '₦2,800', '₦15,000', 'low', 'Low · batch in progress', 'background: #EDE3D2')
+] };
+}
+}
+</script>
+</body>
+</html>

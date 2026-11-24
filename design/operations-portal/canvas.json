@@ -1,0 +1,833 @@
+{
+ "v": 3,
+ "attachments": {},
+ "boards": {
+  "EvAssignStaff.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Events \u00b7 Assign to event (popup)",
+   "w": 1440,
+   "x": 3040,
+   "y": 12100,
+   "is_interactive": true
+  },
+  "EvAssistant.dc.html": {
+   "h": 844,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Events \u00b7 Assistant, event prep (phone)",
+   "w": 390,
+   "x": 0,
+   "y": 2980
+  },
+  "EvBooking.dc.html": {
+   "expand": "fill",
+   "h": 1180,
+   "page": "events",
+   "title": "Events \u00b7 Booking detail",
+   "w": 1440,
+   "x": 3040,
+   "y": 0,
+   "is_interactive": true
+  },
+  "EvBookings.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Events \u00b7 Bookings",
+   "w": 1440,
+   "x": 1520,
+   "y": 0,
+   "is_interactive": true
+  },
+  "EvCalendar.dc.html": {
+   "expand": "fill",
+   "h": 960,
+   "page": "events",
+   "title": "Events \u00b7 Calendar",
+   "w": 1440,
+   "x": 0,
+   "y": 1600,
+   "is_interactive": true
+  },
+  "EvClient.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Core \u00b7 Client detail",
+   "w": 1440,
+   "x": 3560,
+   "y": 10500
+  },
+  "EvClients.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Core \u00b7 Clients",
+   "w": 1440,
+   "x": 0,
+   "y": 10500,
+   "is_interactive": true
+  },
+  "EvEventPrep.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Events \u00b7 Event prep",
+   "w": 1440,
+   "x": 1520,
+   "y": 14700,
+   "is_interactive": true
+  },
+  "EvHome.dc.html": {
+   "expand": "fill",
+   "h": 1480,
+   "page": "events",
+   "title": "Events \u00b7 Home",
+   "w": 1440,
+   "x": 0,
+   "y": 0,
+   "is_interactive": true
+  },
+  "EvNewBooking.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "page": "events",
+   "title": "Events \u00b7 New booking (dialog)",
+   "w": 1440,
+   "x": 1520,
+   "y": 1600,
+   "is_interactive": true
+  },
+  "EvNewPurchase.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "page": "events",
+   "title": "Core \u00b7 Record purchase (popup)",
+   "w": 1440,
+   "x": 1520,
+   "y": 12100,
+   "is_interactive": true
+  },
+  "EvPackEvent.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "page": "events",
+   "title": "Events \u00b7 Pack items (popup)",
+   "w": 1440,
+   "x": 0,
+   "y": 14700,
+   "is_interactive": true
+  },
+  "EvPayments.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Core \u00b7 Payments",
+   "w": 1440,
+   "x": 3040,
+   "y": 13400,
+   "is_interactive": true
+  },
+  "EvPurchases.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Core \u00b7 Purchases",
+   "w": 1440,
+   "x": 0,
+   "y": 12100,
+   "is_interactive": true
+  },
+  "EvReviews.dc.html": {
+   "expand": "fill",
+   "h": 1000,
+   "page": "events",
+   "title": "Core \u00b7 Reviews",
+   "w": 1440,
+   "x": 1520,
+   "y": 10500,
+   "is_interactive": true
+  },
+  "EvSettings.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Shell \u00b7 Settings (dialog)",
+   "w": 1440,
+   "x": 3040,
+   "y": 1600
+  },
+  "EvSidebar.dc.html": {
+   "h": 900,
+   "page": "events",
+   "title": "Shell \u00b7 Sidebar component",
+   "w": 224,
+   "x": 470,
+   "y": 2980,
+   "is_interactive": true
+  },
+  "EvStaff.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Core \u00b7 Staff",
+   "w": 1440,
+   "x": 1520,
+   "y": 13400,
+   "is_interactive": true
+  },
+  "EvStaffMember.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Core \u00b7 Staff member detail",
+   "w": 1440,
+   "x": 5080,
+   "y": 13400
+  },
+  "EvStock.dc.html": {
+   "expand": "fill",
+   "h": 960,
+   "page": "events",
+   "title": "Core \u00b7 Stock and ingredients",
+   "w": 1440,
+   "x": 0,
+   "y": 13400,
+   "is_interactive": true
+  },
+  "EvStockItem.dc.html": {
+   "expand": "fill",
+   "h": 960,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Core \u00b7 Stock item detail",
+   "w": 1440,
+   "x": 6600,
+   "y": 13400
+  },
+  "Main.dc.html": {
+   "expand": "fill",
+   "h": 1120,
+   "page": "couture",
+   "title": "Owner \u00b7 Home",
+   "w": 1440,
+   "x": 0,
+   "y": 0,
+   "is_interactive": true
+  },
+  "MyWork.dc.html": {
+   "h": 844,
+   "page": "couture",
+   "title": "Team Member \u00b7 My work (phone)",
+   "w": 390,
+   "x": 0,
+   "y": 1540,
+   "is_interactive": true
+  },
+  "NewOrder.dc.html": {
+   "h": 844,
+   "page": "couture",
+   "title": "Owner/Sales \u00b7 New bespoke order (phone)",
+   "w": 390,
+   "x": 470,
+   "y": 1540,
+   "is_interactive": true
+  },
+  "Production.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "couture",
+   "title": "Team Lead \u00b7 Production board",
+   "w": 1440,
+   "x": 1520,
+   "y": 0,
+   "is_interactive": true
+  },
+  "RtBatch.dc.html": {
+   "expand": "fill",
+   "h": 820,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Batch detail",
+   "w": 1440,
+   "x": 0,
+   "y": 6700
+  },
+  "RtEditPack.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Retail \u00b7 Edit mixed pack (dialog)",
+   "w": 1440,
+   "x": 1520,
+   "y": 7900
+  },
+  "RtEditProduct.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Retail \u00b7 Edit product (dialog)",
+   "w": 1440,
+   "x": 0,
+   "y": 7900
+  },
+  "RtEditRecipe.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Edit recipe (dialog)",
+   "w": 1440,
+   "x": 3040,
+   "y": 6700
+  },
+  "RtOrder.dc.html": {
+   "expand": "fill",
+   "h": 860,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Retail \u00b7 Order detail",
+   "w": 1440,
+   "x": 5060,
+   "y": 4200
+  },
+  "RtOrders.dc.html": {
+   "expand": "fill",
+   "h": 860,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Retail \u00b7 Orders",
+   "w": 1440,
+   "x": 0,
+   "y": 4200
+  },
+  "RtPlan.dc.html": {
+   "expand": "fill",
+   "h": 980,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Plan",
+   "w": 1440,
+   "x": 0,
+   "y": 5500
+  },
+  "RtProduction.dc.html": {
+   "expand": "fill",
+   "h": 860,
+   "page": "events",
+   "title": "Production \u00b7 Batches",
+   "w": 1440,
+   "x": 1520,
+   "y": 5500,
+   "is_interactive": true
+  },
+  "RtProducts.dc.html": {
+   "expand": "fill",
+   "h": 1040,
+   "page": "events",
+   "title": "Retail \u00b7 Products",
+   "w": 1440,
+   "x": 1520,
+   "y": 4200,
+   "is_interactive": true
+  },
+  "RtRecipe.dc.html": {
+   "expand": "fill",
+   "h": 760,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Recipe detail",
+   "w": 1440,
+   "x": 4560,
+   "y": 6700
+  },
+  "RtRecipes.dc.html": {
+   "expand": "fill",
+   "h": 760,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Recipes",
+   "w": 1440,
+   "x": 1520,
+   "y": 6700
+  },
+  "RtSale.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "page": "events",
+   "title": "Retail \u00b7 New order (popup)",
+   "w": 1440,
+   "x": 3040,
+   "y": 4200,
+   "is_interactive": true
+  },
+  "RtStartBatch.dc.html": {
+   "expand": "fill",
+   "h": 900,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Production \u00b7 Start a batch (dialog)",
+   "w": 1440,
+   "x": 3040,
+   "y": 5500
+  },
+  "SidebarStates.dc.html": {
+   "h": 960,
+   "is_interactive": true,
+   "page": "events",
+   "title": "Shell \u00b7 Sidebar, expanded and collapsed",
+   "w": 640,
+   "x": 1520,
+   "y": -1200
+  },
+  "EvPayment.dc.html": {
+   "x": 8120,
+   "y": 13400,
+   "w": 1440,
+   "h": 900,
+   "title": "Core \u00b7 Payment detail",
+   "expand": "fill",
+   "page": "events",
+   "is_interactive": true
+  },
+  "EvPurchase.dc.html": {
+   "x": 4560,
+   "y": 12100,
+   "w": 1440,
+   "h": 900,
+   "title": "Core \u00b7 Purchase detail",
+   "expand": "fill",
+   "page": "events",
+   "is_interactive": true
+  },
+  "EvReview.dc.html": {
+   "x": 5080,
+   "y": 10500,
+   "w": 1440,
+   "h": 1000,
+   "title": "Core \u00b7 Review detail",
+   "expand": "fill",
+   "page": "events",
+   "is_interactive": true
+  },
+  "RtProduct.dc.html": {
+   "x": 6580,
+   "y": 4200,
+   "w": 1440,
+   "h": 1040,
+   "title": "Retail \u00b7 Product detail",
+   "expand": "fill",
+   "page": "events",
+   "is_interactive": true
+  }
+ },
+ "createdOnFiles": {
+  "at": "2026-11-09T07:20:00Z",
+  "v": 1
+ },
+ "designSystems": [],
+ "launch": {
+  "page": "events",
+  "view": "canvas"
+ },
+ "notes": {
+  "e1": {
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "events",
+   "text": "Avril Beetails \u2014 Avril (owner) on desktop",
+   "x": 0,
+   "y": -300
+  },
+  "e10": {
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "events",
+   "text": "Production \u2014 plan it, start it, bottle it",
+   "x": 0,
+   "y": 5300
+  },
+  "e11": {
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "events",
+   "text": "Edit screens \u2014 every product, pack and recipe has its own",
+   "x": 0,
+   "y": 7600
+  },
+  "e12": {
+   "fill": "yellow",
+   "page": "events",
+   "size": "m",
+   "text": "Product edit = Item (price lists, reorder level, shelf_life_in_days, website visibility). Mixed pack edit = Product Bundle of Items. Recipe edit = BOM: the Item is fixed, ingredients are picked from the Item master, not typed.",
+   "w": 420,
+   "x": 3040,
+   "y": 7900
+  },
+  "e13": {
+   "kind": "title1",
+   "maxW": 1000,
+   "page": "events",
+   "text": "Sidebar",
+   "x": 1520,
+   "y": -1400
+  },
+  "e14": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Sidebar = frappe-ui Sidebar. SidebarHeader with app switcher menu, SidebarLabel sections (collapsible), SidebarItem h-7 with icons, SidebarCollapseToggle in the footer. Collapsed it is a 3rem icon rail; the toggle works on every screen.",
+   "w": 420,
+   "x": 2200,
+   "y": -1200
+  },
+  "e15": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "New order = ERPNext Sales Order (order_type Sales). Customer: customer_type Individual or Company, customer_name, email. Mobile: Contact.mobile_no with country calling code. Delivery: Address doctype (address_line1, address_line2, city, state, pincode, country) set as shipping address; delivery_date is required on a Sales Order. Shipping charge: Shipping Rule. Pickup skips the address. Payment: advance Payment Entry, or Sales Invoice at delivery for pay on delivery. Flow after: Delivery Note, Sales Invoice, Payment Entry.",
+   "w": 440,
+   "x": 4540,
+   "y": 4200
+  },
+  "e16": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "New booking = ERPNext Quotation, which becomes a Sales Order when accepted and a Sales Invoice for the deposit. Client = Customer (Individual or Company) with Contact mobile and calling code. Venue = Address doctype. Event date, times and guests are custom fields. Packages are not a special field: they are Items (Item Group Packages, Add-ons, Hire and supplies, Staff) on the Quotation items table with qty, rate (editable) and amount, plus additional discount %. Deposit = payment terms or advance Payment Entry.",
+   "w": 440,
+   "x": 3020,
+   "y": 1600
+  },
+  "e17": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "events",
+   "text": "Clients and reviews",
+   "x": 0,
+   "y": 10200
+  },
+  "e18": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Clients = ERPNext Customer (customer_type Individual or Company) with its Contact (mobile, email) and primary Address. Events, spent and next event come from the customer's Quotations and Sales Orders. Reviews = a custom Event Review doctype linked to the Customer and the Sales Order: rating 1 to 5, review text, reply, and a Show on website flag that the OpsCMS booking page reads. The review request goes out by WhatsApp 24 hours after the event is marked Executed.",
+   "w": 440,
+   "x": 3040,
+   "y": 10500
+  },
+  "e19": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "events",
+   "text": "Purchases",
+   "x": 0,
+   "y": 11800
+  },
+  "e2": {
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "events",
+   "text": "Calendar, new booking and settings",
+   "x": 0,
+   "y": 1300
+  },
+  "e20": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Record purchase = ERPNext Purchase Invoice with Update Stock when the goods are received, or a Purchase Order when still on order (mark received later to create the Purchase Receipt). Supplier = Supplier with Contact and Address. Items are stock Items; the purchase UOM converts to the stock UOM (6 L adds 6,000 ml). Delivery charge = taxes and charges row. Paid now = Payment Entry (Pay) against the invoice; Pay later sets the due date in payment terms and shows under To pay.",
+   "w": 440,
+   "x": 3040,
+   "y": 12100
+  },
+  "e21": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "events",
+   "text": "Stock, staff and payments",
+   "x": 0,
+   "y": 13100
+  },
+  "e22": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Stock = ERPNext Bin and Stock Ledger per Item; the reorder level is the Item Reorder row, and Reorder opens a purchase (or a Material Request on Reorder). Staff = Employee with a designation (bartender, bar back, mixologist, driver, coordinator); assignments are the staff table on the booking and Shift Assignment. Payments = Payment Entry: Receive for clients and orders, Pay for suppliers. Receive entries take the transaction ID automatically from the POS or the payment gateway; Pay entries are typed by hand. Cash has no ID.",
+   "w": 440,
+   "x": 4560,
+   "y": 13400
+  },
+  "e23": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Assign to event = a row added to the booking's staff table (Employee, role, call time, finish, pay, note). Only Confirmed and Paid bookings can be picked. The slot bars compare staff needed (from the packages on the booking) with staff already assigned. Warnings: already assigned to this booking, another booking the same day (checked against other staff table rows and Shift Assignment), and role slots already full. Pay defaults to the employee's usual rate for the designation. The WhatsApp message goes out through the WhatsApp integration.",
+   "w": 440,
+   "x": 4560,
+   "y": 12100
+  },
+  "e24": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Pack items = Stock Entries on the booking's Sales Order. Items come from the packages on the booking (the Product Bundle and BOM of each package). Used up items (drinks, ice, ingredients): Stock Entry, Material Issue from the main warehouse. Goes out and comes back items (glasses, hire): Stock Entry, Material Transfer from the main warehouse to an Out at events warehouse. After the event the owner checks them back in, a Transfer back, and anything broken or missing is written off as a Material Issue. Short items link to Record purchase. The owner never sees Stock Entry, only a packing list.",
+   "w": 440,
+   "x": 3040,
+   "y": 14700
+  },
+  "e25": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Event prep = a Project made from a template when the booking is confirmed, with a Task per job: pack the kit, collect ice, d\u00e9cor, menu, confirm bartenders, send call times. The owner ticks tasks off, adds her own and assigns them. The same Tasks show on the phone. Pack items is a separate stock movement (Stock Entries, see the note beside it). The packing task is linked to it and completes itself once the list is marked as packed. Assign staff links from the staff tasks.",
+   "w": 440,
+   "x": 3520,
+   "y": 14700
+  },
+  "e26": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "Status tags always show the real ERPNext status of the document, never our own wording. Bookings: Draft, Open (Quotation), Unpaid, Partly Paid, Paid (Sales Invoice), Completed (Sales Order), Cancelled. Orders: To Deliver and Bill, To Deliver, Completed (Sales Order) and Paid or Unpaid. Purchases: To Receive and Bill (Purchase Order), Paid, Unpaid, Overdue (Purchase Invoice). Batches: Not Started, In Process, Completed (Work Order). Staff: Active or Inactive (Employee). Event prep tasks: Open or Completed (Task). Tabs and filters such as To pack or Free this week are only filters, not statuses.",
+   "w": 440,
+   "x": 3520,
+   "y": 15400
+  },
+  "e3": {
+   "kind": "title1",
+   "maxW": 2000,
+   "page": "events",
+   "text": "The Assistant on the go",
+   "x": 0,
+   "y": 2680
+  },
+  "e4": {
+   "fill": "teal",
+   "size": "m",
+   "text": "Statuses follow event_bookings exactly: New \u2192 Quoted \u2192 Invoiced \u2192 Confirmed \u2192 Paid \u2192 Executed (forward-only, Cancelled aside). The portal never asks Avril to open a Quotation or Sales Order \u2014 the actions do it.",
+   "w": 420,
+   "x": 800,
+   "y": 2980
+  },
+  "e5": {
+   "fill": "gray",
+   "size": "m",
+   "text": "frappe-ui map\nHome: NumberCard strip, feed List, Badge\nBookings: List + ListHeaderCellSort, TabButtons, TextInput search\nDetail: two-pane detail + meta panel w-[20rem], Tabs underline, Progress\nCalendar: Calendar (frappe-ui/experimental) Month mode\nNew booking: Dialog size xl + FormControl + Combobox + MultiSelect\nSettings: SettingsDialog \u2192 SettingsNavGroup \u2192 SettingsRow + Switch\nPhone: MobileShell + MobileNav",
+   "w": 420,
+   "x": 800,
+   "y": 3320
+  },
+  "e6": {
+   "fill": "yellow",
+   "size": "m",
+   "text": "Settings rows map 1:1 to Event Booking Settings fields: enable_automated_status, auto_executed_after_event_date, pre_event_reminder_days, default_customer_group, default_warehouse, require_review.",
+   "w": 420,
+   "x": 1260,
+   "y": 2980
+  },
+  "e7": {
+   "kind": "title1",
+   "maxW": 4480,
+   "page": "events",
+   "text": "Retail \u2014 Avril's packed drinks",
+   "x": 0,
+   "y": 3900
+  },
+  "e8": {
+   "fill": "teal",
+   "page": "events",
+   "size": "m",
+   "text": "Online orders are ERPNext Sales Orders from the OpsCMS shop, fulfilled here. Stock is counted in bottles. Singles and 6-packs draw from the same Item stock; mixed packs are Product Bundles. 'Adun' is only the brand. Selling packaged drinks online needs NAFDAC registration.",
+   "w": 520,
+   "x": 0,
+   "y": 9000
+  },
+  "e9": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "ERPNext Manufacturing map\nRecipe = BOM of a product Item. Ingredients are Items, priced by valuation rate. Editing saves a new BOM version and makes it default; running Work Orders keep theirs\nStart batch = Work Order + Material Transfer for Manufacture\nBottling done = Stock Entry (Manufacture), process loss = spilled or broken\nBatch code and best-before = Batch doctype (expiry_date)\nRequest restock = Material Request\nPlan = Production Plan / Work Order suggestions\nfrappe-ui: List, TabButtons, Dialog, FormControl, Badge\nThe screens keep their names. Underneath it is the ERPNext Manufacturing module: Production Plan fed by open Sales Orders and Material Requests for raw material shortages, then Work Orders. The owner only presses Start batch and Bottling done, ERPNext creates the Work Order and Stock Entries behind them.",
+   "w": 520,
+   "x": 560,
+   "y": 9000
+  },
+  "m0": {
+   "kind": "title1",
+   "maxW": 2400,
+   "page": "events",
+   "text": "Product map: what is built once, what is sold, what is set per client",
+   "x": 0,
+   "y": -2500
+  },
+  "m1": {
+   "fill": "blue",
+   "page": "events",
+   "size": "m",
+   "text": "SHELL \u00b7 built once, same for every business\nThe frappe-ui Sidebar, sticky header, settings, full width toggle, phone shell. The patterns every popup reuses: wizard steps, no close on outside click, discard confirm, searchable lists, address form with country calling codes, list with a detail panel. The shell is one frappe-ui app on top of ERPNext, the way Helpdesk and CRM are built. Each business gets the sidebar entries of the modules it has bought. Board titles start with Shell.",
+   "w": 440,
+   "x": 0,
+   "y": -2300
+  },
+  "m2": {
+   "fill": "green",
+   "page": "events",
+   "size": "m",
+   "text": "CORE \u00b7 back office every business needs, sold with any module\nClients, Reviews, Stock and ingredients, Purchases and Record purchase, Staff, Payments. ERPNext underneath: Customer, Item and Bin, Purchase Invoice, Employee, Payment Entry. Board titles start with Core.",
+   "w": 440,
+   "x": 480,
+   "y": -2300
+  },
+  "m3": {
+   "fill": "purple",
+   "page": "events",
+   "size": "m",
+   "text": "MODULES \u00b7 sold per type of business\nEvents: Home, Bookings, Booking detail, Calendar, New booking, Assign to event, Event prep, Pack items (the event_bookings app).\nRetail: Orders, New order, Products, mixed packs.\nProduction: Plan, Batches, Recipes (ERPNext Manufacturing). A business only buys the modules it runs, and the sidebar shows only those. Board titles start with the module name.",
+   "w": 440,
+   "x": 960,
+   "y": -2300
+  },
+  "m4": {
+   "fill": "yellow",
+   "page": "events",
+   "size": "m",
+   "text": "CLIENT SETUP \u00b7 set per business, never rebuilt\nLogo and name, product brand (Avril's Adun), packages and price lists, shipping rules, studio and venue addresses, staff roles and usual pay, WhatsApp number, print formats for quotes, invoices and packing lists. The names, prices and people on these boards are sample data and get replaced at onboarding.",
+   "w": 440,
+   "x": 1440,
+   "y": -2300
+  },
+  "m5": {
+   "fill": "gray",
+   "page": "events",
+   "size": "m",
+   "text": "HOW IT IS SOLD (proposal, nothing set yet)\nOne price per business: Shell and Core as the base, plus a price for each module it takes. Setup is a separate one-off fee since it is configuration. A second bar or catering client reuses the Events module and only needs the Client setup layer.",
+   "w": 440,
+   "x": 1920,
+   "y": -2300
+  },
+  "s1": {
+   "fill": "green",
+   "page": "couture",
+   "size": "m",
+   "text": "Owners get one screen: today's cash, money still owed, what's due, what's running low, and an approvals inbox \u2014 no ERP documents to open.",
+   "w": 360,
+   "x": 960,
+   "y": 1540
+  },
+  "s2": {
+   "fill": "blue",
+   "page": "couture",
+   "size": "m",
+   "text": "Employees see only their own work: assigned stages, a one-tap piece logger, and what they've earned this period.",
+   "w": 360,
+   "x": 960,
+   "y": 1880
+  },
+  "s3": {
+   "fill": "orange",
+   "page": "couture",
+   "size": "m",
+   "text": "Every button is an action, not a document. 'Confirm & send receipt' creates the quote, order, invoice and payment behind the scenes.",
+   "w": 360,
+   "x": 1400,
+   "y": 1540
+  },
+  "s4": {
+   "fill": "purple",
+   "page": "couture",
+   "size": "m",
+   "text": "The menu is built from installed modules. This site shows Couture + Retail; an events client would see Events in the same place.",
+   "w": 360,
+   "x": 1400,
+   "y": 1880
+  },
+  "s5": {
+   "fill": "gray",
+   "page": "couture",
+   "size": "m",
+   "text": "Built on frappe-ui 1.x\nHome: DesktopShell + Sidebar (14rem) + PageHeader \u00b7 NumberCard strip (frappe-ui/charts) \u00b7 List with :columns \u00b7 Badge subtle \u00b7 Progress\nApprovals: dialog.confirm on Approve\nProduction: Board archetype \u2014 w-72 columns bg-surface-gray-1, cards bg-surface-elevation-1 \u00b7 TabButtons filter\nPhones: MobileShell + PageHeaderMobile + MobileNav \u00b7 FormControl \u00b7 TabButtons for payment method\nData: useCall(portal action) \u00b7 useList(Design Project)",
+   "w": 440,
+   "x": 1840,
+   "y": 1540
+  },
+  "t1": {
+   "kind": "title1",
+   "maxW": 2960,
+   "page": "couture",
+   "text": "Run the business \u2014 desktop",
+   "x": 0,
+   "y": -300
+  },
+  "t2": {
+   "kind": "title1",
+   "maxW": 1840,
+   "page": "couture",
+   "text": "Do the work \u2014 phone",
+   "x": 0,
+   "y": 1240
+  }
+ },
+ "order": [
+  "Main.dc.html",
+  "Production.dc.html",
+  "MyWork.dc.html",
+  "NewOrder.dc.html",
+  "EvSidebar.dc.html",
+  "EvHome.dc.html",
+  "EvBookings.dc.html",
+  "EvBooking.dc.html",
+  "EvCalendar.dc.html",
+  "EvNewBooking.dc.html",
+  "EvSettings.dc.html",
+  "EvAssistant.dc.html",
+  "RtProducts.dc.html",
+  "RtProduct.dc.html",
+  "RtProduction.dc.html",
+  "RtSale.dc.html",
+  "RtOrders.dc.html",
+  "RtOrder.dc.html",
+  "RtPlan.dc.html",
+  "RtStartBatch.dc.html",
+  "RtBatch.dc.html",
+  "RtRecipes.dc.html",
+  "RtRecipe.dc.html",
+  "RtEditRecipe.dc.html",
+  "RtEditProduct.dc.html",
+  "RtEditPack.dc.html",
+  "SidebarStates.dc.html",
+  "EvClients.dc.html",
+  "EvClient.dc.html",
+  "EvReviews.dc.html",
+  "EvReview.dc.html",
+  "EvPurchases.dc.html",
+  "EvPurchase.dc.html",
+  "EvNewPurchase.dc.html",
+  "EvStock.dc.html",
+  "EvStockItem.dc.html",
+  "EvStaff.dc.html",
+  "EvStaffMember.dc.html",
+  "EvPayments.dc.html",
+  "EvPayment.dc.html",
+  "EvAssignStaff.dc.html",
+  "EvPackEvent.dc.html",
+  "EvEventPrep.dc.html"
+ ],
+ "pages": [
+  {
+   "id": "couture",
+   "name": "Couture (sample)"
+  },
+  {
+   "id": "events",
+   "name": "Avril Beetails \u00b7 Events"
+  }
+ ],
+ "title": "OpsCloud Portal"
+}
