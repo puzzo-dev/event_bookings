@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Calendar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}.pg>header{padding-left:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important;padding-right:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important}.pg>*:not(header){width:100%;max-width:var(--pg-max,1080px);margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 960px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-wrap: wrap; align-items: stretch">
+<div style="flex: 0 0 auto; display: flex"><dc-import name="EvSidebar" active="calendar" role="Owner" hint-size="224px,900px"></dc-import></div>
+
+<div class="pg" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<div style="display: flex; align-items: center; gap: 8px">
+<h1 style="margin: 0; font-size: 18px; font-weight: 600; color: #171717">November 2026</h1>
+<button type="button" aria-label="Previous month" style="width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent; color: #383838; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></button>
+<button type="button" aria-label="Next month" style="width: 28px; height: 28px; border-radius: 8px; border: none; background: transparent; color: #383838; display: flex; align-items: center; justify-content: center"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M9 18l6-6-6-6"></path></svg></button>
+<button type="button" style="height: 28px; padding: 0 10px; border-radius: 8px; border: none; background: #F3F3F3; color: #383838; font: 500 14px Inter, sans-serif">Today</button>
+</div>
+<div style="display: flex; gap: 8px; align-items: center">
+<div role="group" aria-label="View" style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px">
+<button type="button" aria-pressed="true" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717; font: 500 13px Inter, sans-serif">Month</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Week</button>
+<button type="button" aria-pressed="false" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; background: transparent; color: #525252; font: 500 13px Inter, sans-serif">Agenda</button>
+</div>
+<a href="EvNewBooking.dc.html" style="height: 28px; box-sizing: border-box; display: inline-flex; align-items: center; padding: 0 10px; border-radius: 8px; background: #171717; color: #FFFFFF; text-decoration: none; font-size: 14px; font-weight: 500">New booking</a>
+</div>
+</header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load the calendar</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Nothing scheduled</span><span style="font-size: 14px; color: #525252; max-width: 360px">Confirmed events will show here.</span></div></sc-if>
+<div style="display: {{vShow}}; flex-direction: column; flex: 1">
+
+<div style="padding: 0 20px 24px; overflow-x: auto">
+<div style="min-width: 840px; display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); border-left: 1px solid #EDEDED">
+<sc-for list="{{dow}}" as="d" hint-placeholder-count="7">
+<div style="height: 36px; display: flex; align-items: center; padding: 0 8px; font-size: 12px; color: #6B6B6B; border-right: 1px solid #EDEDED; border-bottom: 1px solid #EDEDED">{{d}}</div>
+</sc-for>
+<sc-for list="{{days}}" as="c" hint-placeholder-count="42">
+<div style="min-height: 128px; box-sizing: border-box; padding: 6px; border-right: 1px solid #EDEDED; border-bottom: 1px solid #EDEDED; display: flex; flex-direction: column; gap: 4px; {{c.cellBg}}">
+<span style="width: 24px; height: 24px; border-radius: 12px; display: flex; align-items: center; justify-content: center; font-size: 12px; {{c.numStyle}}">{{c.n}}</span>
+<sc-for list="{{c.events}}" as="e" hint-placeholder-count="1">
+<a href="{{e.href}}" style="display: block; padding: 4px 6px; border-radius: 6px; text-decoration: none; font-size: 12px; line-height: 1.3; {{e.style}}"><span style="font-weight: 500">{{e.time}}</span> {{e.title}}</a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+<div style="display: flex; flex-wrap: wrap; gap: 16px; padding-top: 12px; font-size: 12px; color: #525252">
+<sc-for list="{{legend}}" as="l" hint-placeholder-count="6">
+<span style="display: flex; align-items: center; gap: 6px"><span aria-hidden="true" style="width: 10px; height: 10px; border-radius: 3px; {{l.sw}}"></span>{{l.label}}</span>
+</sc-for>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":960}}'>
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = {}; this.__vinit(); }
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const S = {
+Draft: 'background: #F3F3F3; color: #383838',
+Open: 'background: #E6F4FF; color: #005EB0',
+Unpaid: 'background: #F5F0FF; color: #6B3FC9',
+'Partly Paid': 'background: #E6F7F4; color: #0B6E5E',
+Paid: 'background: #E4FAEB; color: #16794C',
+Completed: 'background: #EDEDED; color: #525252'
+};
+const ev = {
+'11-1': [['2 pm', 'Kemi A. birthday', 'Completed']],
+'11-7': [['11 am', 'Launch brunch', 'Completed']],
+'11-13': [['7 pm', "Bisola's 30th", 'Open']],
+'11-14': [['12 pm', 'Skincare launch', 'Paid'], ['4 pm', 'Tomi & Dayo wedding', 'Partly Paid', 'EvBooking.dc.html']],
+'11-21': [['6 pm', 'Year-end party', 'Unpaid']],
+'11-22': [['1 pm', 'Baby shower', 'Draft']],
+'11-28': [['8 pm', 'Wedding after-party', 'Partly Paid']],
+'12-5': [['7 pm', 'Year-end dinner', 'Open']]
+};
+const days = [];
+const start = new Date(2026, 9, 26);
+for (let i = 0; i < 42; i++) {
+const d = new Date(start); d.setDate(start.getDate() + i);
+const m = d.getMonth() + 1, n = d.getDate();
+const inMonth = m === 11;
+const today = m === 11 && n === 9;
+days.push({
+n,
+cellBg: inMonth ? '' : 'background: #FAFAFA',
+numStyle: today ? 'background: #171717; color: #FFFFFF; font-weight: 600' : (inMonth ? 'color: #383838' : 'color: #8F8F8F'),
+events: (ev[m + '-' + n] || []).map(([time, title, st, href]) => ({ time, title, style: S[st], href: href || '#' }))
+});
+}
+return {
+dow: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+days,
+legend: Object.keys(S).map((k) => ({ label: k, sw: S[k] }))
+};
+}
+}
+</script>
+</body>
+</html>

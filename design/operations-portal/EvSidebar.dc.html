@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sidebar</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+</style>
+</helmet>
+<nav aria-label="Main" style="position: sticky; top: 0; align-self: flex-start; height: 100vh; overflow: visible; width: {{navWidth}}; flex-shrink: 0; box-sizing: border-box; background: #F8F8F8; border-right: 1px solid #EDEDED; display: flex; flex-direction: column; font-family: Inter, system-ui, sans-serif; color: #383838">
+
+<div style="padding: 8px 8px 4px">
+<button type="button" onClick="{{toggleMenu}}" title="Avril Beetails" aria-haspopup="menu" aria-expanded="{{menuOpen}}" style="width: 100%; display: flex; align-items: center; gap: 8px; padding: {{headPad}}; justify-content: {{justify}}; border: none; border-radius: 8px; background: {{headBg}}; text-align: left; font-family: inherit; cursor: pointer">
+<span aria-hidden="true" style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; background: #EBBA06; color: #0C2627; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 12px">AB</span>
+<span style="flex: 1; min-width: 0; display: {{labelShow}}; flex-direction: column"><span style="font-size: 14px; font-weight: 600; color: #171717; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">Avril Beetails</span><span style="font-size: 12px; color: #6B6B6B">{{roleLabel}}</span></span>
+<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{labelShow}}"><path d="m7 15 5 5 5-5M7 9l5-5 5 5"></path></svg>
+</button>
+</div>
+
+<sc-if value="{{menuOpen}}" hint-placeholder-val="{{ false }}">
+<div role="menu" style="position: absolute; z-index: 5; top: 56px; left: 8px; width: 208px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 4px">
+<div style="display: flex; flex-direction: column; gap: 2px; padding: 8px 8px 10px"><span style="font-size: 14px; font-weight: 600; color: #171717">{{ownerName}}</span><span style="font-size: 13px; color: #6B6B6B">{{roleLabel}}</span></div>
+<div style="height: 1px; background: #EDEDED; margin: 0 0 4px"></div>
+<div style="position: relative">
+<button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="{{appsOpenAttr}}" onClick="{{toggleApps}}" style="width: 100%; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: none; border-radius: 8px; background: {{appsRowBg}}; font: 400 14px Inter, sans-serif; color: #383838; text-align: left; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z"></path></svg><span style="flex: 1">Apps</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#6B6B6B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 18 6-6-6-6"></path></svg></button>
+<sc-if value="{{appsOpen}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="Switch app" style="position: absolute; z-index: 6; top: -4px; left: calc(100% + 8px); width: 248px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 4px; box-sizing: border-box">
+<span style="display: block; padding: 8px 8px 4px; font-size: 12px; color: #6B6B6B">Switch app</span>
+<sc-for list="{{apps}}" as="a" hint-placeholder-count="2">
+<a role="menuitem" href="{{a.href}}" aria-current="{{a.current}}" style="display: flex; align-items: center; gap: 10px; padding: 8px; border-radius: 8px; text-decoration: none; color: #383838; {{a.style}}"><span aria-hidden="true" style="width: 32px; height: 32px; flex-shrink: 0; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 13px; font-weight: 700; {{a.logo}}">{{a.letter}}</span><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500; color: #171717">{{a.label}}</span><span style="font-size: 12px; color: #6B6B6B">{{a.sub}}</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{a.checkShow}}; flex-shrink: 0; color: #171717"><path d="M20 6 9 17l-5-5"></path></svg></a>
+</sc-for>
+</div>
+</sc-if>
+</div>
+<div style="position: relative">
+<button type="button" role="menuitem" aria-haspopup="menu" aria-expanded="{{branchOpenAttr}}" onClick="{{toggleBranch}}" style="width: 100%; height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: none; border-radius: 8px; background: {{branchRowBg}}; font: 400 14px Inter, sans-serif; color: #383838; text-align: left; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 22V4a2 2 0 0 1 2-2h8a2 2 0 0 1 2 2v18zM6 12H4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h2M18 9h2a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-2M10 6h4M10 10h4M10 14h4M10 18h4"></path></svg><span style="flex: 1">Branch</span><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">{{branchName}}</span></button>
+<sc-if value="{{branchOpen}}" hint-placeholder-val="{{ false }}">
+<div role="menu" aria-label="Switch branch" style="position: absolute; z-index: 6; top: -4px; left: calc(100% + 8px); width: 248px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.12); padding: 4px; box-sizing: border-box">
+<span style="display: block; padding: 8px 8px 4px; font-size: 12px; color: #6B6B6B">Switch branch</span>
+<sc-for list="{{branches}}" as="b" hint-placeholder-count="1">
+<button type="button" role="menuitemradio" aria-checked="{{b.on}}" onClick="{{b.pick}}" style="width: 100%; display: flex; align-items: center; gap: 10px; padding: 8px; border: none; border-radius: 8px; background: {{b.bg}}; text-align: left; font-family: inherit; cursor: pointer"><span style="flex: 1; min-width: 0; display: flex; flex-direction: column"><span style="font-size: 14px; font-weight: 500; color: #171717">{{b.label}}</span><span style="font-size: 12px; color: #6B6B6B">{{b.sub}}</span></span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="display: {{b.check}}; flex-shrink: 0; color: #171717"><path d="M20 6 9 17l-5-5"></path></svg></button>
+</sc-for>
+<div style="height: 1px; background: #EDEDED; margin: 4px 0"></div>
+<a role="menuitem" href="#" style="height: 32px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 8px; text-decoration: none; font-size: 14px; color: #525252"><span style="flex: 1">Manage branches in ERPNext</span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path></svg></a>
+</div>
+</sc-if>
+</div>
+<div style="height: 1px; background: #EDEDED; margin: 4px 0"></div>
+<sc-for list="{{menuItems}}" as="a" hint-placeholder-count="2">
+<a role="menuitem" href="{{a.href}}" style="height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 8px; text-decoration: none; font-size: 14px; color: #383838"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"></path></svg><span style="flex: 1">{{a.label}}</span></a>
+</sc-for>
+<button type="button" role="menuitemcheckbox" aria-checked="{{wideAttr}}" onClick="{{toggleWide}}" style="width: 100%; height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; font: 400 14px Inter, sans-serif; color: #383838; text-align: left; cursor: pointer"><span style="flex: 1">Toggle full width</span></button>
+<sc-for list="{{menuItems2}}" as="a" hint-placeholder-count="1">
+<a role="menuitem" href="{{a.href}}" style="height: 28px; display: flex; align-items: center; gap: 8px; padding: 0 8px; border-radius: 8px; text-decoration: none; font-size: 14px; color: #383838"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{a.icon}}"></path></svg><span style="flex: 1">{{a.label}}</span></a>
+</sc-for>
+</div>
+</sc-if>
+
+<div style="flex: 1; min-height: 0; overflow-y: auto; padding: 2px 8px 16px; display: flex; flex-direction: column; gap: 12px">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<sc-for list="{{top}}" as="item" hint-placeholder-count="3">
+<a href="{{item.href}}" aria-current="{{item.current}}" title="{{item.label}}" style="height: 28px; display: flex; align-items: center; justify-content: {{justify}}; gap: 8px; padding: {{rowPad}}; border-radius: 8px; text-decoration: none; font-size: 14px; {{item.style}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="{{item.icon}}"></path></svg><span style="flex: 1; display: {{labelShow}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.label}}</span><span style="display: {{labelShow}}; margin-right: 4px; font-size: 12px; color: #8C8C8C">{{item.count}}</span></a>
+</sc-for>
+</div>
+
+<sc-for list="{{sections}}" as="sec" hint-placeholder-count="3">
+<div style="display: flex; flex-direction: column; gap: 2px">
+<div style="display: {{railShow}}; height: 1px; background: #EDEDED; margin: 0 4px"></div>
+<button type="button" onClick="{{sec.toggle}}" aria-expanded="{{sec.open}}" style="height: 24px; display: {{labelShow}}; align-items: center; gap: 4px; padding: 0 8px; border: none; border-radius: 8px; background: transparent; font: 400 13px Inter, sans-serif; color: #6B6B6B; text-align: left; cursor: pointer"><span style="flex: 1">{{sec.label}}</span><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="{{sec.chevron}}"></path></svg></button>
+<sc-for list="{{sec.items}}" as="item" hint-placeholder-count="4">
+<a href="{{item.href}}" aria-current="{{item.current}}" title="{{item.label}}" style="height: 28px; display: {{sec.display}}; align-items: center; justify-content: {{justify}}; gap: 8px; padding: {{rowPad}}; border-radius: 8px; text-decoration: none; font-size: 14px; {{item.style}}"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="{{item.icon}}"></path></svg><span style="flex: 1; display: {{labelShow}}; white-space: nowrap; overflow: hidden; text-overflow: ellipsis">{{item.label}}</span><span style="display: {{labelShow}}; margin-right: 4px; font-size: 12px; color: #8C8C8C">{{item.count}}</span></a>
+</sc-for>
+</div>
+</sc-for>
+</div>
+
+<div style="padding: 8px; border-top: 1px solid #EDEDED; display: flex; flex-direction: column; gap: 2px">
+<button type="button" onClick="{{toggleCollapse}}" title="{{collapseLabel}}" aria-label="{{collapseLabel}}" aria-pressed="{{collapsedAttr}}" style="height: 28px; display: flex; align-items: center; justify-content: {{justify}}; gap: 8px; padding: {{rowPad}}; border: none; border-radius: 8px; background: transparent; font: 400 14px Inter, sans-serif; color: #383838; text-align: left; cursor: pointer"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" style="flex-shrink: 0"><path d="M3 5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2zM9 3v18"></path></svg><span style="flex: 1; display: {{labelShow}}">Collapse</span></button>
+</div>
+</nav>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"active":{"editor":"enum","options":["home","inbox","bookings","calendar","clients","reviews","orders","products","production","sale","stock","purchases","staff","payments"],"default":"home"},"role":{"editor":"enum","options":["Owner","Assistant"],"default":"Owner"},"collapsed":{"editor":"enum","options":["false","true"],"default":"false"},"$preview":{"width":224,"height":900}}'>
+class Component extends DCLogic {
+constructor(p) {
+super(p);
+const apply = (w) => { try { document.documentElement.style.setProperty('--pg-max', w ? '100000px' : '1080px'); } catch (e) {} };
+let dark = false;
+const sysDark = () => { try { return window.matchMedia('(prefers-color-scheme: dark)').matches; } catch (e) { return false; } };
+this.isDark = (c) => c === 'dark' || (c === 'system' && sysDark());
+try { dark = this.isDark(localStorage.getItem('opsTheme')); } catch (e) {}
+const applyTheme = (d) => { try { const doc = document; let st = doc.getElementById('opsThemeStyle'); if (!st) { st = doc.createElement('style'); st.id = 'opsThemeStyle'; st.textContent = 'html[data-theme="dark"]{filter:invert(1) hue-rotate(180deg);background:#FFFFFF}'; doc.head.appendChild(st); } doc.documentElement.setAttribute('data-theme', d ? 'dark' : 'light'); } catch (e) {} };
+applyTheme(dark);
+this.applyTheme = applyTheme;
+let wide = false;
+try { wide = localStorage.getItem('opsPageWide') === '1'; } catch (e) {}
+apply(wide);
+this.state = { menu: false, appsOpen: false, branchOpen: false, branch: 'Main', dark, shut: {}, col: p && p.collapsed === 'true', wide };
+this.applyWide = apply;
+const sync = (w) => { apply(w); this.setState({ wide: w }); };
+try { window.addEventListener('storage', (e) => { if (e.key === 'opsTheme') { const d = this.isDark(e.newValue); this.applyTheme(d); this.setState({ dark: d }); } }); } catch (e) {}
+try { window.addEventListener('storage', (e) => { if (e.key === 'opsPageWide') sync(e.newValue === '1'); }); } catch (e) {}
+try { this.bc = new BroadcastChannel('opsPageWide'); this.bc.onmessage = (e) => sync(!!e.data); } catch (e) {}
+}
+renderVals() {
+const a = this.props.active ?? 'home';
+const s = this.state;
+const col = s.col;
+const IC = {
+  search: 'm21 21-4.3-4.3M11 18a7 7 0 1 0 0-14 7 7 0 0 0 0 14',
+  home: 'M3 9.5 12 3l9 6.5V20a1 1 0 0 1-1 1h-5v-6H9v6H4a1 1 0 0 1-1-1z',
+  bell: 'M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9M10.3 21a1.94 1.94 0 0 0 3.4 0',
+  list: 'M9 2h6a1 1 0 0 1 1 1v2a1 1 0 0 1-1 1H9a1 1 0 0 1-1-1V3a1 1 0 0 1 1-1M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2M12 11h4M12 16h4M8 11h.01M8 16h.01',
+  cal: 'M8 2v4M16 2v4M3 10h18M5 4h14a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2',
+  users: 'M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M22 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8',
+  star: 'M12 2l3.1 6.3 6.9 1-5 4.9 1.2 6.8L12 17.8 5.8 21l1.2-6.8-5-4.9 6.9-1z',
+  cart: 'M8 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2M19 22a1 1 0 1 0 0-2 1 1 0 0 0 0 2M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12',
+  box: 'M16.5 9.4 7.5 4.2M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7M3.3 7 12 12l8.7-5M12 22V12',
+  factory: 'M2 20a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2V8l-7 5V8l-7 5V4a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2z',
+  receipt: 'M4 2v20l2-1 2 1 2-1 2 1 2-1 2 1 2-1 2 1V2l-2 1-2-1-2 1-2-1-2 1-2-1-2 1zM16 8h-6a2 2 0 1 0 0 4h4a2 2 0 1 1 0 4H8M12 17.5v-11',
+  wallet: 'M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4',
+  grid: 'M3 3h7v7H3zM14 3h7v7h-7zM14 14h7v7h-7zM3 14h7v7H3z',
+  ext: 'M15 3h6v6M10 14 21 3M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6',
+  help: 'M12 22a10 10 0 1 0 0-20 10 10 0 0 0 0 20M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01',
+  out: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
+  gear: 'M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1zM12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6',
+  down: 'm6 9 6 6 6-6', right: 'm9 18 6-6-6-6'
+};
+const mk = (k, label, href, icon, count) => ({
+  label, href, icon: IC[icon], count: count || '',
+  current: k === a ? 'page' : undefined,
+  style: k === a ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717; font-weight: 500' : 'color: #383838'
+});
+const sec = (key, label, items) => ({ label, items, open: s.shut[key] ? 'false' : 'true', display: s.shut[key] ? 'none' : 'flex', chevron: s.shut[key] ? IC.right : IC.down, toggle: () => this.setState({ shut: { ...s.shut, [key]: !s.shut[key] } }) });
+return {
+  navWidth: col ? '48px' : '224px', labelShow: col ? 'none' : 'flex', railShow: col ? 'block' : 'none', justify: col ? 'center' : 'flex-start', rowPad: col ? '0' : '0 8px', headPad: col ? '6px 0' : '6px 8px', gear: IC.gear,
+  collapseLabel: col ? 'Expand sidebar' : 'Collapse sidebar', collapsedAttr: col ? 'true' : 'false', toggleCollapse: () => this.setState({ col: !col, menu: false }),
+  roleLabel: this.props.role ?? 'Owner',
+  headBg: s.menu ? '#EDEDED' : 'transparent', menuOpen: s.menu, toggleMenu: () => this.setState({ menu: !s.menu, appsOpen: false, branchOpen: false }),
+  apps: [{ label: 'Operations', sub: 'This app', letter: 'O', href: 'EvHome.dc.html', logo: 'background: #171717; color: #FFFFFF', current: 'true', checkShow: 'block', style: '' }, { label: 'ERPNext', sub: 'Accounts, stock, buying', letter: 'E', href: '#', logo: 'background: #CFE5FF; color: #0B4F8A', current: undefined, checkShow: 'none', style: '' }],
+  ownerName: 'Avril Beetails', appsOpen: s.appsOpen, appsOpenAttr: s.appsOpen ? 'true' : 'false', appsRowBg: s.appsOpen ? '#F3F3F3' : 'transparent', toggleApps: () => this.setState({ appsOpen: !s.appsOpen, branchOpen: false }),
+  branchName: s.branch, branchOpen: s.branchOpen, branchOpenAttr: s.branchOpen ? 'true' : 'false', branchRowBg: s.branchOpen ? '#F3F3F3' : 'transparent', toggleBranch: () => this.setState({ branchOpen: !s.branchOpen, appsOpen: false }),
+  branches: [['Main', 'Default branch']].map(([l, sub]) => ({ label: l, sub, on: s.branch === l ? 'true' : 'false', check: s.branch === l ? 'block' : 'none', bg: s.branch === l ? '#F3F3F3' : 'transparent', pick: () => this.setState({ branch: l, branchOpen: false }) })),
+  menuItems: [{ label: 'Settings', href: 'EvSettings.dc.html', icon: IC.gear }, { label: 'Help and support', href: '#', icon: IC.help }],
+  menuItems2: [{ label: 'Log out', href: '#', icon: IC.out }],
+  darkAttr: s.dark ? 'true' : 'false', themeIcon: s.dark ? 'M12 3v1M12 20v1M4.2 4.2l.7.7M19.1 19.1l.7.7M3 12h1M20 12h1M4.2 19.8l.7-.7M19.1 4.9l.7-.7M12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10' : 'M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9', toggleTheme: () => { const d = !s.dark; this.applyTheme(d); try { localStorage.setItem('opsTheme', d ? 'dark' : 'light'); } catch (e) {} try { if (this.bc2) this.bc2.postMessage(d); } catch (e) {} this.setState({ dark: d }); },
+  wideAttr: s.wide ? 'true' : 'false', wideTrack: s.wide ? '#171717' : '#D4D4D4', wideKnob: s.wide ? '12px' : '2px',
+  toggleWide: () => { const w = !s.wide; this.applyWide(w); try { localStorage.setItem('opsPageWide', w ? '1' : '0'); } catch (e) {} try { if (this.bc) this.bc.postMessage(w); } catch (e) {} this.setState({ wide: w }); },
+  top: [mk('search', 'Search', '#', 'search'), mk('home', 'Home', 'EvHome.dc.html', 'home'), mk('inbox', 'Needs attention', 'EvHome.dc.html', 'bell', '4')],
+  sections: [
+    sec('events', 'Events', [mk('bookings', 'Bookings', 'EvBookings.dc.html', 'list', '29'), mk('calendar', 'Calendar', 'EvCalendar.dc.html', 'cal'), mk('clients', 'Clients', 'EvClients.dc.html', 'users'), mk('reviews', 'Reviews', 'EvReviews.dc.html', 'star', '1')]),
+    sec('retail', 'Retail', [mk('orders', 'Orders', 'RtOrders.dc.html', 'cart', '5'), mk('products', 'Products', 'RtProducts.dc.html', 'box'), mk('production', 'Production', 'RtPlan.dc.html', 'factory', '2')]),
+    sec('business', 'Business', [mk('stock', 'Stock and ingredients', 'EvStock.dc.html', 'box'), mk('purchases', 'Purchases', 'EvPurchases.dc.html', 'receipt'), mk('staff', 'Staff', 'EvStaff.dc.html', 'users'), mk('payments', 'Payments', 'EvPayments.dc.html', 'wallet')])
+  ]
+};
+}
+}
+</script>
+</body>
+</html>

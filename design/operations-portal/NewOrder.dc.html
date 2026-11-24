@@ -1,0 +1,89 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>New bespoke order</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 390px; height: 844px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 15px; color: #383838; display: flex; flex-direction: column; overflow: hidden">
+
+<header style="min-height: 52px; padding: 8px 12px; border-bottom: 1px solid #EDEDED; display: grid; grid-template-columns: 44px 1fr 44px; align-items: center">
+<a href="Main.dc.html" aria-label="Back" style="width: 44px; height: 44px; display: flex; align-items: center; justify-content: center; border-radius: 10px; color: #383838"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"></path></svg></a>
+<h1 style="margin: 0; text-align: center; font-size: 17px; font-weight: 600; color: #171717">New bespoke order</h1>
+<span></span>
+</header>
+<sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 16px; background: #FFF1F0; color: #B42318; font-size: 14px"><span>Couldn't save. Nothing was lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; padding: 0 10px; border: none; border-radius: 8px; background: #FFFFFF; color: #B42318; font: 500 14px Inter, sans-serif; cursor: pointer; white-space: nowrap">Try again</button></div></sc-if><sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-label="Saving" style="display: flex; align-items: center; gap: 8px; padding: 10px 16px; background: #F3F3F3; color: #525252; font-size: 14px"><span style="width: 12px; height: 12px; border-radius: 6px; background: #525252; animation: opsPulse 1.4s ease-in-out infinite; flex-shrink: 0"></span>Saving…</div></sc-if>
+
+<div style="flex: 1; overflow: hidden; padding: 16px; display: flex; flex-direction: column; gap: 16px">
+<div style="display: flex; flex-direction: column; gap: 6px">
+<div role="progressbar" aria-label="Step 4 of 4" aria-valuemin="1" aria-valuemax="4" aria-valuenow="4" style="display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 4px"><span style="height: 4px; border-radius: 2px; background: #383838"></span><span style="height: 4px; border-radius: 2px; background: #383838"></span><span style="height: 4px; border-radius: 2px; background: #383838"></span><span style="height: 4px; border-radius: 2px; background: #383838"></span></div>
+<span style="font-size: 13px; color: #6B6B6B">Step 4 of 4 · Price &amp; deposit</span>
+</div>
+
+<div style="background: #F8F8F8; border-radius: 12px; padding: 12px; display: flex; flex-direction: column; gap: 6px">
+<div style="display: flex; justify-content: space-between; align-items: center"><span style="font-size: 16px; font-weight: 500; color: #171717">Funmi D.</span><a href="#" style="font-size: 13px">Edit</a></div>
+<span style="font-size: 13px; color: #525252">Evening gown · silk crepe, emerald</span>
+<span style="font-size: 13px; color: #525252">Measurements today · 3 reference photos · ready 6 Dec</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="price" style="font-size: 13px; color: #525252">Price</label>
+<input id="price" type="text" value="₦450,000" style="height: 40px; box-sizing: border-box; border: none; border-radius: 10px; background: #F3F3F3; padding: 0 12px; font: 500 16px Inter, sans-serif; color: #171717">
+</div>
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="deposit" style="font-size: 13px; color: #525252">Deposit today (50%)</label>
+<input id="deposit" type="text" value="₦225,000" style="height: 40px; box-sizing: border-box; border: none; border-radius: 10px; background: #F3F3F3; padding: 0 12px; font: 500 16px Inter, sans-serif; color: #171717">
+<span style="font-size: 13px; color: #6B6B6B">Balance ₦225,000 due on pickup</span>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<span id="paylbl" style="font-size: 13px; color: #525252">Payment method</span>
+<div role="group" aria-labelledby="paylbl" style="display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 4px; background: #F3F3F3; border-radius: 10px; padding: 3px">
+<button type="button" aria-pressed="true" style="height: 40px; border: none; border-radius: 8px; background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717; font: 500 14px Inter, sans-serif">Bank transfer</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: none; border-radius: 8px; background: transparent; color: #525252; font: 500 14px Inter, sans-serif">Card (POS)</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: none; border-radius: 8px; background: transparent; color: #525252; font: 500 14px Inter, sans-serif">Cash</button>
+<button type="button" aria-pressed="false" style="height: 40px; border: none; border-radius: 8px; background: transparent; color: #525252; font: 500 14px Inter, sans-serif">Send pay link</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 6px">
+<label for="team" style="font-size: 13px; color: #525252">Assign team</label>
+<select id="team" style="height: 40px; border: none; border-radius: 10px; background: #F3F3F3; padding: 0 10px; font: 500 15px Inter, sans-serif; color: #171717"><option>Team A · 2 projects running</option><option>Team B</option><option>Team C</option></select>
+</div>
+</div>
+
+<footer style="padding: 12px 16px 24px; border-top: 1px solid #EDEDED; display: flex; flex-direction: column; gap: 8px">
+<button type="button" style="height: 44px; border: none; border-radius: 10px; background: #171717; color: #FFFFFF; font: 500 15px Inter, sans-serif">Confirm &amp; send receipt on WhatsApp</button>
+<span style="font-size: 12px; color: #6B6B6B; text-align: center">The order, invoice and receipt are created for you.</span>
+</footer>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":390,"height":844}}'>
+class Component extends DCLogic {
+constructor(p) { super(p); this.state = {}; this.__vinit(); }
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+return {};
+}
+}
+</script>
+</body>
+</html>

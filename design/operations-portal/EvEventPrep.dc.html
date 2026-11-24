@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Event prep</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+body{margin:0}.pg>header{padding-left:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important;padding-right:max(20px,calc((100% - var(--pg-max,1080px))/2 + 20px))!important}.pg>*:not(header){width:100%;max-width:var(--pg-max,1080px);margin-left:auto!important;margin-right:auto!important;box-sizing:border-box}
+a{color:#0070CC}a:hover{color:#005499}
+@keyframes opsPulse{50%{opacity:.5}}
+</style>
+</helmet>
+<div style="width: 100%; min-height: 900px; box-sizing: border-box; background: #FFFFFF; font-family: Inter, system-ui, sans-serif; font-size: 14px; color: #383838; display: flex; flex-wrap: wrap; align-items: stretch">
+<div style="flex: 0 0 auto; display: flex"><dc-import name="EvSidebar" active="bookings" role="Owner" hint-size="224px,900px"></dc-import></div>
+<div class="pg" style="flex: 999 1 560px; min-width: 0; display: flex; flex-direction: column">
+<header style="position: sticky; top: 0; z-index: 20; background: #FFFFFF; min-height: 48px; box-sizing: border-box; padding: 8px 20px; border-bottom: 1px solid #EDEDED; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px">
+<nav aria-label="Breadcrumb" style="display: flex; align-items: center; gap: 6px; min-width: 0"><a href="EvBookings.dc.html" style="color: #6B6B6B; text-decoration: none">Bookings</a><span aria-hidden="true" style="color: #C7C7C7">/</span><a href="EvBooking.dc.html" style="color: #6B6B6B; text-decoration: none">Tomi &amp; Dayo wedding reception</a><span aria-hidden="true" style="color: #C7C7C7">/</span><span style="font-size: 18px; font-weight: 600; color: #171717">Event prep</span></nav>
+<a href="EvPackEvent.dc.html" style="height: 28px; box-sizing: border-box; padding: 0 10px; border-radius: 8px; font: 500 14px Inter, sans-serif; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-decoration: none; white-space: nowrap; background: #171717; color: #FFFFFF">{{packLabel}}</a>
+</header>
+<sc-if value="{{vLoading}}" hint-placeholder-val="{{ false }}"><div role="status" aria-busy="true" aria-label="Loading" style="padding: 20px; display: flex; flex-direction: column; gap: 20px"><div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px"><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="border: 1px solid #EDEDED; border-radius: 12px; padding: 16px; display: flex; flex-direction: column; gap: 10px"><span style="height: 12px; width: 40%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 24px; width: 30%; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div><div style="display: flex; flex-direction: column"><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div><div style="display: flex; align-items: center; gap: 12px; height: 48px; border-bottom: 1px solid #EDEDED"><span style="width: 28px; height: 28px; border-radius: 14px; flex-shrink: 0; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 2; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; flex: 1; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span><span style="height: 12px; width: 64px; background: #F3F3F3; border-radius: 6px; animation: opsPulse 1.4s ease-in-out infinite"></span></div></div></div></sc-if><sc-if value="{{vError}}" hint-placeholder-val="{{ false }}"><div role="alert" style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 8px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Couldn't load event prep</span><span style="font-size: 14px; color: #525252; max-width: 360px">Check your connection and try again. Nothing you entered has been lost.</span><button type="button" onClick="{{vRetry}}" style="height: 28px; box-sizing: border-box; padding: 0 10px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; background: #171717; color: #FFFFFF">Try again</button></div></sc-if><sc-if value="{{vEmpty}}" hint-placeholder-val="{{ false }}"><div style="padding: 68px 20px 20px; display: flex; flex-direction: column; align-items: center; gap: 4px; text-align: center"><span style="font-size: 16px; font-weight: 600; color: #171717">Event prep not found</span><span style="font-size: 14px; color: #525252; max-width: 360px">The booking may have been cancelled or removed.</span></div></sc-if>
+<div style="display: {{vShow}}; flex-direction: column; flex: 1">
+<div style="display: flex; flex-wrap: wrap; flex: 1; align-items: stretch">
+<main style="flex: 999 1 520px; min-width: 0; box-sizing: border-box; padding: 20px; display: flex; flex-direction: column; gap: 20px">
+<div style="display: flex; flex-direction: column; gap: 8px"><div style="display: flex; justify-content: space-between; align-items: baseline"><h2 style="margin: 0; font-size: 16px; font-weight: 600; color: #171717">Checklist</h2><span style="font-size: 13px; color: #6B6B6B">{{progressText}}</span></div><span style="display: block; height: 6px; border-radius: 3px; background: #F3F3F3; overflow: hidden"><span style="display: block; height: 6px; border-radius: 3px; background: #16794C; width: {{pct}}"></span></span></div>
+<div style="display: flex; flex-direction: column">
+<sc-for list="{{tasks}}" as="t" hint-placeholder-count="7">
+<div style="display: flex; flex-direction: column">
+<span style="display: {{t.headShow}}; padding: 16px 0 6px; font-size: 13px; font-weight: 600; color: #6B6B6B">{{t.head}}</span>
+<div style="min-height: 48px; display: flex; align-items: center; gap: 12px; border-bottom: 1px solid #EDEDED">
+<button type="button" role="checkbox" aria-checked="{{t.pressed}}" aria-label="{{t.label}}" onClick="{{t.toggle}}" style="width: 20px; height: 20px; padding: 0; flex-shrink: 0; border-radius: 6px; display: inline-flex; align-items: center; justify-content: center; color: #FFFFFF; font-size: 13px; cursor: pointer; {{t.box}}">{{t.mark}}</button>
+<div style="flex: 1; min-width: 0; display: flex; flex-direction: column; padding: 8px 0"><span style="{{t.text}}">{{t.label}}</span><span style="font-size: 12px; color: #6B6B6B">{{t.sub}}</span></div>
+<a href="{{t.href}}" style="display: {{t.linkShow}}; font-size: 13px; white-space: nowrap">{{t.linkLabel}}</a>
+<span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0; {{t.tag}}">{{t.tagText}}</span><span aria-hidden="true" title="{{t.who}}" style="width: 24px; height: 24px; border-radius: 12px; background: #EDEDED; color: #383838; font-size: 10px; font-weight: 600; display: inline-flex; align-items: center; justify-content: center; flex-shrink: 0">{{t.init}}</span>
+</div></div>
+</sc-for>
+</div>
+<div style="display: flex; gap: 8px; align-items: center"><div style="flex: 1; display: flex; align-items: center; height: 32px; box-sizing: border-box; padding: 0 8px; border-radius: 8px; background: #F3F3F3"><input type="text" autocomplete="off" aria-label="New task" placeholder="Add a task, e.g. Buy gold ribbon" value="{{draft}}" onInput="{{onDraft}}" onChange="{{onDraft}}" onKeyDown="{{onKey}}" style="width: 100%; border: none; outline: none; background: transparent; font: 400 14px Inter, sans-serif; color: #383838"></div><button type="button" onClick="{{addTask}}" style="height: 32px; box-sizing: border-box; padding: 0 12px; border: none; border-radius: 8px; font: 500 14px Inter, sans-serif; cursor: pointer; {{addStyle}}">Add task</button></div>
+</main>
+<aside aria-label="Event summary" style="flex: 1 1 300px; max-width: 340px; box-sizing: border-box; border-left: 1px solid #EDEDED; padding: 20px; display: flex; flex-direction: column; gap: 24px">
+<section style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-size: 13px; font-weight: 400; color: #6B6B6B">Event</h2>
+<div style="display: flex; flex-direction: column; gap: 2px"><span style="font-weight: 600; font-size: 16px; color: #171717">Tomi &amp; Dayo wedding reception</span><span style="color: #525252">Sat 14 Nov 2026 · 4:00 pm – 10:00 pm</span><span style="color: #525252">Victoria Island · 250 guests</span><span style="font-size: 13px; color: #6B6B6B">Set-up from 1:00 pm. Pack down by 10:30 pm.</span></div></section>
+<section style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-size: 13px; font-weight: 400; color: #6B6B6B">Staff</h2>
+<div style="display: flex; justify-content: space-between; align-items: center"><span>Bartenders</span><span style="background: #FFF7D3; color: #9A4A00; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">2 of 4</span></div>
+<div style="display: flex; justify-content: space-between; align-items: center"><span>Waiters, mixologist, bar backs</span><span style="background: #E4FAEB; color: #16794C; padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; white-space: nowrap; flex-shrink: 0">All confirmed</span></div>
+<a href="EvAssignStaff.dc.html" style="font-size: 13px">Assign staff</a></section>
+<section style="display: flex; flex-direction: column; gap: 10px"><h2 style="margin: 0; font-size: 13px; font-weight: 400; color: #6B6B6B">Stock</h2>
+<div style="display: flex; justify-content: space-between; align-items: center"><span>Packing list</span><span style="padding: 2px 8px; border-radius: 12px; font-size: 12px; font-weight: 500; {{stockBadge}}; white-space: nowrap; flex-shrink: 0">{{stockText}}</span></div>
+<a href="EvPackEvent.dc.html" style="font-size: 13px">{{packLabel}}</a></section>
+</aside>
+</div>
+</div>
+</div>
+</div>
+<div role="group" aria-label="Screen state" style="font-family: Inter, system-ui, sans-serif; position: fixed; right: 16px; bottom: 16px; z-index: 60; display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 12px; background: #FFFFFF; border: 1px solid #EDEDED; border-radius: 12px; box-shadow: 0 4px 16px rgba(0,0,0,0.08)"><span style="font-size: 13px; color: #6B6B6B; white-space: nowrap">Screen state</span><div style="display: flex; background: #F3F3F3; border-radius: 8px; padding: 2px"><sc-for list="{{vOpts}}" as="o" hint-placeholder-count="4"><button type="button" aria-pressed="{{o.on}}" onClick="{{o.pick}}" style="height: 24px; padding: 0 10px; border: none; border-radius: 6px; font: 500 13px Inter, sans-serif; cursor: pointer; white-space: nowrap; {{o.style}}">{{o.label}}</button></sc-for></div></div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1440,"height":900}}'>
+class Component extends DCLogic {
+
+__vinit() { try { const f = () => this.setState({ __v: Date.now() }); window.addEventListener('storage', f); window.addEventListener('focus', f); } catch (e) {} }
+viewVals() { let v = 'ok'; try { v = localStorage.getItem('opsView') || 'ok'; } catch (e) {}
+const set = (k) => () => { try { localStorage.setItem('opsView', k); } catch (e) {} try { window.dispatchEvent(new Event('focus')); } catch (e) {} this.setState({ __v: Date.now() }); };
+const opt = (k, l) => ({ label: l, pick: set(k), on: v === k ? 'true' : 'false', style: v === k ? 'background: #FFFFFF; box-shadow: 0 1px 2px rgba(0,0,0,0.08); color: #171717' : 'background: transparent; color: #525252' });
+return { vLoading: v === 'loading', vError: v === 'error', vEmpty: v === 'empty', vShow: v === 'ok' ? 'flex' : 'none', vRetry: set('ok'), vOpts: [opt('ok', 'Normal'), opt('loading', 'Loading'), opt('error', 'Error'), opt('empty', 'Empty')] }; }
+constructor(p) { super(p); this.__vinit(); const read = () => { try { return JSON.parse(localStorage.getItem('opsPacked') || '{}').v2 || null; } catch (e) { return null; } }; this.state = { packed: read(), done: { 2: true, 3: true }, extra: [], draft: '' }; try { window.addEventListener('storage', () => this.setState({ packed: read() })); window.addEventListener('focus', () => this.setState({ packed: read() })); } catch (e) {} }
+renderVals() { return Object.assign(this.__rv(), this.viewVals()); }
+__rv() {
+const s = this.state;
+const T0 = [
+ { label: 'Coupe and highball glasses packed', group: 'Stock', sub: 'Done from the packing list, this ticks itself', due: 'Thu 12 Nov', who: 'Chiamaka Eze', init: 'CE', pack: true, href: 'EvPackEvent.dc.html' },
+ { label: 'Ice, 40 bags (collect on the day)', group: 'Stock', sub: 'Due Sat 14 Nov, 12:00 pm', who: 'Ayo Coker', init: 'AC' },
+ { label: 'Bar counter and gold décor packed', group: 'Décor and menu', sub: 'Due Thu 12 Nov', who: 'Chiamaka Eze', init: 'CE' },
+ { label: 'Signature menu printed', group: 'Décor and menu', sub: 'Due Thu 12 Nov', who: 'Chiamaka Eze', init: 'CE' },
+ { label: 'Confirm 2 more bartenders', group: 'Staff', sub: 'Due Wed 11 Nov', who: 'Avril', init: 'AB', href: 'EvAssignStaff.dc.html', link: 'Assign staff' },
+ { label: 'Send staff call time on WhatsApp', group: 'Staff', sub: 'Due Fri 13 Nov', who: 'Avril', init: 'AB' }
+];
+const T = T0.map((t, i) => Object.assign({ id: i }, t));
+if (s.packed && s.packed.short) T.splice(1, 0, { id: 50, label: 'Buy what is short: ' + s.packed.short, group: 'Stock', sub: 'Found while packing', who: 'Avril', init: 'AB', href: 'EvNewPurchase.dc.html', link: 'Record purchase' });
+const all = T.concat(s.extra.map((label, j) => ({ id: 100 + j, label, group: 'Added by you', sub: 'No due date', who: 'You', init: 'AB' })));
+const isDone = (t) => t.pack ? !!s.packed : !!s.done[t.id];
+let lastGroup = '';
+const tasks = all.map((t) => { const head = t.group !== lastGroup; lastGroup = t.group; const d = isDone(t); return {
+  head: t.group, headShow: head ? 'block' : 'none', label: t.label, sub: t.pack ? (s.packed ? 'Packed. Stock updated and the packing list is saved.' : t.sub) : t.sub, who: t.who, init: t.init,
+  tagText: d ? 'Completed' : 'Open', tag: d ? 'background: #E4FAEB; color: #16794C' : 'background: #E6F4FF; color: #005EB0', pressed: d ? 'true' : 'false', mark: d ? '✓' : '', box: d ? 'background: #171717; border: 1px solid #171717' : 'background: #FFFFFF; border: 1px solid #C7C7C7', text: d ? 'color: #6B6B6B; text-decoration: line-through' : 'color: #171717',
+  toggle: () => { if (t.pack) return; this.setState({ done: Object.assign({}, s.done, { [t.id]: !s.done[t.id] }) }); },
+  href: t.href || '#', linkShow: t.href ? 'inline' : 'none', linkLabel: t.pack ? (s.packed ? 'View packing list' : 'Pack items') : (t.link || '')
+}; });
+const doneCount = all.filter(isDone).length;
+const draft = s.draft.trim();
+const add = () => { if (draft) this.setState({ extra: s.extra.concat(draft), draft: '' }); };
+return {
+  tasks, progressText: doneCount + ' of ' + all.length + ' done', pct: Math.round(doneCount / all.length * 100) + '%',
+  draft: s.draft, onDraft: (e) => this.setState({ draft: e.target.value }), onKey: (e) => { if (e.key === 'Enter') add(); }, addTask: add,
+  addStyle: draft ? 'background: #171717; color: #FFFFFF' : 'background: #EDEDED; color: #8C8C8C; cursor: not-allowed',
+  packLabel: s.packed ? 'View packing list' : 'Pack items', stockText: s.packed ? (s.packed.short ? 'Packed, some short' : 'Packed') : 'Not packed yet', stockBadge: s.packed && !s.packed.short ? 'background: #E4FAEB; color: #16794C' : 'background: #FFF7D3; color: #9A4A00'
+};
+}
+}
+</script>
+</body>
+</html>
